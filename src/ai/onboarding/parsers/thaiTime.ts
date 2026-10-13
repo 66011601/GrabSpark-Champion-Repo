@@ -73,12 +73,19 @@ export function parseThaiTime(text: string): string | null {
   return findTimes(text)[0]?.time ?? null
 }
 
-/** Days named after "หยุด" ("หยุดวันอาทิตย์" → ['sun']). */
+// A closed verb is "หยุด" or "ปิด" (not the ปิด inside "เปิด"). Days in the clause after it (up to "เปิด"/"ขาย") or in the word just before it are closed.
+const CLOSED_VERB = /หยุด|(?<!เ)ปิด/g
+
+/** Days the merchant says are closed ("หยุดวันอาทิตย์" → ['sun'], "วันอาทิตย์หยุด" → ['sun']). */
 export function parseClosedDays(text: string): Weekday[] {
-  const start = text.indexOf('หยุด')
-  if (start === -1) return []
-  const rest = text.slice(start)
-  return DAY_WORDS.filter(([word]) => rest.includes(word)).map(([, day]) => day)
+  const clauses: string[] = []
+  for (const verb of text.matchAll(CLOSED_VERB)) {
+    const at = verb.index ?? 0
+    const before = text.slice(0, at).split(/\s|เปิด/).pop() ?? ''
+    const after = text.slice(at + verb[0].length).split(/เปิด|ขาย/)[0]
+    clauses.push(before, after)
+  }
+  return DAY_WORDS.filter(([word]) => clauses.some((clause) => clause.includes(word))).map(([, day]) => day)
 }
 
 /** "สิบโมงเช้าถึงสองทุ่ม" → { open: "10:00", close: "20:00" }. Null unless both times are present. */

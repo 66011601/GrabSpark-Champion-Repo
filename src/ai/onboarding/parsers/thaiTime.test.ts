@@ -45,6 +45,25 @@ describe('parseClosedDays', () => {
   it('is empty when open every day', () => {
     expect(parseClosedDays('เปิดทุกวัน')).toEqual([])
   })
+
+  it('ignores days after "เปิด" in a closed-day phrase', () => {
+    expect(parseClosedDays('หยุดวันอาทิตย์ เปิดจันทร์ถึงเสาร์')).toEqual(['sun'])
+    expect(parseClosedDays('หยุดวันอาทิตย์ เปิดวันเสาร์')).toEqual(['sun'])
+  })
+
+  it('reads "ปิด" as a closed verb', () => {
+    expect(parseClosedDays('ปิดวันอาทิตย์')).toEqual(['sun'])
+    expect(parseClosedDays('ปิดทุกวันอาทิตย์')).toEqual(['sun'])
+  })
+
+  it('reads a day said before the closed verb', () => {
+    expect(parseClosedDays('วันอาทิตย์หยุด')).toEqual(['sun'])
+  })
+
+  it('does not take a closing time for a closed day', () => {
+    expect(parseClosedDays('ปิดสองทุ่ม')).toEqual([])
+    expect(parseClosedDays('เปิดสิบโมงถึงสองทุ่ม เปิดทุกวัน')).toEqual([])
+  })
 })
 
 describe('parseOpeningHours', () => {
@@ -62,6 +81,14 @@ describe('parseOpeningHours', () => {
 
   it('reads days off said first', () => {
     expect(parseOpeningHours('หยุดวันเสาร์อาทิตย์ เปิดแปดโมงถึงห้าโมงเย็น')).toEqual({ open: '08:00', close: '17:00', closedDays: ['sat', 'sun'] })
+  })
+
+  it('reads a day closed with "ปิด" and open hours', () => {
+    expect(parseOpeningHours('ร้านปิดวันอาทิตย์ เปิดสิบโมงถึงสองทุ่ม')).toEqual({ open: '10:00', close: '20:00', closedDays: ['sun'] })
+  })
+
+  it('reads a day said before "หยุด" and open hours', () => {
+    expect(parseOpeningHours('อาทิตย์หยุด เปิดสิบโมงถึงสองทุ่ม')).toEqual({ open: '10:00', close: '20:00', closedDays: ['sun'] })
   })
 
   it('needs both an opening and a closing time', () => {
