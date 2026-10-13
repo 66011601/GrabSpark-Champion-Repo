@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Noto Sans Thai Looped", ui-sans-serif, system-ui, sans-serif;
+
+  /* Grab green is 2.8:1 on white: fills and accents only, never text. */
+  --color-grab: #00b14f;
+  /* Buttons with white text and any green text (~5.5:1 on white). */
+  --color-action: #007a3d;
+  --color-action-pressed: #00602f;
+  --color-ink: #1a1a1a;
+  --color-ink-muted: #5c5c5c;
+  --color-surface: #ffffff;
+  --color-canvas: #f4f6f5;
+  --color-line: #e2e6e4;
+  --color-ok-bg: #e6f6ec;
+  --color-warn-bg: #fff4d6;
+  --color-warn-ink: #7a4b00;
+
+  /* Older eyes: nothing smaller than 15px, body at 18px. */
+  --text-xs: 0.9375rem;
+  --text-sm: 1rem;
+  --text-base: 1.125rem;
+  --text-base--line-height: 1.6;
+  --text-money: 2rem;
+  --text-money--line-height: 1.2;
+
+  --animate-pop: pop 0.4s ease-out both;
+
+  @keyframes pop {
+    0% { transform: scale(0.6); opacity: 0; }
+    70% { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); }
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.6;
+  }
+}
