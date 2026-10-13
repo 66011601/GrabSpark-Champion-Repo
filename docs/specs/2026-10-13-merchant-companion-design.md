@@ -108,14 +108,14 @@ All `src/ai/` code is pure TypeScript with no React imports, so it can be unit-t
 | Module | Path | Job | Prototype implementation | Production path |
 |---|---|---|---|---|
 | Onboarding Extractor | `ai/onboarding/extractProfile.ts` | Utterance + profile so far → field updates with confidence | Rule-based Thai parsers (§6.4) | LLM restricted to the profile schema |
-| Follow-up Picker | `ai/onboarding/followUp.ts` | Choose next missing or low-confidence field → one question + chips | Fixed priority order: storeName → category → location → hours → menu → phone | Same, plus conversation history |
+| Follow-up Picker | `ai/onboarding/followUp.ts` | Choose the next empty field → one question + chips. Low-confidence fields are flagged in A2, not re-asked. | Fixed priority order: storeName → category → location → hours → menu → phone | Same, plus conversation history |
 | Nudge Engine | `ai/nudge-engine/` | Detect opportunities, rank, explain | Detector functions over mock JSON; `score = impact × confidence × urgency` | Live order events + a model predicting promo lift |
 | Action Parser | `ai/action-parser/` | Thai voice/text → `ParsedIntent` | Thai keyword/slot word list (`thaiLexicon.ts`) | LLM restricted to the action schema |
 | Pre-fill Handler | `ai/prefill/` | Intent + merchant data → complete `ActionDraft` | One filler per action type; v1: `fillers/bundlePromo.ts` | Same, plus merchant history and policy |
 | Guardrail | `ai/guardrail/` | Run checks, gate execution | Pure check functions; `confirmAndExecute.ts` is the only code allowed to call write APIs | Same checks re-run on the server |
 | Impact Estimator | `ai/impact/estimateImpact.ts` | Conservative impact ranges | Formula in §6.6 | Measured against real promo results |
 
-**Executor isolation.** Only `ai/guardrail/confirmAndExecute.ts` and `ai/onboarding/submit.ts` may import the write functions in `services/merchantApi.ts` (`createPromotion`, `submitApplication`). This is enforced with an ESLint `no-restricted-imports` rule, so "the AI can't execute on its own" is a property of the code, not just the UI.
+**Executor isolation.** Write functions (`submitApplication`, later `createPromotion`) live in their own module, `services/merchantApi.write.ts`. Only `ai/onboarding/submit.ts` and `ai/guardrail/confirmAndExecute.ts` may import it. An architecture test (`src/architecture.test.ts`) scans every source file and fails if anything else does, so "the AI can't execute on its own" is a property of the code, not just the UI.
 
 **Swappable AI.** `parseIntent` and `extractProfile` are chosen through an adapter selected by `VITE_AI_MODE=mock|llm`. v1 ships `mock` only; `llm` is a stub. A real LLM requires a small server proxy because API keys cannot be shipped to the browser.
 
@@ -141,7 +141,14 @@ interface OnboardingProfile {
     menu:      ProfileField<{ name: string; priceTHB: number }[]>;
     phone:     ProfileField<string> & { suggestFromAccount?: boolean };
   };
-  nextQuestion?: { field: keyof OnboardingProfile['fields']; text: string; chips: string[] };
+}
+
+// Computed from the profile by the Follow-up Picker, not stored in it.
+interface FollowUpQuestion {
+  field: keyof OnboardingProfile['fields'] | null;   // null = the open "tell me about your shop" prompt
+  text: string;
+  chips: { label: string; kind: 'say' | 'startMic' | 'useAccountPhone' | 'useDeviceLocation' | 'scanMenu' }[];
+  // 'say' chips are fed to the extractor as if the merchant had spoken the label
 }
 
 type ActionType = 'CREATE_BUNDLE_PROMO';   // v1; more later (AD_BOOST, ADD_MENU_PHOTO…)
@@ -255,7 +262,7 @@ Money is computed in integer satang (฿1 = 100 satang) to avoid floating-point 
 - `MicButton` (idle / listening / processing / error) + live `TranscriptBubble`.
 - `LiveProfileChecklist`: rows ชื่อร้าน · ประเภทอาหาร · ที่ตั้ง · เวลาเปิด-ปิด · เมนู · เบอร์ติดต่อ; each row animates to ✓ when heard.
 - `FollowUpPrompt`: one question for the next missing field, with `ClarifyChips` (e.g. [10:00] [เจ็ดโมงเช้า] [พูดเอง]).
-- `MenuItemList`: grows live as items are heard; tap an item to fix it. Link "ถ่ายรูปเมนูแทน" → mock hand-off to Grab's existing Menu Assistant scan.
+- `MenuItemList`: grows live as items are heard. A wrong item is removed with × and said again. Chip "ถ่ายรูปเมนูแทน" → mock hand-off to Grab's existing Menu Assistant scan.
 - Phone and owner name are offered from the logged-in account as a chip: *"ใช้เบอร์ 08x-xxx-4217 ที่ล็อกอินอยู่ไหมคะ?"* [ใช่] [ใช้เบอร์อื่น].
 - "พิมพ์แทน" link to a text fallback.
 - Primary button "ตรวจทานข้อมูล" enabled once every field is at least `heard`.
@@ -263,12 +270,13 @@ Money is computed in integer satang (฿1 = 100 satang) to avoid floating-point 
 **A2 · Review — AI ฟังได้ว่า…** (`A2-review/ReviewScreen.tsx`)
 - `StorePreviewCard`: "ลูกค้าจะเห็นร้านแบบนี้".
 - Section cards with edit buttons: `ProfileSummaryCard`, `MapPinConfirm` (static map + pin, "หมุดถูกไหมคะ?" [ถูกแล้ว] [ขยับหมุด]), `HoursCard`, `MenuReviewList`.
-- Fields with confidence < 0.8 are amber: "ช่วยเช็คหน่อยค่ะ". Tapping ✓ marks a field `confirmed`.
+- Fields with confidence < 0.8 are amber: "ช่วยเช็คหน่อยค่ะ". Tapping ✓ ถูกแล้ว marks a field `confirmed`.
+- แก้ไข clears that field and returns to A1, where the companion asks for it again by voice (no keyboard forms).
 - `ListenButton`: reads the whole summary aloud (Thai text-to-speech; hidden if no Thai voice is available).
 - Sticky `ConfirmBar`: **ยืนยันและส่งสมัคร**, with *"ยังไม่ส่งข้อมูลจนกว่าคุณจะกดยืนยัน"*.
 
 **A3 · Submitted** (`A3-submitted/SubmittedScreen.tsx`)
-- `SuccessHero`: "ส่งข้อมูลร้านแล้วค่ะ 🎉" and a talking-vs-typing time comparison (mock, labeled as an estimate).
+- `SuccessHero`: "ส่งข้อมูลร้านแล้วค่ะ 🎉" and the real time spent, measured from the first utterance to submit ("คุยกันแค่ 2 นาที 40 วินาที ก็เสร็จ"). No invented typing benchmark.
 - `NextStepsTimeline`: ถ่ายรูปบัตรประชาชนและสมุดบัญชี (หนูจะพาทำ) → Grab ตรวจสอบ → เปิดรับออเดอร์. Not interactive in the prototype.
 - `ActTransition`: "30 วันต่อมา…" card → G1.
 
@@ -410,7 +418,7 @@ Detector rule (`afternoonSlump.ts`): fire when the baseline 14:00–17:00 window
   "sessionId": "onb_001",
   "fields": {
     "storeName": { "value": "ครัวป้าแดง", "status": "heard", "confidence": 0.93, "heardFrom": "ร้านชื่อครัวป้าแดงค่ะ" },
-    "category":  { "value": "อาหารไทย", "status": "heard", "confidence": 0.74, "heardFrom": "ขายน้ำพริกปลาทู อาหารไทยบ้านๆ" },
+    "category":  { "value": "อาหารไทย", "status": "heard", "confidence": 0.9, "heardFrom": "ขายน้ำพริกปลาทู อาหารไทยบ้านๆ" },
     "location":  { "value": { "text": "ลาดพร้าว 71 ตรงข้ามเซเว่น", "lat": 13.8016, "lng": 100.6033 }, "status": "heard", "confidence": 0.62, "needsPinCheck": true },
     "hours":     { "value": { "open": "10:00", "close": "20:00", "closedDays": [] }, "status": "heard", "confidence": 0.95, "heardFrom": "สิบโมงเช้าถึงสองทุ่ม ทุกวัน" },
     "menu":      { "value": [{ "name": "น้ำพริกกะปิ ปลาทูทอด", "priceTHB": 89 }, { "name": "ชาไทยเย็น", "priceTHB": 35 }], "status": "heard", "confidence": 0.9 },
@@ -419,7 +427,7 @@ Detector rule (`afternoonSlump.ts`): fire when the baseline 14:00–17:00 window
   "nextQuestion": { "field": "phone", "text": "ใช้เบอร์ 08x-xxx-4217 ที่ล็อกอินอยู่ไหมคะ?", "chips": ["ใช่", "ใช้เบอร์อื่น"] }
 }
 ```
-Coordinates are mock values for the demo.
+Coordinates are mock values for the demo. Category is 0.9 here because the merchant said "อาหารไทย" outright; it would be 0.74 (amber) if only guessed from dish names like น้ำพริก.
 
 ### 9.5 Demo script (`onboarding-script.json`)
 
@@ -435,8 +443,8 @@ Used by the DemoPanel and by the speech fallback (text "types out" as if heard).
 The five menu items match `merchant.json`, which keeps both acts in one story.
 
 ### 9.6 Other data files
-- `landmarks.json`: mock geocode table, e.g. `{ "match": ["ลาดพร้าว 71", "ลาดพร้าวซอย 71", "ลาดพร้าวซอยเจ็ดสิบเอ็ด"], "lat": 13.8016, "lng": 100.6033, "label": "ซ.ลาดพร้าว 71" }`.
-- `account.json`: mock logged-in account (owner name, masked phone) for the one-tap phone chip.
+- `landmarks.json`: mock geocode table, e.g. `{ "label": "ลาดพร้าว 71", "match": ["ลาดพร้าว 71", "ลาดพร้าวซอย 71"], "lat": 13.8016, "lng": 100.6033 }`. Spoken numbers are normalized before matching, so "ลาดพร้าวซอยเจ็ดสิบเอ็ด" matches too. The location parser receives this table as an argument (read through `merchantApi.getLandmarks()`), which keeps it pure and testable.
+- `account.json`: mock logged-in account (owner name, phone, masked phone, device location) for the one-tap phone and "ใช้ตำแหน่งปัจจุบัน" chips.
 
 ## 10. Error handling
 
@@ -445,13 +453,13 @@ The five menu items match `merchant.json`, which keeps both acts in one story.
 | Mic permission denied / speech not supported | Show chips and "พิมพ์แทน"; offer scripted demo line |
 | Noisy room / no speech detected | "หนูยังไม่ได้ยินค่ะ ลองอีกครั้งนะคะ" + tap-chips |
 | Parser confidence < 0.7 or missing slot | One question with big tap-chips (never a free-text form) |
-| Landmark not found | Ask for a nearby landmark or soi number; offer map drag |
+| Landmark not found | Ask again for a nearby landmark or soi number; offer the "ใช้ตำแหน่งปัจจุบัน" chip (pin is then checked in A2) |
 | Guardrail check fails | Amber explanation, confirm disabled until fixed |
 | Mock API failure (simulated via DemoPanel) | "ตอนนี้ระบบช้าอยู่ค่ะ ลองกดอีกครั้งนะคะ" + retry; nothing half-applied |
 
 ## 11. Tech, structure, testing
 
-**Stack:** Vite + React + TypeScript + Tailwind CSS v4 (`@tailwindcss/vite`), `lucide-react` icons, `motion` for nudge/success animations, Vitest for tests. Speech uses the browser Web Speech API (`SpeechRecognition` with `lang = 'th-TH'`, works in Chrome/Edge/Android Chrome; `speechSynthesis` for read-aloud).
+**Stack:** Vite 8 + React 19 + TypeScript 6 + Tailwind CSS v4 (`@tailwindcss/vite`), `lucide-react` icons, Vitest for tests, oxlint for linting (the current Vite template default). Act 1 uses CSS animations; `motion` is added in Act 2 for the nudge slide-in if CSS is not enough. Speech uses the browser Web Speech API (`SpeechRecognition` with `lang = 'th-TH'`, works in Chrome/Edge/Android Chrome; `speechSynthesis` for read-aloud).
 
 **State:** one typed reducer (`app/journey/journeyMachine.ts`) with states `A1_TALK → A2_REVIEW → A3_SUBMITTED → TRANSITION → G1_DASHBOARD → G2_INTENT → G3_PREVIEW → G4_SUCCESS → G5_RECAP`. No router; the DemoPanel can jump to any state.
 
@@ -473,9 +481,10 @@ GrabSpark-Champion-Repo/
     │   ├── guardrail/                   # checks, confirmAndExecute
     │   └── impact/                      # estimateImpact
     ├── services/
-    │   ├── merchantApi.ts               # reads + createPromotion/submitApplication (simulated delay/failure)
-    │   ├── geocode.ts
-    │   └── speech/                      # speechToText, textToSpeech (+ scripted fallback)
+    │   ├── merchantApi.ts               # reads: account, landmarks, merchant data
+    │   ├── merchantApi.write.ts         # submitApplication / createPromotion (simulated delay/failure)
+    │   ├── demoFlags.ts                 # presenter switches (e.g. simulate API outage)
+    │   └── speech/                      # speechToText, scripted fallback, textToSpeech
     ├── data/                            # §9
     ├── types/domain.ts                  # §6.3
     ├── copy/th.ts
@@ -487,6 +496,7 @@ GrabSpark-Champion-Repo/
 ```
 
 **Testing:**
+- Architecture test: only the guardrail modules import `merchantApi.write.ts`, and `src/ai/` never imports React.
 - Unit tests (Vitest), written before the code, for everything in `src/ai/`: Thai time and number parsing (every row of §6.4), menu splitting, every demo-script line in §9.5, the afternoon-slump detector, the draft filler, every guardrail check (pass and fail), and the impact formula (must reproduce the §6.6 numbers exactly).
 - Screens are checked visually in the browser at phone size (390 × 844), in both acts, including the error states in §10.
 
