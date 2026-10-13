@@ -9,6 +9,7 @@ export interface JourneyState {
   profile: OnboardingProfile
   startedAt: number | null // first utterance, for the "คุยกันแค่…" time on A3
   submittedAt: number | null
+  runId: number // bumps on RESET so screens start fresh
 }
 
 export type JourneyEvent =
@@ -22,7 +23,7 @@ export type JourneyEvent =
   | { type: 'RESET' }
 
 export function initialJourney(): JourneyState {
-  return { screen: 'A1_TALK', profile: createEmptyProfile(), startedAt: null, submittedAt: null }
+  return { screen: 'A1_TALK', profile: createEmptyProfile(), startedAt: null, submittedAt: null, runId: 0 }
 }
 
 export function journeyReducer(state: JourneyState, event: JourneyEvent): JourneyState {
@@ -42,6 +43,6 @@ export function journeyReducer(state: JourneyState, event: JourneyEvent): Journe
     case 'LOAD_PROFILE':
       return { ...state, profile: event.profile }
     case 'RESET':
-      return initialJourney()
+      return { ...initialJourney(), runId: state.runId + 1 }
   }
 }

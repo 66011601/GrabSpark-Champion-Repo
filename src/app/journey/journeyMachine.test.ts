@@ -57,6 +57,10 @@ describe('journeyReducer', () => {
 
   it('resets everything', () => {
     const busy = journeyReducer(journeyReducer(initialJourney(), { type: 'HEARD', updates: NAME, at: 1 }), { type: 'GO', screen: 'TRANSITION' })
-    expect(journeyReducer(busy, { type: 'RESET' })).toEqual(initialJourney())
+    expect(journeyReducer(busy, { type: 'RESET' })).toEqual({ ...initialJourney(), runId: busy.runId + 1 })
+  })
+
+  it('starts a new run on reset', () => {
+    expect(journeyReducer(initialJourney(), { type: 'RESET' }).runId).toBe(1)
   })
 })

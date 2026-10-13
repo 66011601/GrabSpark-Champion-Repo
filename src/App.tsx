@@ -7,7 +7,7 @@ import { ScreenStub } from '@/screens/ScreenStub.tsx'
 
 function ScreenSwitch() {
   const { state } = useJourney()
-  if (state.screen === 'A1_TALK') return <TalkScreen />
+  if (state.screen === 'A1_TALK') return <TalkScreen key={state.runId} />
   return <ScreenStub screen={state.screen} />
 }
 

@@ -35,6 +35,21 @@ export function TalkScreen() {
   const [notice, setNotice] = useState<string | null>(null)
   const [typing, setTyping] = useState(false)
   const session = useRef<ListenSession | null>(null)
+  const mounted = useRef(true)
+  const thinking = useRef<number | undefined>(undefined)
+  const cancelScript = useRef<(() => void) | null>(null)
+  const menuHeard = profile.fields.menu.status !== 'empty'
+
+  // Anything still in flight (thinking timer, scripted line, mic) must not touch the journey after we leave.
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      window.clearTimeout(thinking.current)
+      cancelScript.current?.()
+      session.current?.stop()
+    }
+  }, [])
 
   const record = useCallback(
     (updates: ProfileUpdates) => dispatch({ type: 'HEARD', updates, at: Date.now() }),
@@ -44,16 +59,23 @@ export function TalkScreen() {
   // Every input path (mic, scripted demo line, chip, keyboard) ends here.
   const handleUtterance = useCallback(
     (text: string) => {
+      if (!mounted.current) return
       setTranscript({ text, final: true })
       setMic('processing')
-      window.setTimeout(() => {
-        const updates = extractProfile(text, { expecting, landmarks })
+      window.clearTimeout(thinking.current)
+      thinking.current = window.setTimeout(() => {
+        if (!mounted.current) return
+        let updates = extractProfile(text, { expecting, landmarks })
+        // Re-saying a dish after removing a wrong one (spec §7.2), whatever question is pending.
+        if (Object.keys(updates).length === 0 && expecting !== 'menu' && menuHeard) {
+          updates = extractProfile(text, { expecting: 'menu', landmarks })
+        }
         record(updates)
         setNotice(Object.keys(updates).length === 0 ? th.onboarding.notUnderstood : null)
         setMic('idle')
       }, THINKING_MS)
     },
-    [expecting, record],
+    [expecting, menuHeard, record],
   )
 
   const toggleMic = () => {
@@ -68,10 +90,13 @@ export function TalkScreen() {
       onInterim: (text) => setTranscript({ text, final: false }),
       onFinal: handleUtterance,
       onError: (kind) => {
+        if (kind === 'no-speech') {
+          setMic('idle')
+          setNotice(th.onboarding.notHeard)
+          return
+        }
         setMic('error')
-        if (kind === 'no-speech') setNotice(th.onboarding.notHeard)
-        else if (kind === 'unsupported') setNotice(th.mic.unsupported)
-        else setNotice(th.mic.error)
+        setNotice(kind === 'unsupported' ? th.mic.unsupported : th.mic.error)
       },
       onEnd: () => setMic((current) => (current === 'listening' ? 'idle' : current)),
     })
@@ -82,7 +107,8 @@ export function TalkScreen() {
       demoBus.onSay((text) => {
         setNotice(null)
         setMic('listening')
-        playScripted(text, (partial) => setTranscript({ text: partial, final: false }), handleUtterance)
+        cancelScript.current?.()
+        cancelScript.current = playScripted(text, (partial) => setTranscript({ text: partial, final: false }), handleUtterance)
       }),
     [handleUtterance],
   )
