@@ -29,6 +29,17 @@ describe('extractProfile: open talk', () => {
     expect(updates.location?.value.text).toBe('ลาดพร้าว 71 ตรงข้ามเซเว่น')
   })
 
+  it('does not turn an area number said after the menu into a dish', () => {
+    const updates = extractProfile('มีเมนูข้าวมันไก่ห้าสิบบาท อยู่ลาดพร้าว 71 ตรงข้ามเซเว่น', { landmarks })
+    expect(updates.menu?.value).toEqual([{ name: 'ข้าวมันไก่', priceTHB: 50 }])
+    expect(updates.location?.value.text).toContain('ลาดพร้าว')
+  })
+
+  it('stops the menu where the address starts, even with a soi number', () => {
+    const updates = extractProfile('เมนูมีข้าวผัดห้าสิบบาท ร้านอยู่ซอย 12 ลาดพร้าว 71', { landmarks })
+    expect(updates.menu?.value).toEqual([{ name: 'ข้าวผัด', priceTHB: 50 }])
+  })
+
   it('ignores numbers when the word เมนู only appears in the shop name', () => {
     expect(extractProfile('ร้านเมนูสุข อยู่ลาดพร้าวซอยเจ็ดสิบเอ็ด ตรงข้ามเซเว่น', { landmarks }).menu).toBeUndefined()
   })
