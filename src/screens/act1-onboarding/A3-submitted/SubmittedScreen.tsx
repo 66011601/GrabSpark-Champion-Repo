@@ -15,7 +15,7 @@ export function SubmittedScreen() {
       title={th.onboarding.title}
       dock={
         <CompanionDock
-          text={elapsed ? th.submitted.elapsed(elapsed) : th.submitted.title}
+          text={th.submitted.dockLine}
           actions={
             <Button fullWidth onClick={() => dispatch({ type: 'GO', screen: 'TRANSITION' })}>
               {th.submitted.continue}
