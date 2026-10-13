@@ -1,0 +1,70 @@
+import { describe, expect, it } from 'vitest'
+import { parseClosedDays, parseOpeningHours, parseThaiTime } from './thaiTime.ts'
+
+describe('parseThaiTime', () => {
+  // Every row of spec §6.4, plus digit forms and half hours.
+  it.each([
+    ['เจ็ดโมงเช้า', '07:00'],
+    ['เจ็ดโมง', '07:00'],
+    ['สิบโมง', '10:00'],
+    ['สิบโมงเช้า', '10:00'],
+    ['เที่ยง', '12:00'],
+    ['เที่ยงวัน', '12:00'],
+    ['บ่ายโมง', '13:00'],
+    ['บ่ายสาม', '15:00'],
+    ['บ่ายสามโมง', '15:00'],
+    ['ห้าโมงเย็น', '17:00'],
+    ['หกโมงเย็น', '18:00'],
+    ['ทุ่มนึง', '19:00'],
+    ['หนึ่งทุ่ม', '19:00'],
+    ['สองทุ่ม', '20:00'],
+    ['สามทุ่ม', '21:00'],
+    ['เที่ยงคืน', '00:00'],
+    ['ตีหนึ่ง', '01:00'],
+    ['ตีห้า', '05:00'],
+    ['สองโมง', '14:00'],
+    ['สิบโมงครึ่ง', '10:30'],
+    ['สองทุ่มครึ่ง', '20:30'],
+    ['10 โมง', '10:00'],
+    ['20:00', '20:00'],
+    ['20.00 น.', '20:00'],
+  ])('%s → %s', (spoken, expected) => {
+    expect(parseThaiTime(spoken)).toBe(expected)
+  })
+
+  it('returns null when there is no time', () => {
+    expect(parseThaiTime('ขายน้ำพริกปลาทู')).toBeNull()
+  })
+})
+
+describe('parseClosedDays', () => {
+  it('reads days after "หยุด"', () => {
+    expect(parseClosedDays('หยุดวันเสาร์กับวันอาทิตย์')).toEqual(['sat', 'sun'])
+  })
+
+  it('is empty when open every day', () => {
+    expect(parseClosedDays('เปิดทุกวัน')).toEqual([])
+  })
+})
+
+describe('parseOpeningHours', () => {
+  it('reads the demo script line', () => {
+    expect(parseOpeningHours('สิบโมงเช้าถึงสองทุ่ม เปิดทุกวัน')).toEqual({ open: '10:00', close: '20:00', closedDays: [] })
+  })
+
+  it('reads afternoon close and a day off', () => {
+    expect(parseOpeningHours('เจ็ดโมงเช้าถึงบ่ายสาม หยุดวันอาทิตย์')).toEqual({ open: '07:00', close: '15:00', closedDays: ['sun'] })
+  })
+
+  it('reads the tap-chip form', () => {
+    expect(parseOpeningHours('10:00 – 20:00')).toEqual({ open: '10:00', close: '20:00', closedDays: [] })
+  })
+
+  it('reads days off said first', () => {
+    expect(parseOpeningHours('หยุดวันเสาร์อาทิตย์ เปิดแปดโมงถึงห้าโมงเย็น')).toEqual({ open: '08:00', close: '17:00', closedDays: ['sat', 'sun'] })
+  })
+
+  it('needs both an opening and a closing time', () => {
+    expect(parseOpeningHours('เปิดสิบโมง')).toBeNull()
+  })
+})
