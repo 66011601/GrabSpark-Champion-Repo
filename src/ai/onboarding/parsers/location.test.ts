@@ -26,6 +26,18 @@ describe('parseLocation', () => {
     expect(parseLocation('ร้านอยู่แถวอารีย์', landmarks)?.value.text).toBe('อารีย์')
   })
 
+  it('drops a trailing particle from the landmark phrase', () => {
+    expect(parseLocation('อยู่ลาดพร้าว 71 ตรงข้ามเซเว่นค่ะ', landmarks)?.value.text).toBe('ลาดพร้าว 71 ตรงข้ามเซเว่น')
+  })
+
+  it('does not read a landmark word inside another word', () => {
+    expect(parseLocation('ร้านมีหน้าร้านเล็กๆ อยู่ลาดพร้าว 71 ตรงข้ามเซเว่น', landmarks)?.value.text).toBe('ลาดพร้าว 71 ตรงข้ามเซเว่น')
+  })
+
+  it('does not read ติด inside ติดต่อ', () => {
+    expect(parseLocation('ลูกค้าติดต่อได้ที่ลาดพร้าว 71', landmarks)?.value.text).toBe('ลาดพร้าว 71')
+  })
+
   it('is always below the pin-check threshold', () => {
     expect(LOCATION_CONFIDENCE).toBeLessThan(0.8)
   })
