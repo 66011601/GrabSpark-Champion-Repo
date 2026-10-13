@@ -10,6 +10,9 @@ export const HOURS_CONFIDENCE = 0.95
 export const MENU_CONFIDENCE = 0.9
 export const PHONE_CONFIDENCE = 0.9
 
+// Where the talk leaves the menu: the address (อยู่, ร้าน), opening hours or a phone number.
+const MENU_STOP_WORDS = /อยู่|เปิด|โทร|เบอร์|ร้าน/
+
 export interface ExtractContext {
   expecting?: ProfileFieldKey // set when the companion just asked about one field
   landmarks: Landmark[]
@@ -34,10 +37,14 @@ function extractOpenTalk(text: string, landmarks: Landmark[]): ProfileUpdates {
   const hours = parseOpeningHours(text)
   if (hours) updates.hours = { value: hours, confidence: HOURS_CONFIDENCE, heardFrom }
   // In open talk, read a menu only once the merchant names it ("…มีเมนูข้าวมันไก่ห้าสิบบาท"),
-  // and only from that word on, so the shop's name and address never become dishes.
+  // and only from that word until the merchant moves on to the address, hours or phone, so the shop's
+  // name and address never become dishes.
   const menuStart = text.indexOf('เมนู')
   if (menuStart !== -1) {
-    const menu = parseMenuItems(text.slice(menuStart))
+    const afterWord = menuStart + 'เมนู'.length
+    const stop = text.slice(afterWord).search(MENU_STOP_WORDS)
+    const menuEnd = stop === -1 ? text.length : afterWord + stop
+    const menu = parseMenuItems(text.slice(menuStart, menuEnd))
     if (menu.length > 0) updates.menu = { value: menu, confidence: MENU_CONFIDENCE, heardFrom }
   }
   return updates

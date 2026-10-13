@@ -84,7 +84,7 @@ export function TalkScreen() {
   }
 
   const { mic, transcript, notice, setNotice, toggleMic, hear, onSpoken } = useVoiceInput(
-    async (text) => {
+    async (text, isCurrent) => {
       const obeyed = obey(text)
       if (obeyed !== null) return obeyed
       let updates = extractProfile(text, { expecting, landmarks })
@@ -97,6 +97,7 @@ export function TalkScreen() {
       const place = places.live && wantsPlace ? locationPhrase(text, expecting === 'location') : null
       if (place) {
         const match = await places.find(place)
+        if (!isCurrent()) return false // the screen was left or reset while the map was answering
         if (match) updates = { ...updates, location: { ...match, heardFrom: text } }
         else if (Object.keys(updates).length === 0) return th.places.notFound
       }

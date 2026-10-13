@@ -66,9 +66,22 @@ describe('journeyReducer', () => {
   })
 
   it('records the submit time and shows A3', () => {
-    const next = journeyReducer(initialJourney(), { type: 'SUBMITTED', at: 9000 })
+    const reviewing = journeyReducer(journeyReducer(initialJourney(), { type: 'HEARD', updates: NAME, at: 1000 }), { type: 'GO', screen: 'A2_REVIEW' })
+    const next = journeyReducer(reviewing, { type: 'SUBMITTED', at: 9000, profile: reviewing.profile })
     expect(next.screen).toBe('A3_SUBMITTED')
     expect(next.submittedAt).toBe(9000)
+  })
+
+  it('ignores a stale submit after the profile changed', () => {
+    const reviewing = journeyReducer(journeyReducer(initialJourney(), { type: 'HEARD', updates: NAME, at: 1000 }), { type: 'GO', screen: 'A2_REVIEW' })
+    const submitted = reviewing.profile
+    const edited = journeyReducer(reviewing, { type: 'CONFIRM_FIELD', field: 'storeName' })
+    expect(journeyReducer(edited, { type: 'SUBMITTED', at: 9000, profile: submitted })).toBe(edited)
+  })
+
+  it('ignores a submit when no longer on A2', () => {
+    const talking = journeyReducer(initialJourney(), { type: 'GO', screen: 'A1_TALK' })
+    expect(journeyReducer(talking, { type: 'SUBMITTED', at: 9000, profile: talking.profile })).toBe(talking)
   })
 
   it('loads a prepared profile (presenter shortcut)', () => {

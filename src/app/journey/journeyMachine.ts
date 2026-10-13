@@ -34,7 +34,7 @@ export type JourneyEvent =
   | { type: 'CONFIRM_FIELD'; field: ProfileFieldKey }
   | { type: 'REASK_FIELD'; field: ProfileFieldKey }
   | { type: 'REMOVE_MENU_ITEM'; name: string }
-  | { type: 'SUBMITTED'; at: number }
+  | { type: 'SUBMITTED'; at: number; profile: OnboardingProfile } // the profile that was sent
   | { type: 'LOAD_PROFILE'; profile: OnboardingProfile }
   | { type: 'RESET' }
 
@@ -77,6 +77,8 @@ export function journeyReducer(state: JourneyState, event: JourneyEvent): Journe
     case 'REMOVE_MENU_ITEM':
       return { ...state, profile: removeMenuItem(state.profile, event.name) }
     case 'SUBMITTED':
+      // The send takes a moment; if the merchant edited or the demo reset meanwhile, it no longer applies.
+      if (state.screen !== 'A2_REVIEW' || state.profile !== event.profile) return state
       return { ...state, submittedAt: event.at, screen: 'A3_SUBMITTED' }
     case 'LOAD_PROFILE':
       return { ...state, profile: event.profile }

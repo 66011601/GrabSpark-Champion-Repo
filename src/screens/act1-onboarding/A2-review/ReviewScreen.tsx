@@ -37,7 +37,14 @@ export function ReviewScreen() {
   const remaining = PROFILE_FIELDS.filter((key) => fields[key].status !== 'confirmed').length
 
   const reading = useRef<number | undefined>(undefined)
-  useEffect(() => () => window.clearTimeout(reading.current), [])
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      window.clearTimeout(reading.current)
+    }
+  }, [])
 
   // By voice the companion will read the summary back, but sending the application takes the merchant's own tap.
   const { mic, transcript, notice, toggleMic } = useVoiceInput((text) => {
@@ -57,6 +64,7 @@ export function ReviewScreen() {
     field: fields[key],
     onConfirm: () => dispatch({ type: 'CONFIRM_FIELD', field: key }),
     onEdit: () => dispatch({ type: 'REASK_FIELD', field: key }),
+    disabled: submitting,
   })
 
   const submit = async () => {
@@ -64,10 +72,12 @@ export function ReviewScreen() {
     setError(null)
     try {
       await submitProfile(profile)
-      dispatch({ type: 'SUBMITTED', at: Date.now() })
+      // Carries the profile that was sent: if the merchant changed it meanwhile, the journey ignores this.
+      dispatch({ type: 'SUBMITTED', at: Date.now(), profile })
+      if (mounted.current) setSubmitting(false)
     } catch (caught) {
       setError(caught instanceof SubmissionBlockedError ? caught.failed.map((check) => check.message).join(' · ') : th.review.apiError)
-      setSubmitting(false)
+      if (mounted.current) setSubmitting(false)
     }
   }
 
