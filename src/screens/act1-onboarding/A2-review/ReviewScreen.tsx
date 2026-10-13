@@ -1,21 +1,31 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { matchCommand } from '@/ai/commands/matchCommand.ts'
+import { SAY } from '@/ai/commands/phrases.ts'
 import { PROFILE_FIELDS } from '@/ai/onboarding/profile.ts'
 import { runSubmissionChecks, SubmissionBlockedError, submitProfile } from '@/ai/onboarding/submit.ts'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
 import { CompanionDock } from '@/components/assistant/CompanionDock.tsx'
+import { MIC_LABELS } from '@/components/assistant/companionState.ts'
 import { ListenButton } from '@/components/assistant/ListenButton.tsx'
+import { useVoiceInput } from '@/components/assistant/useVoiceInput.ts'
 import { OnboardingShell } from '@/components/shell/OnboardingShell.tsx'
 import { Button } from '@/components/ui/Button.tsx'
 import { th } from '@/copy/th.ts'
 import { formatHours, formatPhone, formatTHB } from '@/lib/format.ts'
 import { getAccount } from '@/services/merchantApi.ts'
+import { speak } from '@/services/speech/textToSpeech.ts'
 import type { ProfileFieldKey } from '@/types/domain.ts'
 import { profileSummary } from '../summarizeField.ts'
 import { MapPinConfirm } from './MapPinConfirm.tsx'
 import { ReviewFieldCard } from './ReviewFieldCard.tsx'
 import { StorePreviewCard } from './StorePreviewCard.tsx'
 
+const READ_AFTER_MS = 150
 const account = getAccount()
+const COMMANDS = [
+  { id: 'listenSummary' as const, phrases: SAY.listenSummary },
+  { id: 'submit' as const, phrases: SAY.submit },
+]
 
 export function ReviewScreen() {
   const { state, dispatch } = useJourney()
@@ -25,6 +35,22 @@ export function ReviewScreen() {
   const [error, setError] = useState<string | null>(null)
   const canSubmit = runSubmissionChecks(profile).every((check) => check.pass)
   const remaining = PROFILE_FIELDS.filter((key) => fields[key].status !== 'confirmed').length
+
+  const reading = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(reading.current), [])
+
+  // By voice the companion will read the summary back, but sending the application takes the merchant's own tap.
+  const { mic, transcript, notice, toggleMic } = useVoiceInput((text) => {
+    const command = matchCommand(text, COMMANDS)
+    if (command === 'submit') return th.review.mustTap
+    if (command !== 'listenSummary') return false
+    // After this turn has settled, so the summary is not cut off by the bubble updating.
+    reading.current = window.setTimeout(() => speak(profileSummary(profile)), READ_AFTER_MS)
+    return true
+  })
+
+  const said =
+    remaining === PROFILE_FIELDS.length ? th.review.subtitle : remaining > 0 ? th.review.confirmedSoFar(remaining) : th.review.allConfirmed
 
   const card = (key: ProfileFieldKey) => ({
     label: th.fields[key],
@@ -51,9 +77,12 @@ export function ReviewScreen() {
       progress={remaining > 0 ? th.review.remaining(remaining) : th.checks.allConfirmed}
       dock={
         <CompanionDock
-          text={th.review.subtitle}
-          notice={error}
-          hint={th.review.nothingSentYet}
+          text={said}
+          notice={error ?? notice}
+          hint={mic === 'idle' || mic === 'error' ? th.review.nothingSentYet : MIC_LABELS[mic]}
+          heard={transcript}
+          state={mic}
+          onPress={toggleMic}
           actions={
             <Button fullWidth disabled={!canSubmit} loading={submitting} onClick={submit}>
               {submitting ? th.review.submitting : th.review.submit}

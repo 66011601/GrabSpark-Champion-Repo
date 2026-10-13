@@ -28,10 +28,19 @@ function MicBadge({ state }: { state: MicState }) {
  * The companion's face. With `onPress` it is the talk button: press to start, press again
  * while listening to stop. Without it, it only keeps the merchant company.
  */
-export function CompanionAvatar({ state = 'idle', onPress }: { state?: CompanionState; onPress?: () => void }) {
+export function CompanionAvatar({
+  state = 'idle',
+  speaking = false,
+  onPress,
+}: {
+  state?: CompanionState
+  speaking?: boolean
+  onPress?: () => void
+}) {
   const face = (
     <>
       {state === 'listening' && <span className="absolute inset-0 animate-listen rounded-full bg-grab" aria-hidden />}
+      {speaking && state === 'idle' && <span className="absolute inset-0 animate-speak rounded-full bg-grab" aria-hidden />}
       <img src={FACE} alt="" width={72} height={72} className={`relative size-18 rounded-full object-cover ring-4 ${RING[state]}`} />
       {state === 'private' && (
         <span className="absolute inset-0 flex animate-pop items-center justify-center rounded-full bg-ink/60 text-white" aria-hidden>

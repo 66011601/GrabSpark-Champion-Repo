@@ -1,6 +1,10 @@
 import { Clock, Mic, ShieldCheck, Store } from 'lucide-react'
+import { matchCommand } from '@/ai/commands/matchCommand.ts'
+import { SAY } from '@/ai/commands/phrases.ts'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
 import { CompanionDock } from '@/components/assistant/CompanionDock.tsx'
+import { MIC_LABELS } from '@/components/assistant/companionState.ts'
+import { useVoiceInput } from '@/components/assistant/useVoiceInput.ts'
 import { Button } from '@/components/ui/Button.tsx'
 import { th } from '@/copy/th.ts'
 
@@ -9,8 +13,22 @@ const STAGGER_MS = 70
 
 const delay = (step: number) => ({ animationDelay: `${step * STAGGER_MS}ms` })
 
+const COMMANDS = [
+  { id: 'register' as const, phrases: SAY.register },
+  { id: 'login' as const, phrases: SAY.login },
+]
+
 export function WelcomeScreen() {
   const { dispatch } = useJourney()
+  // Answering the companion's question out loud presses the matching button.
+  const { mic, transcript, notice, toggleMic, onSpoken } = useVoiceInput(
+    (text) => {
+      const mode = matchCommand(text, COMMANDS)
+      if (mode) dispatch({ type: 'CHOOSE_AUTH', mode })
+      return mode !== null
+    },
+    { autoListen: true },
+  )
   return (
     <>
       <main className="relative flex flex-1 flex-col overflow-y-auto">
@@ -60,7 +78,16 @@ export function WelcomeScreen() {
           </div>
         </div>
       </main>
-      <CompanionDock bare text={th.welcome.bubble} />
+      <CompanionDock
+        bare
+        text={th.welcome.bubble}
+        notice={notice}
+        hint={mic === 'error' ? undefined : MIC_LABELS[mic]}
+        heard={transcript}
+        state={mic}
+        onPress={toggleMic}
+        onSpoken={onSpoken}
+      />
     </>
   )
 }

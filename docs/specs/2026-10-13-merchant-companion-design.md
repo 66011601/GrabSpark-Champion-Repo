@@ -265,6 +265,14 @@ Added from the team's wireframes. `R1 Welcome ──► R2 Account ──► R3 
 - **R3 · Store basics** (`R3-store`): ชื่อร้านค้า, ชื่ออาคาร (optional), ที่ตั้งร้านค้า. The merchant talks to the companion and it fills the boxes (a green mark shows which ones it filled); every box can also be typed. Nothing is saved until ต่อไป. What was heard here (including a category, if mentioned) carries into A1, which then only asks for what is missing.
 - ชื่ออาคาร is kept beside the profile (`JourneyState.building`) and shown on the A2 location card; it is not one of the six confirmed fields.
 
+### 7.1b The companion talks back and takes spoken commands
+
+- **Speaks every line in Thai.** Whatever the bubble says is also read aloud (`services/speech/textToSpeech.ts`, browser `speechSynthesis` with a Thai voice), so every tap gets a spoken answer. A speaker button in the bubble mutes it; the choice is remembered. A device without a Thai voice stays silent and shows a crossed-out speaker.
+- **Presses buttons by voice.** A short spoken command presses the matching control: ลงทะเบียน / เข้าสู่ระบบ (or answering "เคยสมัครรึยังคะ?" with ยัง / เคยแล้ว), ต่อไป, ย้อนกลับ, ตรวจทาน, พิมพ์แทน, a chip's label, ฟังสรุป. Matching is rule-based (`ai/commands/`); a long sentence is never taken as a command.
+- **Keeps the conversation going.** After the merchant speaks and the companion answers, it listens again without another tap (R1, R3, A1). Silence ends it quietly. Tapping the companion while it talks cuts it off and starts listening.
+- **What voice may not do** (trust rule, §3): it never takes an email or password by ear, and it never submits the application. Saying "ยืนยัน" on A2 gets "ข้อนี้ต้องกดปุ่มเองนะคะ".
+- **Presenter fallback:** the DemoPanel has a "พูดเอง" box that sends any typed line to the companion as if it were spoken.
+
 ### 7.2 Act 1 · Day 0
 
 **A1 · Tell me about your shop** (`screens/act1-onboarding/A1-talk/TalkScreen.tsx`)

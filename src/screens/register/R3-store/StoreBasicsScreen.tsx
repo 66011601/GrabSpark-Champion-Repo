@@ -1,5 +1,7 @@
 import { Sparkles } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
+import { matchCommand } from '@/ai/commands/matchCommand.ts'
+import { SAY } from '@/ai/commands/phrases.ts'
 import { extractProfile } from '@/ai/onboarding/extractProfile.ts'
 import { parseBuilding } from '@/ai/onboarding/parsers/building.ts'
 import { parseLocation } from '@/ai/onboarding/parsers/location.ts'
@@ -19,6 +21,10 @@ import type { ProfileUpdates } from '@/types/domain.ts'
 const UNPLACED_ADDRESS_CONFIDENCE = 0.5
 const account = getAccount()
 const landmarks = getLandmarks()
+const COMMANDS = [
+  { id: 'next' as const, phrases: SAY.next },
+  { id: 'back' as const, phrases: SAY.back },
+]
 
 type BasicsField = 'storeName' | 'building' | 'location'
 
@@ -50,41 +56,54 @@ export function StoreBasicsScreen() {
   // Once the companion has asked for one thing, a bare answer ("ครัวป้าแดง") is that thing.
   const expecting = asked && missing ? missing : undefined
 
-  const interpret = useCallback(
-    (text: string) => {
-      setAsked(true)
-      const heardBuilding = parseBuilding(text)
-      let updates = extractProfile(text, { landmarks })
-      if (Object.keys(updates).length === 0 && !heardBuilding && expecting) updates = extractProfile(text, { expecting, landmarks })
-      if (Object.keys(updates).length === 0 && !heardBuilding) return false
+  const fill = (text: string) => {
+    setAsked(true)
+    const heardBuilding = parseBuilding(text)
+    let updates = extractProfile(text, { landmarks })
+    if (Object.keys(updates).length === 0 && !heardBuilding && expecting) updates = extractProfile(text, { expecting, landmarks })
+    if (Object.keys(updates).length === 0 && !heardBuilding) return false
 
-      const nowFilled: BasicsField[] = []
-      if (updates.storeName) {
-        setStoreName(updates.storeName.value)
-        nowFilled.push('storeName')
+    const nowFilled: BasicsField[] = []
+    if (updates.storeName) {
+      setStoreName(updates.storeName.value)
+      nowFilled.push('storeName')
+    }
+    if (updates.location) {
+      setLocation(updates.location.value.text)
+      nowFilled.push('location')
+    }
+    if (heardBuilding) {
+      setBuilding(heardBuilding.value)
+      nowFilled.push('building')
+    }
+    setHeard((before) => ({ ...before, ...updates }))
+    setFilled((before) => [...new Set([...before, ...nowFilled])])
+    return true
+  }
+
+  const { mic, transcript, notice, toggleMic, onSpoken } = useVoiceInput(
+    (text) => {
+      const command = matchCommand(text, COMMANDS)
+      if (command === 'back') {
+        dispatch({ type: 'GO', screen: 'R2_ACCOUNT' })
+        return true
       }
-      if (updates.location) {
-        setLocation(updates.location.value.text)
-        nowFilled.push('location')
+      if (command === 'next') {
+        if (missing) return th.store.notYet
+        finish()
+        return true
       }
-      if (heardBuilding) {
-        setBuilding(heardBuilding.value)
-        nowFilled.push('building')
-      }
-      setHeard((before) => ({ ...before, ...updates }))
-      setFilled((before) => [...new Set([...before, ...nowFilled])])
-      return true
+      return fill(text)
     },
-    [expecting],
+    { autoListen: true },
   )
-  const { mic, transcript, notice, toggleMic } = useVoiceInput(interpret)
 
   const type = (field: BasicsField, set: (value: string) => void) => (value: string) => {
     set(value)
     setFilled((before) => before.filter((key) => key !== field))
   }
 
-  const finish = () => {
+  function finish() {
     const updates: ProfileUpdates = { ...heard }
     const name = storeName.trim()
     const place = location.trim()
@@ -123,6 +142,7 @@ export function StoreBasicsScreen() {
           hint={mic === 'error' ? undefined : mic === 'idle' && untouched ? th.store.example : MIC_LABELS[mic]}
           state={mic}
           onPress={toggleMic}
+          onSpoken={onSpoken}
           actions={
             <Button fullWidth disabled={missing !== null} onClick={finish}>
               {th.common.next}

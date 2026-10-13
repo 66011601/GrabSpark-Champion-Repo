@@ -1,5 +1,7 @@
 import { Keyboard } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
+import { matchCommand } from '@/ai/commands/matchCommand.ts'
+import { SAY } from '@/ai/commands/phrases.ts'
 import { extractProfile } from '@/ai/onboarding/extractProfile.ts'
 import { pickFollowUp } from '@/ai/onboarding/followUp.ts'
 import { countHeard, isReadyForReview, PROFILE_FIELDS } from '@/ai/onboarding/profile.ts'
@@ -7,7 +9,7 @@ import { useJourney } from '@/app/journey/JourneyContext.ts'
 import { MIC_LABELS } from '@/components/assistant/companionState.ts'
 import { CompanionDock } from '@/components/assistant/CompanionDock.tsx'
 import { TranscriptBubble } from '@/components/assistant/TranscriptBubble.tsx'
-import { useVoiceInput } from '@/components/assistant/useVoiceInput.ts'
+import { useVoiceInput, type Reply } from '@/components/assistant/useVoiceInput.ts'
 import { OnboardingShell } from '@/components/shell/OnboardingShell.tsx'
 import { Button } from '@/components/ui/Button.tsx'
 import { Chip } from '@/components/ui/Chip.tsx'
@@ -21,6 +23,10 @@ import { TypeInstead } from './TypeInstead.tsx'
 const DEVICE_LOCATION_CONFIDENCE = 0.7
 const account = getAccount()
 const landmarks = getLandmarks()
+const COMMANDS = [
+  { id: 'review' as const, phrases: SAY.review },
+  { id: 'typeInstead' as const, phrases: SAY.typeInstead },
+]
 
 export function TalkScreen() {
   const { state, dispatch } = useJourney()
@@ -35,8 +41,49 @@ export function TalkScreen() {
     [dispatch],
   )
 
-  const interpret = useCallback(
-    (text: string) => {
+  const ready = isReadyForReview(profile)
+  const menu = profile.fields.menu.value
+
+  const takeAccountPhone = () => record({ phone: { value: account.phone, confidence: 1, heardFrom: th.review.fromAccount } })
+  const takeDeviceLocation = () =>
+    record({ location: { value: account.deviceLocation, confidence: DEVICE_LOCATION_CONFIDENCE, heardFrom: th.chips.useDeviceLocation } })
+
+  // Saying a chip's label, or a button's name, presses it. The reply is what the companion says back;
+  // null means the words were not a command.
+  const obey = (text: string): Reply | null => {
+    const chips = (question?.chips ?? []).filter((chip) => chip.kind !== 'say')
+    const chip = matchCommand(
+      text,
+      chips.map((option) => ({ id: option.kind, phrases: option.kind === 'useAccountPhone' ? [option.label, ...SAY.yes] : [option.label] })),
+    )
+    const command = chip ?? matchCommand(text, COMMANDS)
+    switch (command) {
+      case 'useAccountPhone':
+        takeAccountPhone()
+        return true
+      case 'useDeviceLocation':
+        takeDeviceLocation()
+        return true
+      case 'scanMenu':
+        return th.onboarding.scanMenuToast
+      case 'startMic':
+        return th.followUp.sayPhone
+      case 'typeInstead':
+        setTyping(true)
+        return true
+      case 'review':
+        if (!ready) return th.onboarding.notReady
+        dispatch({ type: 'GO', screen: 'A2_REVIEW' })
+        return true
+      default:
+        return null
+    }
+  }
+
+  const { mic, transcript, notice, setNotice, toggleMic, hear, onSpoken } = useVoiceInput(
+    (text) => {
+      const obeyed = obey(text)
+      if (obeyed !== null) return obeyed
       let updates = extractProfile(text, { expecting, landmarks })
       // Re-saying a dish after removing a wrong one (spec §7.2), whatever question is pending.
       if (Object.keys(updates).length === 0 && expecting !== 'menu' && menuHeard) {
@@ -45,9 +92,8 @@ export function TalkScreen() {
       record(updates)
       return Object.keys(updates).length > 0
     },
-    [expecting, menuHeard, record],
+    { autoListen: true },
   )
-  const { mic, transcript, notice, setNotice, toggleMic, hear } = useVoiceInput(interpret)
 
   const onChip = (chip: FollowUpChip) => {
     switch (chip.kind) {
@@ -58,19 +104,16 @@ export function TalkScreen() {
         toggleMic()
         break
       case 'useAccountPhone':
-        record({ phone: { value: account.phone, confidence: 1, heardFrom: th.review.fromAccount } })
+        takeAccountPhone()
         break
       case 'useDeviceLocation':
-        record({ location: { value: account.deviceLocation, confidence: DEVICE_LOCATION_CONFIDENCE, heardFrom: th.chips.useDeviceLocation } })
+        takeDeviceLocation()
         break
       case 'scanMenu':
         setNotice(th.onboarding.scanMenuToast)
         break
     }
   }
-
-  const ready = isReadyForReview(profile)
-  const menu = profile.fields.menu.value
 
   return (
     <OnboardingShell
@@ -83,6 +126,7 @@ export function TalkScreen() {
           hint={mic === 'error' ? undefined : MIC_LABELS[mic]}
           state={mic}
           onPress={toggleMic}
+          onSpoken={onSpoken}
           extras={
             question &&
             question.chips.length > 0 && (
