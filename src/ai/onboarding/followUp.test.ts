@@ -26,7 +26,7 @@ describe('pickFollowUp', () => {
   it('asks for opening hours after the opening sentence, with time chips', () => {
     const question = pickFollowUp(afterLine1, account)
     expect(question?.field).toBe('hours')
-    expect(question?.chips.map((chip) => chip.label)).toEqual(['10:00 – 20:00', '07:00 – 15:00'])
+    expect(question?.chips.map((chip) => chip.label)).toEqual([th.chips.hoursFullDay, th.chips.hoursMorning])
   })
 
   it('asks for the menu next, offering the photo scan', () => {

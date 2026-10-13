@@ -19,8 +19,8 @@ const QUESTIONS: Record<ProfileFieldKey, (account: Account) => FollowUpQuestion>
     field: 'hours',
     text: th.followUp.hours,
     chips: [
-      { label: '10:00 – 20:00', kind: 'say' },
-      { label: '07:00 – 15:00', kind: 'say' },
+      { label: th.chips.hoursFullDay, kind: 'say' },
+      { label: th.chips.hoursMorning, kind: 'say' },
     ],
   }),
   menu: () => ({

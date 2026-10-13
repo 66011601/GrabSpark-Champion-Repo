@@ -40,6 +40,8 @@ export const th = {
     otherPhone: 'ใช้เบอร์อื่น',
     useDeviceLocation: 'ใช้ตำแหน่งปัจจุบัน',
     scanMenu: 'ถ่ายรูปเมนูแทน',
+    hoursFullDay: '10:00 – 20:00',
+    hoursMorning: '07:00 – 15:00',
   },
   mic: {
     idle: 'กดแล้วพูดได้เลย',
