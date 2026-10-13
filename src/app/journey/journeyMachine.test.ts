@@ -1,0 +1,62 @@
+import { describe, expect, it } from 'vitest'
+import { applyUpdates, createEmptyProfile } from '@/ai/onboarding/profile.ts'
+import { initialJourney, journeyReducer } from './journeyMachine.ts'
+
+const NAME = { storeName: { value: 'ครัวป้าแดง', confidence: 0.93, heardFrom: 'x' } }
+
+describe('journeyReducer', () => {
+  it('starts on A1 with an empty profile', () => {
+    const state = initialJourney()
+    expect(state.screen).toBe('A1_TALK')
+    expect(state.profile.fields.storeName.status).toBe('empty')
+    expect(state.startedAt).toBeNull()
+  })
+
+  it('moves between screens', () => {
+    expect(journeyReducer(initialJourney(), { type: 'GO', screen: 'A2_REVIEW' }).screen).toBe('A2_REVIEW')
+  })
+
+  it('applies what was heard and remembers when talking started', () => {
+    const first = journeyReducer(initialJourney(), { type: 'HEARD', updates: NAME, at: 1000 })
+    const second = journeyReducer(first, { type: 'HEARD', updates: {}, at: 5000 })
+    expect(second.profile.fields.storeName.value).toBe('ครัวป้าแดง')
+    expect(second.startedAt).toBe(1000)
+  })
+
+  it('confirms a field', () => {
+    const heard = journeyReducer(initialJourney(), { type: 'HEARD', updates: NAME, at: 1 })
+    expect(journeyReducer(heard, { type: 'CONFIRM_FIELD', field: 'storeName' }).profile.fields.storeName.status).toBe('confirmed')
+  })
+
+  it('re-asking a field clears it and returns to A1', () => {
+    const onReview = { ...journeyReducer(initialJourney(), { type: 'HEARD', updates: NAME, at: 1 }), screen: 'A2_REVIEW' as const }
+    const next = journeyReducer(onReview, { type: 'REASK_FIELD', field: 'storeName' })
+    expect(next.screen).toBe('A1_TALK')
+    expect(next.profile.fields.storeName.status).toBe('empty')
+  })
+
+  it('removes a menu item', () => {
+    const withMenu = journeyReducer(initialJourney(), {
+      type: 'HEARD',
+      updates: { menu: { value: [{ name: 'ก', priceTHB: 10 }, { name: 'ข', priceTHB: 20 }], confidence: 0.9, heardFrom: 'x' } },
+      at: 1,
+    })
+    expect(journeyReducer(withMenu, { type: 'REMOVE_MENU_ITEM', name: 'ก' }).profile.fields.menu.value).toEqual([{ name: 'ข', priceTHB: 20 }])
+  })
+
+  it('records the submit time and shows A3', () => {
+    const next = journeyReducer(initialJourney(), { type: 'SUBMITTED', at: 9000 })
+    expect(next.screen).toBe('A3_SUBMITTED')
+    expect(next.submittedAt).toBe(9000)
+  })
+
+  it('loads a prepared profile (presenter shortcut)', () => {
+    const profile = applyUpdates(createEmptyProfile(), NAME)
+    expect(journeyReducer(initialJourney(), { type: 'LOAD_PROFILE', profile }).profile).toBe(profile)
+  })
+
+  it('resets everything', () => {
+    const busy = journeyReducer(journeyReducer(initialJourney(), { type: 'HEARD', updates: NAME, at: 1 }), { type: 'GO', screen: 'TRANSITION' })
+    expect(journeyReducer(busy, { type: 'RESET' })).toEqual(initialJourney())
+  })
+})

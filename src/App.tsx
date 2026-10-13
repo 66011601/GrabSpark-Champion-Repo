@@ -1,8 +1,20 @@
+import { useJourney } from '@/app/journey/JourneyContext.ts'
+import { JourneyProvider } from '@/app/journey/JourneyProvider.tsx'
+import { DeviceFrame } from '@/components/shell/DeviceFrame.tsx'
+import { ScreenStub } from '@/screens/ScreenStub.tsx'
+
+function ScreenSwitch() {
+  const { state } = useJourney()
+  return <ScreenStub screen={state.screen} />
+}
+
 function App() {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-canvas px-4">
-      <p className="text-money font-bold text-action">สวัสดีค่ะ ครัวป้าแดง</p>
-    </main>
+    <JourneyProvider>
+      <DeviceFrame>
+        <ScreenSwitch />
+      </DeviceFrame>
+    </JourneyProvider>
   )
 }
 
