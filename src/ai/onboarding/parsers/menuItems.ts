@@ -9,7 +9,8 @@ const MAX_PRICE = 5000
 const AFTER_PRICE = /^(?:\s|$|บาท|ค่ะ|ครับ|คะ|นะ|[,.!?])/
 
 // The unit and polite particle after a price belong to that price, not to the next dish.
-const PRICE_TAIL = /^\s*(?:บาท)?\s*(?:นะ)?(?:ค่ะ|ครับ|คะ|จ้ะ|จ้า)?/
+// Without "บาท", a particle only counts when a pause follows ("50 คะน้า…" is a dish, not "50 คะ").
+const PRICE_TAIL = /^\s*(?:บาท\s*(?:นะ)?(?:ค่ะ|ครับ|คะ|จ้ะ|จ้า)?|(?:นะ)?(?:ค่ะ|ครับ|คะ|จ้ะ|จ้า)(?=\s|$))?/
 
 // Connectors that can open a dish phrase. กับ/และ also start real dishes ("กับแกล้ม"),
 // so they only count when a pause follows.

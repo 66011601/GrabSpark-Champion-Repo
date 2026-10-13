@@ -55,4 +55,19 @@ describe('parseMenuItems', () => {
   it('needs a pause or บาท after a price', () => {
     expect(parseMenuItems('ปลาแปดริ้ว 80 บาท')).toEqual([{ name: 'ปลาแปดริ้ว', priceTHB: 80 }])
   })
+
+  it('only takes a bare particle after a price when a pause follows', () => {
+    expect(parseMenuItems('ข้าวมันไก่ 50 คะน้าหมูกรอบ 60 บาท')).toEqual([
+      { name: 'ข้าวมันไก่', priceTHB: 50 },
+      { name: 'คะน้าหมูกรอบ', priceTHB: 60 },
+    ])
+    expect(parseMenuItems('ผัดไทยห้าสิบ คะน้าหมูกรอบหกสิบ')).toEqual([
+      { name: 'ผัดไทย', priceTHB: 50 },
+      { name: 'คะน้าหมูกรอบ', priceTHB: 60 },
+    ])
+    expect(parseMenuItems('ข้าวมันไก่ห้าสิบบาทครับต้มเลือดหมูสี่สิบบาท')).toEqual([
+      { name: 'ข้าวมันไก่', priceTHB: 50 },
+      { name: 'ต้มเลือดหมู', priceTHB: 40 },
+    ])
+  })
 })
