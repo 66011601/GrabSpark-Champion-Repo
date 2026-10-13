@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { PROFILE_FIELDS } from '@/ai/onboarding/profile.ts'
 import { runSubmissionChecks, SubmissionBlockedError, submitProfile } from '@/ai/onboarding/submit.ts'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
+import { CompanionDock } from '@/components/assistant/CompanionDock.tsx'
 import { ListenButton } from '@/components/assistant/ListenButton.tsx'
 import { OnboardingShell } from '@/components/shell/OnboardingShell.tsx'
 import { Button } from '@/components/ui/Button.tsx'
@@ -48,22 +49,20 @@ export function ReviewScreen() {
     <OnboardingShell
       title={th.review.title}
       progress={remaining > 0 ? th.review.remaining(remaining) : th.checks.allConfirmed}
-      footer={
-        <div className="flex flex-col gap-2">
-          {error && (
-            <p role="alert" className="rounded-2xl bg-warn-bg px-4 py-3 text-warn-ink">
-              {error}
-            </p>
-          )}
-          <Button fullWidth disabled={!canSubmit} loading={submitting} onClick={submit}>
-            {submitting ? th.review.submitting : th.review.submit}
-          </Button>
-          <p className="text-center text-sm text-ink-muted">{th.review.nothingSentYet}</p>
-        </div>
+      dock={
+        <CompanionDock
+          text={th.review.subtitle}
+          notice={error}
+          hint={th.review.nothingSentYet}
+          actions={
+            <Button fullWidth disabled={!canSubmit} loading={submitting} onClick={submit}>
+              {submitting ? th.review.submitting : th.review.submit}
+            </Button>
+          }
+        />
       }
     >
       <div className="flex flex-col gap-4">
-        <p>{th.review.subtitle}</p>
         <StorePreviewCard profile={profile} />
         <ListenButton text={profileSummary(profile)} />
 
@@ -72,6 +71,11 @@ export function ReviewScreen() {
         <ReviewFieldCard {...card('location')}>
           <p className="mb-2 font-bold">{th.review.pinQuestion}</p>
           {fields.location.value && <MapPinConfirm point={fields.location.value} />}
+          {state.building && (
+            <p className="mt-2 text-base text-ink-muted">
+              {th.review.building}: {state.building}
+            </p>
+          )}
         </ReviewFieldCard>
         <ReviewFieldCard {...card('hours')}>{fields.hours.value && formatHours(fields.hours.value)}</ReviewFieldCard>
         <ReviewFieldCard {...card('menu')}>

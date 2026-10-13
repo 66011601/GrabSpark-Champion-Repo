@@ -255,6 +255,16 @@ Money is computed in integer satang (฿1 = 100 satang) to avoid floating-point 
 - `OnboardingShell` (Act 1): simple header with progress, no bottom nav.
 - `DemoPanel` (presenter only, beside the phone on desktop, toggled with `D`): jump to any screen, reset state, set simulated time, play scripted utterances.
 
+### 7.1a Register phase (before Act 1)
+
+Added from the team's wireframes. `R1 Welcome ──► R2 Account ──► R3 Store basics ──► A1`. A returning merchant (เข้าสู่ระบบ) goes `R1 ──► R2 ──► A1`.
+
+- **Companion dock** (`components/assistant/CompanionDock.tsx`): on every screen the companion's face sits in the bottom-right corner with its speech bubble; the screen's main button is to its left. On R3 and A1 the face is the talk button (it replaces the old centre `MicButton`).
+- **R1 · Welcome** (`screens/register/R1-welcome`): headline, three plain promises, ลงทะเบียน (left) and เข้าสู่ระบบ (right). Bubble: "เคยสมัครรึยังคะ?"
+- **R2 · Account** (`R2-account`): อีเมล, then รหัสผ่าน. Typed only. While the password box is focused the companion covers its eyes. Mock sign-in: nothing leaves the browser and the password is never stored (§4 still applies: no real authentication).
+- **R3 · Store basics** (`R3-store`): ชื่อร้านค้า, ชื่ออาคาร (optional), ที่ตั้งร้านค้า. The merchant talks to the companion and it fills the boxes (a green mark shows which ones it filled); every box can also be typed. Nothing is saved until ต่อไป. What was heard here (including a category, if mentioned) carries into A1, which then only asks for what is missing.
+- ชื่ออาคาร is kept beside the profile (`JourneyState.building`) and shown on the A2 location card; it is not one of the six confirmed fields.
+
 ### 7.2 Act 1 · Day 0
 
 **A1 · Tell me about your shop** (`screens/act1-onboarding/A1-talk/TalkScreen.tsx`)

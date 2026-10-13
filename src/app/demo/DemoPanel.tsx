@@ -7,6 +7,9 @@ import { demoProfile, scriptLines } from './demoProfile.ts'
 
 // Presenter-only tooling (desktop, beside the phone). Press D to hide or show.
 const JUMPS: { label: string; screen: Screen; withProfile?: boolean }[] = [
+  { label: 'R1 · หน้าแรก', screen: 'R1_WELCOME' },
+  { label: 'R2 · อีเมลและรหัสผ่าน', screen: 'R2_ACCOUNT' },
+  { label: 'R3 · ข้อมูลร้าน', screen: 'R3_STORE' },
   { label: 'A1 · คุยเปิดร้าน', screen: 'A1_TALK' },
   { label: 'A2 · ตรวจทาน (ข้อมูลตัวอย่าง)', screen: 'A2_REVIEW', withProfile: true },
   { label: 'A3 · ส่งแล้ว', screen: 'A3_SUBMITTED', withProfile: true },
@@ -30,7 +33,7 @@ export function DemoPanel() {
 
   if (!visible) return null
 
-  const onA1 = state.screen === 'A1_TALK'
+  const canSpeak = state.screen === 'A1_TALK' || state.screen === 'R3_STORE'
 
   return (
     <aside className="hidden w-80 shrink-0 flex-col gap-5 rounded-3xl bg-surface p-5 text-base shadow-lg ring-1 ring-line sm:flex">
@@ -57,12 +60,12 @@ export function DemoPanel() {
       </section>
 
       <section className="flex flex-col gap-2">
-        <h3 className="font-bold">พูดตามบท (ที่หน้า A1)</h3>
+        <h3 className="font-bold">พูดตามบท (ที่หน้า R3 หรือ A1)</h3>
         {scriptLines.map((line) => (
           <button
             key={line.id}
             type="button"
-            disabled={!onA1}
+            disabled={!canSpeak}
             className="min-h-12 rounded-xl px-3 py-2 text-left ring-1 ring-line hover:bg-canvas disabled:opacity-40"
             onClick={() => demoBus.say(line.say)}
           >
