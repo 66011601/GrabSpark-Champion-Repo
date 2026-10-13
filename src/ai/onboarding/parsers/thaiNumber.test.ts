@@ -22,6 +22,18 @@ describe('parseThaiNumber', () => {
   it.each([['สองสาม'], ['สิบร้อย'], ['เอ็ด'], ['ยี่'], ['ข้าว'], ['']])('rejects %j', (spoken) => {
     expect(parseThaiNumber(spoken)).toBeNull()
   })
+
+  it('rejects two digit runs fused by whitespace', () => {
+    expect(parseThaiNumber('89 90')).toBeNull()
+  })
+
+  it('rejects a number split by a stray บาท', () => {
+    expect(parseThaiNumber('สามบาทสิบ')).toBeNull()
+  })
+
+  it('reads spaced number words as one number', () => {
+    expect(parseThaiNumber('แปด สิบ เก้า')).toBe(89)
+  })
 })
 
 describe('scanNumbers', () => {
@@ -35,6 +47,10 @@ describe('scanNumbers', () => {
 
   it('finds digit prices', () => {
     expect(scanNumbers('ข้าวมันไก่ 50 ต้มเลือดหมู 40 บาท').map((m) => m.value)).toEqual([50, 40])
+  })
+
+  it('does not read 65 out of หกสิบห้าง', () => {
+    expect(scanNumbers('ซอยหกสิบห้างโลตัส').map((m) => m.value)).toEqual([60])
   })
 })
 
@@ -55,5 +71,11 @@ describe('numbersToDigits', () => {
 
   it('reads colloquial "นึง" as one', () => {
     expect(numbersToDigits('ทุ่มนึง')).toBe('ทุ่ม1')
+  })
+
+  it('leaves number words inside ordinary compounds alone', () => {
+    expect(numbersToDigits('ตรงข้ามห้างโลตัส')).toBe('ตรงข้ามห้างโลตัส')
+    expect(numbersToDigits('ศูนย์อาหาร')).toBe('ศูนย์อาหาร')
+    expect(numbersToDigits('ตรงสี่แยก')).toBe('ตรงสี่แยก')
   })
 })

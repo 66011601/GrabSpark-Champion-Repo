@@ -25,6 +25,9 @@ const MULTIPLIERS: Record<string, number> = {
 // Longest first, so a longer word always wins over a shorter one at the same position.
 const WORDS = [...Object.keys(DIGIT_WORDS), ...Object.keys(MULTIPLIERS)].sort((a, b) => b.length - a.length)
 
+// Compounds that begin with a number word but are not numbers, so the scanner must skip them whole.
+const NOT_NUMBERS = ['ศูนย์การค้า', 'ศูนย์อาหาร', 'สี่แยก', 'สามแยก', 'พันธุ์', 'ห้าง']
+
 const THAI_DIGITS = '๐๑๒๓๔๕๖๗๘๙'
 
 interface NumberWord {
@@ -43,6 +46,11 @@ export interface NumberMatch {
 /** "๘๙" → "89". One character in, one character out, so positions stay valid. */
 export function normalizeThaiDigits(text: string): string {
   return text.replace(/[๐-๙]/g, (digit) => String(THAI_DIGITS.indexOf(digit)))
+}
+
+/** The non-number compound starting at this index, if any. */
+function notNumberAt(text: string, index: number): string | undefined {
+  return NOT_NUMBERS.find((compound) => text.startsWith(compound, index))
 }
 
 function wordAt(text: string, index: number): NumberWord | null {
@@ -86,9 +94,14 @@ export function scanNumbers(input: string): NumberMatch[] {
       i += digits[0].length
       continue
     }
+    const compound = notNumberAt(text, i)
+    if (compound) {
+      i += compound.length
+      continue
+    }
     const words: NumberWord[] = []
     let j = i
-    for (let word = wordAt(text, j); word; word = wordAt(text, j)) {
+    for (let word = wordAt(text, j); word && !notNumberAt(text, j); word = wordAt(text, j)) {
       words.push(word)
       j += word.word.length
     }
@@ -105,7 +118,10 @@ export function scanNumbers(input: string): NumberMatch[] {
 
 /** "แปดสิบเก้า" → 89, "๘๙ บาท" → 89. Null unless the whole text is one number. */
 export function parseThaiNumber(input: string): number | null {
-  const text = input.replace(/\s+|บาท|฿/g, '')
+  const core = input.trim().replace(/^฿/, '').replace(/บาท$/, '').trim()
+  const normalized = normalizeThaiDigits(core)
+  if (/\d\s+\d/.test(normalized)) return null // "89 90": two numbers, not one
+  const text = normalized.replace(/\s+/g, '')
   if (!text) return null
   const matches = scanNumbers(text)
   const [only] = matches
