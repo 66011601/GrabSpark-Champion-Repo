@@ -1,0 +1,33 @@
+import { describe, expect, it } from 'vitest'
+
+// Raw source of every app file, keyed by path ("/src/...").
+const sources = import.meta.glob<string>('/src/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true })
+
+// The AI may prepare drafts but never execute them: only guardrail modules may call write APIs.
+// Plan 2 adds '/src/ai/guardrail/confirmAndExecute.ts' here.
+const ALLOWED_WRITERS = ['/src/ai/onboarding/submit.ts', '/src/services/merchantApi.write.ts']
+const IMPORTS_WRITE_API = /(?:from\s+|import\s*\(\s*)['"][^'"]*merchantApi\.write/
+const IMPORTS_REACT = /from\s+['"]react/
+
+const appFiles = Object.entries(sources).filter(([path]) => !path.endsWith('.test.ts'))
+
+describe('architecture', () => {
+  it('sees the source tree', () => {
+    expect(Object.keys(sources)).toContain('/src/ai/onboarding/submit.ts')
+    expect(IMPORTS_WRITE_API.test("import { submitApplication } from '@/services/merchantApi.write.ts'")).toBe(true)
+  })
+
+  it('only lets guardrail modules import the write API', () => {
+    const offenders = appFiles
+      .filter(([path, source]) => !ALLOWED_WRITERS.includes(path) && IMPORTS_WRITE_API.test(source))
+      .map(([path]) => path)
+    expect(offenders).toEqual([])
+  })
+
+  it('keeps src/ai free of React', () => {
+    const offenders = appFiles
+      .filter(([path, source]) => path.startsWith('/src/ai/') && IMPORTS_REACT.test(source))
+      .map(([path]) => path)
+    expect(offenders).toEqual([])
+  })
+})
