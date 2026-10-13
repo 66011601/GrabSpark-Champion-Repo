@@ -70,4 +70,9 @@ describe('parseMenuItems', () => {
       { name: 'ต้มเลือดหมู', priceTHB: 40 },
     ])
   })
+
+  it('never reads a soi or house number as a price', () => {
+    expect(parseMenuItems('ลาดพร้าวซอย 71 ตรงข้ามเซเว่น')).toEqual([])
+    expect(parseMenuItems('อยู่ซอยเจ็ดสิบเอ็ด ')).toEqual([])
+  })
 })

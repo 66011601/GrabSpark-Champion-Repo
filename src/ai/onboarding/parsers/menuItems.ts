@@ -8,6 +8,9 @@ const MAX_PRICE = 5000
 // words inside other words ("แปดริ้ว", "แสนอร่อย") from being read as prices.
 const AFTER_PRICE = /^(?:\s|$|บาท|ค่ะ|ครับ|คะ|นะ|[,.!?])/
 
+// A number right after an address word is a house or soi number, never a price.
+const AFTER_ADDRESS_WORD = /(?:ซอย|ซ\.|ถนน|ถ\.|เลขที่|หมู่(?:ที่)?|เบอร์)\s*$/
+
 // The unit and polite particle after a price belong to that price, not to the next dish.
 // Without "บาท", a particle only counts when a pause follows ("50 คะน้า…" is a dish, not "50 คะ").
 const PRICE_TAIL = /^\s*(?:บาท\s*(?:นะ)?(?:ค่ะ|ครับ|คะ|จ้ะ|จ้า)?|(?:นะ)?(?:ค่ะ|ครับ|คะ|จ้ะ|จ้า)(?=\s|$))?/
@@ -19,7 +22,8 @@ const SPACED_FILLERS = ['กับ', 'และ']
 const TRAILING_FILLERS = ['ราคา', 'นะคะ', 'นะครับ', 'ครับ', 'ค่ะ', 'คะ']
 
 function isPrice(text: string, match: NumberMatch): boolean {
-  return match.value >= MIN_PRICE && match.value <= MAX_PRICE && AFTER_PRICE.test(text.slice(match.end))
+  if (match.value < MIN_PRICE || match.value > MAX_PRICE) return false
+  return AFTER_PRICE.test(text.slice(match.end)) && !AFTER_ADDRESS_WORD.test(text.slice(0, match.start))
 }
 
 function stripFiller(name: string): string | null {

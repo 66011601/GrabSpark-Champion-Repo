@@ -23,6 +23,20 @@ describe('extractProfile: open talk', () => {
     expect(extractProfile('มีเมนูข้าวมันไก่ห้าสิบบาท', { landmarks }).menu?.value).toEqual([{ name: 'ข้าวมันไก่', priceTHB: 50 }])
   })
 
+  it('keeps the address out of the menu when both are said together', () => {
+    const updates = extractProfile('อยู่ลาดพร้าวซอยเจ็ดสิบเอ็ด ตรงข้ามเซเว่น มีเมนูข้าวมันไก่ห้าสิบบาท', { landmarks })
+    expect(updates.menu?.value).toEqual([{ name: 'ข้าวมันไก่', priceTHB: 50 }])
+    expect(updates.location?.value.text).toBe('ลาดพร้าว 71 ตรงข้ามเซเว่น')
+  })
+
+  it('ignores numbers when the word เมนู only appears in the shop name', () => {
+    expect(extractProfile('ร้านเมนูสุข อยู่ลาดพร้าวซอยเจ็ดสิบเอ็ด ตรงข้ามเซเว่น', { landmarks }).menu).toBeUndefined()
+  })
+
+  it('leaves the menu to its own question when เมนู is not said', () => {
+    expect(extractProfile('ขายข้าวมันไก่ห้าสิบบาท', { landmarks }).menu).toBeUndefined()
+  })
+
   it('returns nothing for silence', () => {
     expect(extractProfile('   ', { landmarks })).toEqual({})
   })

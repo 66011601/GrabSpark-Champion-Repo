@@ -33,10 +33,11 @@ function extractOpenTalk(text: string, landmarks: Landmark[]): ProfileUpdates {
   if (location) updates.location = { ...location, heardFrom }
   const hours = parseOpeningHours(text)
   if (hours) updates.hours = { value: hours, confidence: HOURS_CONFIDENCE, heardFrom }
-  // Only read prices when the merchant is clearly talking about the menu;
-  // otherwise "ซอยเจ็ดสิบเอ็ด" would become a ฿71 dish.
-  if (/บาท|เมนู/.test(text)) {
-    const menu = parseMenuItems(text)
+  // In open talk, read a menu only once the merchant names it ("…มีเมนูข้าวมันไก่ห้าสิบบาท"),
+  // and only from that word on, so the shop's name and address never become dishes.
+  const menuStart = text.indexOf('เมนู')
+  if (menuStart !== -1) {
+    const menu = parseMenuItems(text.slice(menuStart))
     if (menu.length > 0) updates.menu = { value: menu, confidence: MENU_CONFIDENCE, heardFrom }
   }
   return updates
