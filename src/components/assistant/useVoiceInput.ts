@@ -7,6 +7,7 @@ import { playScripted } from '@/services/speech/scripted.ts'
 import { startListening, type ListenSession } from '@/services/speech/speechToText.ts'
 import { isSpeaking, stopSpeaking } from '@/services/speech/textToSpeech.ts'
 import type { MicState } from './companionState.ts'
+import { createTurnGuard } from './turnGuard.ts'
 
 const THINKING_MS = 500
 const RESUME_MS = 800
@@ -20,21 +21,24 @@ let handsFree = false
 
 /**
  * One merchant turn at a time, from the mic or a scripted demo line.
- * `interpret` gets the final words and says whether it understood them.
+ * `interpret` gets the final words and says whether it understood them. It also gets `isCurrent`:
+ * after any `await` it must check that, and stop without touching the journey when it is false
+ * (the screen was left, the demo was reset, or the merchant has said something newer).
  * With `autoListen`, the screen keeps the conversation going without another tap.
  */
-export function useVoiceInput(interpret: (text: string) => Reply | Promise<Reply>, { autoListen = false } = {}) {
+export type Interpret = (text: string, isCurrent: () => boolean) => Reply | Promise<Reply>
+
+export function useVoiceInput(interpret: Interpret, { autoListen = false } = {}) {
   const [mic, setMicState] = useState<MicState>('idle')
   const [transcript, setTranscript] = useState<{ text: string; final: boolean } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const micNow = useRef<MicState>('idle')
   const session = useRef<ListenSession | null>(null)
-  const mounted = useRef(true)
+  const guard = useRef(createTurnGuard())
   const thinking = useRef<number | undefined>(undefined)
   const resuming = useRef<number | undefined>(undefined)
   const cancelScript = useRef<(() => void) | null>(null)
   const resume = useRef<() => void>(() => {})
-  const turn = useRef(0)
   // Screens pass a fresh `interpret` every render; always use the newest one.
   const latestInterpret = useRef(interpret)
   useEffect(() => {
@@ -48,9 +52,10 @@ export function useVoiceInput(interpret: (text: string) => Reply | Promise<Reply
 
   // Anything still in flight (thinking timer, scripted line, mic) must not touch the journey after we leave.
   useEffect(() => {
-    mounted.current = true
+    const turns = guard.current
+    turns.mount()
     return () => {
-      mounted.current = false
+      turns.unmount()
       window.clearTimeout(thinking.current)
       window.clearTimeout(resuming.current)
       cancelScript.current?.()
@@ -61,18 +66,18 @@ export function useVoiceInput(interpret: (text: string) => Reply | Promise<Reply
   // Every input path (mic, scripted demo line, chip, keyboard) ends here.
   const hear = useCallback(
     (words: string) => {
-      if (!mounted.current) return
+      if (!guard.current.mounted()) return
       // A scripted or typed line may close with "จ้า" too, just like a spoken one.
       const text = cutAtEndWord(words).text || words
-      const mine = ++turn.current
+      const isCurrent = guard.current.begin()
       setTranscript({ text, final: true })
       setMic('processing')
       window.clearTimeout(thinking.current)
       thinking.current = window.setTimeout(async () => {
-        if (!mounted.current) return
+        if (!isCurrent()) return
         // Interpreting may take a moment (looking a place up on the map); a newer turn wins.
-        const reply = await Promise.resolve(latestInterpret.current(text)).catch(() => false as const)
-        if (!mounted.current || mine !== turn.current) return
+        const reply = await Promise.resolve(latestInterpret.current(text, isCurrent)).catch(() => false as const)
+        if (!isCurrent()) return
         setNotice(reply === true ? null : reply === false ? th.onboarding.notUnderstood : reply)
         setMic('idle')
         // When the answer changed nothing the companion has nothing to say, so it just listens again.
@@ -120,7 +125,7 @@ export function useVoiceInput(interpret: (text: string) => Reply | Promise<Reply
 
   useEffect(() => {
     resume.current = () => {
-      if (autoListen && handsFree && mounted.current && micNow.current === 'idle') listen(true)
+      if (autoListen && handsFree && guard.current.mounted() && micNow.current === 'idle') listen(true)
     }
   })
 

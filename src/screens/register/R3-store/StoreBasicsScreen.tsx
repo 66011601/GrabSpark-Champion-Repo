@@ -1,5 +1,5 @@
 import { Sparkles } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { SAY } from '@/ai/commands/phrases.ts'
 import { extractProfile } from '@/ai/onboarding/extractProfile.ts'
@@ -59,6 +59,14 @@ export function StoreBasicsScreen() {
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([])
   const [saving, setSaving] = useState(false)
 
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
+
   const missing: BasicsField | null = !storeName.trim() ? 'storeName' : !location.trim() ? 'location' : null
   // Once the companion has asked for one thing, a bare answer ("ครัวป้าแดง") is that thing.
   const expecting = asked && missing ? missing : undefined
@@ -88,7 +96,7 @@ export function StoreBasicsScreen() {
   }
 
   // true = some box was filled; false = nothing understood; a string = the companion's reply.
-  const fill = async (text: string) => {
+  const fill = async (text: string, isCurrent: () => boolean) => {
     setAsked(true)
     const heardBuilding = parseBuilding(text)
     let updates = extractProfile(text, { landmarks })
@@ -98,6 +106,7 @@ export function StoreBasicsScreen() {
     const place = places.live ? locationPhrase(text, expecting === 'location') : null
     if (place) {
       const match = await places.find(place)
+      if (!isCurrent()) return false // the screen was left or reset while the map was answering
       if (match) updates = { ...updates, location: { ...match, heardFrom: text } }
       else if (Object.keys(updates).length === 0 && !heardBuilding) return th.places.notFound
     }
@@ -123,7 +132,7 @@ export function StoreBasicsScreen() {
   }
 
   const { mic, transcript, notice, toggleMic, onSpoken } = useVoiceInput(
-    async (text) => {
+    async (text, isCurrent) => {
       const command = matchCommand(text, COMMANDS)
       if (command === 'back') {
         dispatch({ type: 'GO', screen: 'R2_ACCOUNT' })
@@ -131,10 +140,10 @@ export function StoreBasicsScreen() {
       }
       if (command === 'next') {
         if (missing) return th.store.notYet
-        await finish()
+        await finish(isCurrent)
         return true
       }
-      return fill(text)
+      return fill(text, isCurrent)
     },
     { autoListen: true },
   )
@@ -145,7 +154,8 @@ export function StoreBasicsScreen() {
     if (field === 'location') setTypedPlace(value.trim())
   }
 
-  async function finish() {
+  // `isCurrent`: false once the screen is gone (or a newer spoken turn began), so nothing is dispatched late.
+  async function finish(isCurrent: () => boolean = () => mounted.current) {
     const updates: ProfileUpdates = { ...heard }
     const name = storeName.trim()
     const place = location.trim()
@@ -156,6 +166,10 @@ export function StoreBasicsScreen() {
     if (place !== (heard.location?.value.text ?? fields.location.value?.text)) {
       setSaving(true)
       const found = await places.find(place)
+      if (!isCurrent()) {
+        setSaving(false)
+        return
+      }
       updates.location = {
         value: { ...(found?.value ?? account.deviceLocation), text: place },
         confidence: found?.confidence ?? UNPLACED_ADDRESS_CONFIDENCE,
@@ -188,7 +202,7 @@ export function StoreBasicsScreen() {
           onPress={toggleMic}
           onSpoken={onSpoken}
           actions={
-            <Button fullWidth disabled={missing !== null} loading={saving} onClick={finish}>
+            <Button fullWidth disabled={missing !== null} loading={saving} onClick={() => finish()}>
               {th.common.next}
             </Button>
           }
