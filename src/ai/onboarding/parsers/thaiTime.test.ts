@@ -64,6 +64,16 @@ describe('parseClosedDays', () => {
     expect(parseClosedDays('ปิดสองทุ่ม')).toEqual([])
     expect(parseClosedDays('เปิดสิบโมงถึงสองทุ่ม เปิดทุกวัน')).toEqual([])
   })
+
+  it('does not read the end of an open range as closed', () => {
+    expect(parseClosedDays('เปิดจันทร์ถึงเสาร์หยุดวันอาทิตย์')).toEqual(['sun'])
+    expect(parseClosedDays('เปิดจันทร์ถึงเสาร์ ปิดสองทุ่ม')).toEqual([])
+  })
+
+  it('reads a day said before the closed verb with a space', () => {
+    expect(parseClosedDays('วันอาทิตย์ หยุด')).toEqual(['sun'])
+    expect(parseClosedDays('ร้านเปิดสิบโมง วันจันทร์หยุด')).toEqual(['mon'])
+  })
 })
 
 describe('parseOpeningHours', () => {

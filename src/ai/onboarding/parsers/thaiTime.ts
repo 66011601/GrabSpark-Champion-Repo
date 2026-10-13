@@ -73,19 +73,24 @@ export function parseThaiTime(text: string): string | null {
   return findTimes(text)[0]?.time ?? null
 }
 
-// A closed verb is "หยุด" or "ปิด" (not the ปิด inside "เปิด"). Days in the clause after it (up to "เปิด"/"ขาย") or in the word just before it are closed.
+// Closed verbs: "หยุด", or "ปิด" not inside "เปิด". A day before a verb counts only as its own phrase, so "ถึงเสาร์หยุด" does not.
 const CLOSED_VERB = /หยุด|(?<!เ)ปิด/g
+
+/** Whether the text before a closed verb ends with this day as its own phrase ("วันอาทิตย์ " yes, "ถึงเสาร์" no). */
+const endsWithDay = (before: string, word: string) => new RegExp(`(?:^|\\s)(?:ทุก)?(?:วัน)?${word}\\s*$`).test(before)
 
 /** Days the merchant says are closed ("หยุดวันอาทิตย์" → ['sun'], "วันอาทิตย์หยุด" → ['sun']). */
 export function parseClosedDays(text: string): Weekday[] {
-  const clauses: string[] = []
+  const closed = new Set<Weekday>()
   for (const verb of text.matchAll(CLOSED_VERB)) {
-    const at = verb.index ?? 0
-    const before = text.slice(0, at).split(/\s|เปิด/).pop() ?? ''
-    const after = text.slice(at + verb[0].length).split(/เปิด|ขาย/)[0]
-    clauses.push(before, after)
+    const verbAt = verb.index ?? 0
+    const before = text.slice(0, verbAt)
+    const after = text.slice(verbAt + verb[0].length).split(/เปิด|ขาย/)[0]
+    for (const [word, day] of DAY_WORDS) {
+      if (after.includes(word) || endsWithDay(before, word)) closed.add(day)
+    }
   }
-  return DAY_WORDS.filter(([word]) => clauses.some((clause) => clause.includes(word))).map(([, day]) => day)
+  return DAY_WORDS.filter(([, day]) => closed.has(day)).map(([, day]) => day)
 }
 
 /** "สิบโมงเช้าถึงสองทุ่ม" → { open: "10:00", close: "20:00" }. Null unless both times are present. */
