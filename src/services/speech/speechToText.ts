@@ -61,6 +61,7 @@ export function startListening(handlers: ListenHandlers): ListenSession {
   recognition.continuous = false
   recognition.maxAlternatives = 1
   let finalText = ''
+  let errored = false
   recognition.onresult = (event) => {
     let interim = ''
     for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -70,9 +71,14 @@ export function startListening(handlers: ListenHandlers): ListenSession {
     }
     if (interim) handlers.onInterim(finalText + interim)
   }
-  recognition.onerror = (event) => handlers.onError(toKind(event.error))
+  recognition.onerror = (event) => {
+    errored = true
+    handlers.onError(toKind(event.error))
+  }
   recognition.onend = () => {
-    if (finalText.trim()) handlers.onFinal(finalText.trim())
+    const text = finalText.trim()
+    if (text) handlers.onFinal(text)
+    else if (!errored) handlers.onError('no-speech') // ended without hearing anything and without an error event
     handlers.onEnd()
   }
   recognition.start()
