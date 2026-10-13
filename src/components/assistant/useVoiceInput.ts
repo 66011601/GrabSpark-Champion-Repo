@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { cutAtEndWord } from '@/ai/commands/endWord.ts'
 import { demoBus } from '@/app/demo/demoBus.ts'
 import { th } from '@/copy/th.ts'
 import { earcon } from '@/services/speech/earcon.ts'
@@ -22,7 +23,7 @@ let handsFree = false
  * `interpret` gets the final words and says whether it understood them.
  * With `autoListen`, the screen keeps the conversation going without another tap.
  */
-export function useVoiceInput(interpret: (text: string) => Reply, { autoListen = false } = {}) {
+export function useVoiceInput(interpret: (text: string) => Reply | Promise<Reply>, { autoListen = false } = {}) {
   const [mic, setMicState] = useState<MicState>('idle')
   const [transcript, setTranscript] = useState<{ text: string; final: boolean } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -33,6 +34,7 @@ export function useVoiceInput(interpret: (text: string) => Reply, { autoListen =
   const resuming = useRef<number | undefined>(undefined)
   const cancelScript = useRef<(() => void) | null>(null)
   const resume = useRef<() => void>(() => {})
+  const turn = useRef(0)
   // Screens pass a fresh `interpret` every render; always use the newest one.
   const latestInterpret = useRef(interpret)
   useEffect(() => {
@@ -58,15 +60,19 @@ export function useVoiceInput(interpret: (text: string) => Reply, { autoListen =
 
   // Every input path (mic, scripted demo line, chip, keyboard) ends here.
   const hear = useCallback(
-    (text: string) => {
+    (words: string) => {
       if (!mounted.current) return
+      // A scripted or typed line may close with "จ้า" too, just like a spoken one.
+      const text = cutAtEndWord(words).text || words
+      const mine = ++turn.current
       setTranscript({ text, final: true })
       setMic('processing')
       window.clearTimeout(thinking.current)
-      thinking.current = window.setTimeout(() => {
+      thinking.current = window.setTimeout(async () => {
         if (!mounted.current) return
-        const reply = latestInterpret.current(text)
-        if (!mounted.current) return
+        // Interpreting may take a moment (looking a place up on the map); a newer turn wins.
+        const reply = await Promise.resolve(latestInterpret.current(text)).catch(() => false as const)
+        if (!mounted.current || mine !== turn.current) return
         setNotice(reply === true ? null : reply === false ? th.onboarding.notUnderstood : reply)
         setMic('idle')
         // When the answer changed nothing the companion has nothing to say, so it just listens again.

@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { SAY } from '@/ai/commands/phrases.ts'
 import { extractProfile } from '@/ai/onboarding/extractProfile.ts'
+import { locationPhrase } from '@/ai/onboarding/parsers/locationPhrase.ts'
 import { pickFollowUp } from '@/ai/onboarding/followUp.ts'
 import { countHeard, isReadyForReview, PROFILE_FIELDS } from '@/ai/onboarding/profile.ts'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
@@ -15,6 +16,7 @@ import { Button } from '@/components/ui/Button.tsx'
 import { Chip } from '@/components/ui/Chip.tsx'
 import { th } from '@/copy/th.ts'
 import { getAccount, getLandmarks } from '@/services/merchantApi.ts'
+import { getPlaces } from '@/services/places/places.ts'
 import type { FollowUpChip, ProfileUpdates } from '@/types/domain.ts'
 import { LiveProfileChecklist } from './LiveProfileChecklist.tsx'
 import { MenuItemList } from './MenuItemList.tsx'
@@ -23,6 +25,7 @@ import { TypeInstead } from './TypeInstead.tsx'
 const DEVICE_LOCATION_CONFIDENCE = 0.7
 const account = getAccount()
 const landmarks = getLandmarks()
+const places = getPlaces()
 const COMMANDS = [
   { id: 'review' as const, phrases: SAY.review },
   { id: 'typeInstead' as const, phrases: SAY.typeInstead },
@@ -81,13 +84,21 @@ export function TalkScreen() {
   }
 
   const { mic, transcript, notice, setNotice, toggleMic, hear, onSpoken } = useVoiceInput(
-    (text) => {
+    async (text) => {
       const obeyed = obey(text)
       if (obeyed !== null) return obeyed
       let updates = extractProfile(text, { expecting, landmarks })
       // Re-saying a dish after removing a wrong one (spec §7.2), whatever question is pending.
       if (Object.keys(updates).length === 0 && expecting !== 'menu' && menuHeard) {
         updates = extractProfile(text, { expecting: 'menu', landmarks })
+      }
+      // With Google Maps connected, the words about where the shop is are looked up there (Thailand only).
+      const wantsPlace = expecting === 'location' || (expecting === undefined && !updates.menu)
+      const place = places.live && wantsPlace ? locationPhrase(text, expecting === 'location') : null
+      if (place) {
+        const match = await places.find(place)
+        if (match) updates = { ...updates, location: { ...match, heardFrom: text } }
+        else if (Object.keys(updates).length === 0) return th.places.notFound
       }
       record(updates)
       return Object.keys(updates).length > 0
