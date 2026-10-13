@@ -7,17 +7,18 @@ import { th } from '@/copy/th.ts'
 import type { FieldStatus } from '@/types/domain.ts'
 
 // Values that came from a tap rather than speech get "ที่มา" instead of "ได้ยินว่า".
-const NON_SPEECH_SOURCES = [th.review.fromAccount, th.chips.useDeviceLocation]
+const NON_SPEECH_SOURCES = [th.review.fromAccount, th.chips.useDeviceLocation, th.store.typed, th.places.picked]
 
 interface ReviewFieldCardProps {
   label: string
   field: { status: FieldStatus; confidence?: number; heardFrom?: string }
   onConfirm: () => void
   onEdit: () => void
+  disabled?: boolean
   children: ReactNode
 }
 
-export function ReviewFieldCard({ label, field, onConfirm, onEdit, children }: ReviewFieldCardProps) {
+export function ReviewFieldCard({ label, field, onConfirm, onEdit, disabled, children }: ReviewFieldCardProps) {
   const confirmed = field.status === 'confirmed'
   const check = needsCheck(field)
   const spoken = field.heardFrom && !NON_SPEECH_SOURCES.includes(field.heardFrom)
@@ -46,11 +47,11 @@ export function ReviewFieldCard({ label, field, onConfirm, onEdit, children }: R
       )}
       <div className="mt-4 flex gap-2">
         {!confirmed && (
-          <Button variant="secondary" className="flex-1" icon={<Check className="size-5" aria-hidden />} onClick={onConfirm}>
+          <Button variant="secondary" className="flex-1" icon={<Check className="size-5" aria-hidden />} disabled={disabled} onClick={onConfirm}>
             {th.review.confirm}
           </Button>
         )}
-        <Button variant="ghost" icon={<Pencil className="size-5" aria-hidden />} onClick={onEdit}>
+        <Button variant="ghost" icon={<Pencil className="size-5" aria-hidden />} disabled={disabled} onClick={onEdit}>
           {th.review.edit}
         </Button>
       </div>
