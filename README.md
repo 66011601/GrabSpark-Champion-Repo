@@ -12,3 +12,10 @@ npm install
 npm run dev     # http://localhost:5173
 npm test        # unit + architecture tests
 ```
+
+### Presenting the demo
+
+- Open on a desktop browser: the phone frame is on the left, the **Demo panel** on the right (press `D` to hide or show it).
+- **Act 1:** on A1, play "บรรทัด 1–3" from the panel (or speak them in Chrome), tap **ใช่** for the phone, then **ตรวจทานข้อมูล** → confirm each card → **ยืนยันและส่งสมัคร**.
+- "จำลองระบบล่ม" shows how a failed submit is handled; "เริ่มใหม่ทั้งหมด" resets.
+- Act 2 arrives with Plan 2.

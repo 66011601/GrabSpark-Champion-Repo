@@ -4,13 +4,24 @@ import { JourneyProvider } from '@/app/journey/JourneyProvider.tsx'
 import { DeviceFrame } from '@/components/shell/DeviceFrame.tsx'
 import { TalkScreen } from '@/screens/act1-onboarding/A1-talk/TalkScreen.tsx'
 import { ReviewScreen } from '@/screens/act1-onboarding/A2-review/ReviewScreen.tsx'
-import { ScreenStub } from '@/screens/ScreenStub.tsx'
+import { SubmittedScreen } from '@/screens/act1-onboarding/A3-submitted/SubmittedScreen.tsx'
+import { DashboardScreen } from '@/screens/act2-grow/1-dashboard/DashboardScreen.tsx'
+import { ActTransition } from '@/screens/ActTransition.tsx'
 
 function ScreenSwitch() {
   const { state } = useJourney()
-  if (state.screen === 'A1_TALK') return <TalkScreen key={state.runId} />
-  if (state.screen === 'A2_REVIEW') return <ReviewScreen />
-  return <ScreenStub screen={state.screen} />
+  switch (state.screen) {
+    case 'A1_TALK':
+      return <TalkScreen key={state.runId} />
+    case 'A2_REVIEW':
+      return <ReviewScreen />
+    case 'A3_SUBMITTED':
+      return <SubmittedScreen />
+    case 'TRANSITION':
+      return <ActTransition />
+    case 'G1_DASHBOARD':
+      return <DashboardScreen />
+  }
 }
 
 function App() {
