@@ -255,6 +255,35 @@ Money is computed in integer satang (฿1 = 100 satang) to avoid floating-point 
 - `OnboardingShell` (Act 1): simple header with progress, no bottom nav.
 - `DemoPanel` (presenter only, beside the phone on desktop, toggled with `D`): jump to any screen, reset state, set simulated time, play scripted utterances.
 
+### 7.1a Register phase (before Act 1)
+
+Added from the team's wireframes. `R1 Welcome ──► R2 Account ──► R3 Store basics ──► A1`. A returning merchant (เข้าสู่ระบบ) goes `R1 ──► R2 ──► A1`.
+
+- **Companion dock** (`components/assistant/CompanionDock.tsx`): on every screen the companion's face sits in the bottom-right corner with its speech bubble; the screen's main button is to its left. On R3 and A1 the face is the talk button (it replaces the old centre `MicButton`).
+- **R1 · Welcome** (`screens/register/R1-welcome`): headline, three plain promises, ลงทะเบียน (left) and เข้าสู่ระบบ (right). Bubble: "เคยสมัครรึยังคะ?"
+- **R2 · Account** (`R2-account`): อีเมล, then รหัสผ่าน. Typed only. While the password box is focused the companion covers its eyes. Mock sign-in: nothing leaves the browser and the password is never stored (§4 still applies: no real authentication).
+- **R3 · Store basics** (`R3-store`): ชื่อร้านค้า, ชื่ออาคาร (optional), ที่ตั้งร้านค้า. The merchant talks to the companion and it fills the boxes (a green mark shows which ones it filled); every box can also be typed. Nothing is saved until ต่อไป. What was heard here (including a category, if mentioned) carries into A1, which then only asks for what is missing.
+- ชื่ออาคาร is kept beside the profile (`JourneyState.building`) and shown on the A2 location card; it is not one of the six confirmed fields.
+
+### 7.1b The companion talks back and takes spoken commands
+
+- **Speaks every line in Thai.** Whatever the bubble says is also read aloud (`services/speech/textToSpeech.ts`, browser `speechSynthesis` with a Thai voice), so every tap gets a spoken answer. A speaker button in the bubble mutes it; the choice is remembered. A device without a Thai voice stays silent and shows a crossed-out speaker.
+- **Presses buttons by voice.** A short spoken command presses the matching control: ลงทะเบียน / เข้าสู่ระบบ (or answering "เคยสมัครรึยังคะ?" with ยัง / เคยแล้ว), ต่อไป, ย้อนกลับ, ตรวจทาน, พิมพ์แทน, a chip's label, ฟังสรุป. Matching is rule-based (`ai/commands/`); a long sentence is never taken as a command.
+- **Keeps the conversation going.** After the merchant speaks and the companion answers, it listens again without another tap (R1, R3, A1). Silence ends it quietly. Tapping the companion while it talks cuts it off and starts listening.
+- **What voice may not do** (trust rule, §3): it never takes an email or password by ear, and it never submits the application. Saying "ยืนยัน" on A2 gets "ข้อนี้ต้องกดปุ่มเองนะคะ".
+- **Presenter fallback:** the DemoPanel has a "พูดเอง" box that sends any typed line to the companion as if it were spoken.
+
+### 7.1c "จ้า" closes a turn, and addresses come from Google Maps
+
+- **"จ้า" ends the merchant's turn.** The mic no longer stops at a pause. It keeps listening until the merchant says "จ้า" (or "จ้ะ"), cuts the sentence there, and the companion moves to the next question (`ai/commands/endWord.ts`, `services/speech/speechToText.ts`). The same letters inside เจ้า or จ้าง do not count. Safety nets: tapping the companion stops it, and so does 8 seconds of silence after speech (10 seconds if nothing was said).
+- **ที่ตั้ง uses Google Maps, Thailand only** (`services/places/`). With `VITE_GOOGLE_MAPS_API_KEY` set in `.env.local` (see `.env.example`):
+  - typing in ที่ตั้งร้านค้า on R3 lists matching places (Places API (New) autocomplete, `includedRegionCodes: ["th"]`);
+  - spoken or typed words about where the shop is are looked up with Text Search inside a box around Thailand;
+  - anything whose country is not TH is dropped, so a result across the border is never used;
+  - the A2 pin check shows the real map (Maps Embed API).
+- Without a key the prototype runs on the sample table in `data/landmarks.json`, and the list says so. If Google cannot be reached mid-demo, free-text lookups fall back to the same table.
+- The pin is still confirmed by the merchant in A2, whatever its source.
+
 ### 7.2 Act 1 · Day 0
 
 **A1 · Tell me about your shop** (`screens/act1-onboarding/A1-talk/TalkScreen.tsx`)

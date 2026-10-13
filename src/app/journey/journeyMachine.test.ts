@@ -5,11 +5,32 @@ import { initialJourney, journeyReducer } from './journeyMachine.ts'
 const NAME = { storeName: { value: 'ครัวป้าแดง', confidence: 0.93, heardFrom: 'x' } }
 
 describe('journeyReducer', () => {
-  it('starts on A1 with an empty profile', () => {
+  it('starts on the welcome screen with an empty profile', () => {
     const state = initialJourney()
-    expect(state.screen).toBe('A1_TALK')
+    expect(state.screen).toBe('R1_WELCOME')
     expect(state.profile.fields.storeName.status).toBe('empty')
     expect(state.startedAt).toBeNull()
+  })
+
+  it('sends a new merchant from the account page to the store basics', () => {
+    const chosen = journeyReducer(initialJourney(), { type: 'CHOOSE_AUTH', mode: 'register' })
+    expect(chosen.screen).toBe('R2_ACCOUNT')
+    const signedUp = journeyReducer(chosen, { type: 'AUTHENTICATED', email: 'padaeng@example.com' })
+    expect(signedUp.screen).toBe('R3_STORE')
+    expect(signedUp.email).toBe('padaeng@example.com')
+  })
+
+  it('sends a returning merchant from the account page straight to A1', () => {
+    const chosen = journeyReducer(initialJourney(), { type: 'CHOOSE_AUTH', mode: 'login' })
+    expect(journeyReducer(chosen, { type: 'AUTHENTICATED', email: 'padaeng@example.com' }).screen).toBe('A1_TALK')
+  })
+
+  it('carries the store basics into A1', () => {
+    const next = journeyReducer(initialJourney(), { type: 'STORE_BASICS', updates: NAME, building: 'ตึกชินวัตร', at: 2000 })
+    expect(next.screen).toBe('A1_TALK')
+    expect(next.profile.fields.storeName.value).toBe('ครัวป้าแดง')
+    expect(next.building).toBe('ตึกชินวัตร')
+    expect(next.startedAt).toBe(2000)
   })
 
   it('moves between screens', () => {

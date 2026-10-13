@@ -11,6 +11,7 @@ export interface ProfileField<T> {
 
 export interface GeoPoint {
   text: string
+  address?: string // the map's own full address, when the place came from Google Maps
   lat: number
   lng: number
 }

@@ -13,6 +13,8 @@
   --color-surface: #ffffff;
   --color-canvas: #f4f6f5;
   --color-line: #e2e6e4;
+  /* Edge of a text box: 3.3:1 on white so an empty field is still easy to find. */
+  --color-field: #869089;
   --color-ok-bg: #e6f6ec;
   --color-warn-bg: #fff4d6;
   --color-warn-ink: #7a4b00;
@@ -26,6 +28,26 @@
   --text-money--line-height: 1.2;
 
   --animate-pop: pop 0.4s ease-out both;
+  --animate-rise: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-listen: listen 1.4s ease-out infinite;
+  --animate-speak: speak 0.9s ease-in-out infinite alternate;
+
+  /* A soft glow behind the companion while it talks. */
+  @keyframes speak {
+    0% { transform: scale(1.04); opacity: 0.25; }
+    100% { transform: scale(1.2); opacity: 0.6; }
+  }
+
+  @keyframes rise {
+    0% { transform: translateY(12px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  /* The ring around the companion while it listens. */
+  @keyframes listen {
+    0% { transform: scale(1); opacity: 0.7; }
+    100% { transform: scale(1.45); opacity: 0; }
+  }
 
   @keyframes pop {
     0% { transform: scale(0.6); opacity: 0; }
@@ -47,5 +69,15 @@
     font-family: var(--font-sans);
     font-size: var(--text-base);
     line-height: 1.6;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

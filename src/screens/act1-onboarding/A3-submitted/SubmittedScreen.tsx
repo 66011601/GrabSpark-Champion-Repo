@@ -1,5 +1,6 @@
 import { CheckCircle2 } from 'lucide-react'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
+import { CompanionDock } from '@/components/assistant/CompanionDock.tsx'
 import { OnboardingShell } from '@/components/shell/OnboardingShell.tsx'
 import { Button } from '@/components/ui/Button.tsx'
 import { th } from '@/copy/th.ts'
@@ -12,10 +13,15 @@ export function SubmittedScreen() {
   return (
     <OnboardingShell
       title={th.onboarding.title}
-      footer={
-        <Button fullWidth onClick={() => dispatch({ type: 'GO', screen: 'TRANSITION' })}>
-          {th.submitted.continue}
-        </Button>
+      dock={
+        <CompanionDock
+          text={elapsed ? th.submitted.elapsed(elapsed) : th.submitted.title}
+          actions={
+            <Button fullWidth onClick={() => dispatch({ type: 'GO', screen: 'TRANSITION' })}>
+              {th.submitted.continue}
+            </Button>
+          }
+        />
       }
     >
       <div className="flex flex-col items-center gap-3 pt-6 text-center">

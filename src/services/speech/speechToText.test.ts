@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { startListening } from './speechToText.ts'
+import { QUIET_AFTER_SPEECH_MS, startListening } from './speechToText.ts'
 
 type ResultLike = { isFinal: boolean; 0: { transcript: string } }
 
@@ -47,6 +47,37 @@ describe('startListening', () => {
     expect(h.onFinal).toHaveBeenCalledWith('สิบโมงเช้า')
     expect(h.onError).not.toHaveBeenCalled()
     expect(h.onEnd).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps listening through a pause', () => {
+    const { recognition } = listen()
+    expect(recognition.continuous).toBe(true)
+    recognition.onresult?.({ resultIndex: 0, results: [{ isFinal: true, 0: { transcript: 'ร้านชื่อครัวป้าแดง' } }] })
+    expect(recognition.stop).not.toHaveBeenCalled()
+    recognition.onend?.()
+  })
+
+  it('closes the turn when the merchant says "จ้า", without waiting for a pause', () => {
+    const { h, recognition } = listen()
+    recognition.onresult?.({ resultIndex: 0, results: [{ isFinal: false, 0: { transcript: 'ร้านชื่อครัวป้าแดงจ้า' } }] })
+    expect(recognition.stop).toHaveBeenCalledTimes(1)
+    // Whatever the recogniser adds while it shuts down is ignored.
+    recognition.onresult?.({ resultIndex: 0, results: [{ isFinal: true, 0: { transcript: 'ร้านชื่อครัวป้าแดงจ้า แล้วก็' } }] })
+    recognition.onend?.()
+    expect(h.onFinal).toHaveBeenCalledWith('ร้านชื่อครัวป้าแดง')
+  })
+
+  it('closes the turn for a merchant who goes quiet', () => {
+    vi.useFakeTimers()
+    const { h, recognition } = listen()
+    recognition.onresult?.({ resultIndex: 0, results: [{ isFinal: false, 0: { transcript: 'สิบโมงเช้า' } }] })
+    vi.advanceTimersByTime(QUIET_AFTER_SPEECH_MS - 1)
+    expect(recognition.stop).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(recognition.stop).toHaveBeenCalledTimes(1)
+    recognition.onend?.()
+    expect(h.onFinal).toHaveBeenCalledWith('สิบโมงเช้า')
+    vi.useRealTimers()
   })
 
   it('reports no-speech when it ends without hearing anything', () => {
