@@ -74,6 +74,21 @@ describe('parseClosedDays', () => {
     expect(parseClosedDays('วันอาทิตย์ หยุด')).toEqual(['sun'])
     expect(parseClosedDays('ร้านเปิดสิบโมง วันจันทร์หยุด')).toEqual(['mon'])
   })
+
+  it('reads a list of days before the closed verb', () => {
+    expect(parseClosedDays('เสาร์อาทิตย์หยุด')).toEqual(['sat', 'sun'])
+    expect(parseClosedDays('วันเสาร์กับวันอาทิตย์หยุด')).toEqual(['sat', 'sun'])
+    expect(parseClosedDays('วันอาทิตย์และวันเสาร์หยุด')).toEqual(['sat', 'sun'])
+  })
+
+  it('does not read a day that opens the shop as closed', () => {
+    expect(parseClosedDays('เปิด วันจันทร์ ปิดวันอาทิตย์')).toEqual(['sun'])
+    expect(parseClosedDays('เปิดจันทร์ ถึง เสาร์หยุดวันอาทิตย์')).toEqual(['sun'])
+  })
+
+  it('reads a long day name', () => {
+    expect(parseClosedDays('วันพฤหัสบดีหยุด')).toEqual(['thu'])
+  })
 })
 
 describe('parseOpeningHours', () => {
