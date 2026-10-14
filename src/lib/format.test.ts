@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDuration, formatHours, formatPhone, formatTHB, formatTime } from './format.ts'
+import { formatAccount, formatDuration, formatHours, formatIdNumber, formatPhone, formatTHB, formatTime, lastFour, maskAccount, maskIdNumber } from './format.ts'
 
 describe('formatTHB', () => {
   it('adds the baht sign and a thousands separator', () => {
@@ -48,5 +48,28 @@ describe('formatDuration', () => {
 
   it('shows only seconds under a minute', () => {
     expect(formatDuration(45_000)).toBe('45 วินาที')
+  })
+})
+
+describe('ID and account numbers', () => {
+  it('groups a full ID number the way the card prints it', () => {
+    expect(formatIdNumber('1234567890121')).toBe('1-2345-67890-12-1')
+  })
+
+  it('masks an ID number except the last four digits', () => {
+    expect(maskIdNumber('1234567890121')).toBe('x-xxxx-xxxx0-12-1')
+  })
+
+  it('groups and masks a 10-digit account number', () => {
+    expect(formatAccount('1234567890')).toBe('123-4-56789-0')
+    expect(maskAccount('1234567890')).toBe('xxx-x-xx789-0')
+  })
+
+  it('leaves out the dashes when the length is unexpected', () => {
+    expect(maskAccount('123456789012')).toBe('xxxxxxxx9012')
+  })
+
+  it('gives the last four digits for spoken lines', () => {
+    expect(lastFour('1234567890')).toBe('7890')
   })
 })

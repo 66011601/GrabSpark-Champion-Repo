@@ -41,3 +41,35 @@ export function formatDuration(ms: number): string {
   if (minutes === 0) return `${seconds} วินาที`
   return seconds === 0 ? `${minutes} นาที` : `${minutes} นาที ${seconds} วินาที`
 }
+
+const ID_GROUPS = [1, 4, 5, 2, 1]
+const ACCOUNT_GROUPS = [3, 1, 5, 1]
+
+/** Joins digits with dashes in the given group sizes, or leaves them as they are when the length does not fit. */
+function group(digits: string, sizes: number[]): string {
+  if (digits.length !== sizes.reduce((total, size) => total + size, 0)) return digits
+  const parts: string[] = []
+  let at = 0
+  for (const size of sizes) {
+    parts.push(digits.slice(at, at + size))
+    at += size
+  }
+  return parts.join('-')
+}
+
+const hideAllButLastFour = (digits: string) => digits.slice(0, -4).replace(/\d/g, 'x') + digits.slice(-4)
+
+/** "1234567890121" → "1-2345-67890-12-1" (only on S1, right after the photo). */
+export const formatIdNumber = (id: string) => group(id, ID_GROUPS)
+
+/** "1234567890121" → "x-xxxx-xxxx0-12-1" */
+export const maskIdNumber = (id: string) => group(hideAllButLastFour(id), ID_GROUPS)
+
+/** "1234567890" → "123-4-56789-0" */
+export const formatAccount = (account: string) => group(account, ACCOUNT_GROUPS)
+
+/** "1234567890" → "xxx-x-xx789-0" */
+export const maskAccount = (account: string) => group(hideAllButLastFour(account), ACCOUNT_GROUPS)
+
+/** What the companion may say aloud: "ลงท้ายด้วย 7890". */
+export const lastFour = (digits: string) => digits.slice(-4)
