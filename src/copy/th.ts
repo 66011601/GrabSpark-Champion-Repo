@@ -186,6 +186,16 @@ export const th = {
       storeName: 'ชื่อร้าน',
       category: 'ประเภทอาหาร',
     },
+    sample: 'ตัวอย่าง',
+    paper: {
+      idTitle: 'บัตรประจำตัว',
+      idNumber: 'เลขประจำตัว',
+      name: 'ชื่อ',
+      bookTitle: 'สมุดบัญชีเงินฝากออมทรัพย์',
+      accountNumber: 'เลขที่บัญชี',
+      accountName: 'ชื่อบัญชี',
+      bank: 'ธนาคาร',
+    },
   },
   submitted: {
     title: 'ส่งข้อมูลร้านแล้วค่ะ 🎉',
