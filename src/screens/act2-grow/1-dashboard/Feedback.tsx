@@ -1,5 +1,4 @@
 import { BookOpen, ChevronRight, Star, Volume2 } from 'lucide-react'
-import { useState } from 'react'
 import { complaintTopics, ratingSummary } from '@/ai/navigator/insights.ts'
 import { BottomSheet } from '@/components/grab/BottomSheet.tsx'
 import { mark } from '@/components/navigator/mark.ts'
@@ -8,12 +7,12 @@ import { th } from '@/copy/th.ts'
 import { getMerchant } from '@/services/merchantApi.ts'
 import { voice } from '@/services/speech/voiceProvider.ts'
 import { AppHeader } from './AppHeader.tsx'
+import type { ReviewTab } from '@/ai/navigator/types.ts'
 import type { PanelProps } from './props.ts'
 import { TabBar } from './TabBar.tsx'
 
 const t = th.act2.feedback
-type Tab = 'reviews' | 'reports'
-const TABS: { id: Tab; label: string }[] = [
+const TABS: { id: ReviewTab; label: string }[] = [
   { id: 'reviews', label: t.tabs.reviews },
   { id: 'reports', label: t.tabs.reports },
 ]
@@ -31,7 +30,7 @@ function Stars({ count }: { count: number }) {
 
 /** GrabMerchant's ฟีดแบก: reviews (filterable by stars) and reports from customers. */
 export function Feedback({ nav, highlight, change, home }: PanelProps) {
-  const [tab, setTab] = useState<Tab>('reviews')
+  const tab = nav.reviewTab
   const shop = getMerchant()
   const rating = ratingSummary(shop)
   const topics = complaintTopics(shop)
@@ -39,7 +38,7 @@ export function Feedback({ nav, highlight, change, home }: PanelProps) {
   return (
     <>
       <AppHeader title={t.title} onBack={home} />
-      <TabBar tabs={TABS} current={tab} onPick={setTab} />
+      <TabBar tabs={TABS} current={tab} onPick={(reviewTab) => change({ reviewTab })} highlight={highlight} navPrefix="review" />
       <main className="flex flex-1 flex-col gap-3 overflow-y-auto bg-canvas px-4 py-3">
         {tab === 'reports' ? (
           <p className="rounded-2xl bg-surface p-6 text-center text-ink-muted ring-1 ring-line">{t.noReports}</p>
@@ -55,7 +54,7 @@ export function Feedback({ nav, highlight, change, home }: PanelProps) {
               </div>
             </section>
             <div className="flex gap-2">
-              <button type="button" aria-pressed={!nav.negativeOnly} onClick={() => change({ negativeOnly: false })} className={chip(!nav.negativeOnly)}>
+              <button type="button" data-nav="filter-all" aria-pressed={!nav.negativeOnly} onClick={() => change({ negativeOnly: false })} className={`${chip(!nav.negativeOnly)} ${mark(highlight, 'filter-all')}`}>
                 {t.all}
               </button>
               <button type="button" data-nav="filter-negative" aria-pressed={nav.negativeOnly} onClick={() => change({ negativeOnly: true })} className={`${chip(nav.negativeOnly)} ${mark(highlight, 'filter-negative')}`}>
@@ -102,7 +101,7 @@ export function Feedback({ nav, highlight, change, home }: PanelProps) {
             <li key={point}>{point}</li>
           ))}
         </ol>
-        <Button className="mt-4" fullWidth icon={<Volume2 className="size-6" aria-hidden />} onClick={() => voice.speak(t.lesson.join(' '))}>
+        <Button data-nav="lesson-read" className={`mt-4 ${mark(highlight, 'lesson-read')}`} fullWidth icon={<Volume2 className="size-6" aria-hidden />} onClick={() => voice.speak(t.lesson.join(' '))}>
           {t.read}
         </Button>
       </BottomSheet>

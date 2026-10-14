@@ -3,6 +3,10 @@ export type NavScreen = 'HOME' | 'INSIGHTS' | 'BOOST' | 'MENU' | 'FEEDBACK' | 'P
 /** The 13 items on GrabMerchant's home. */
 export type GridId = 'orders' | 'menu' | 'shop' | 'boost' | 'staff' | 'grabshop' | 'ai' | 'insights' | 'feedback' | 'cashier' | 'express' | 'smartlink' | 'help'
 export type InsightsTab = 'overview' | 'sales' | 'trend'
+export type ReviewTab = 'reviews' | 'reports'
+
+/** The mock pages behind the buttons on ออเดอร์, เพิ่มยอดขาย, พนักงาน, ส่งด่วน and Smart Link. */
+export type SubId = 'orders-accept' | 'orders-history' | 'staff-add' | 'staff-accounts' | 'express-instant' | 'express-offline' | 'express-branch' | 'link-view' | 'link-copy' | 'link-share' | 'boost-ad' | 'boost-campaigns'
 
 /** A promotion the AI prepared. It stays a draft until the merchant taps the confirm bar. */
 export interface PromoDraft {
@@ -32,7 +36,9 @@ export type Draft = PromoDraft | SoldOutDraft
 export interface NavState {
   screen: NavScreen
   page: GridId | null // which item 'PAGE' describes
+  sub: SubId | null // a mock page opened by a button on PAGE or BOOST
   tab: InsightsTab
+  reviewTab: ReviewTab
   period: 7 | 30
   compare: boolean
   rain: boolean
@@ -46,7 +52,9 @@ export interface NavState {
 export const INITIAL_NAV: NavState = {
   screen: 'HOME',
   page: null,
+  sub: null,
   tab: 'overview',
+  reviewTab: 'reviews',
   period: 30,
   compare: false,
   rain: false,
@@ -67,9 +75,10 @@ export interface ScriptStep {
   say: string // one short line, spoken and shown in the helper bar
 }
 
-/** A feature script (ScriptId) or a plain "open this home item" one. */
-export interface Script<Id extends string = ScriptId | `open-${GridId}`> {
+/** A feature script (ScriptId), an "open this home item" one, or a button press. */
+export interface Script<Id extends string = string> {
   id: Id
+  title?: string // where the run ends up, for the banner
   phrases: string[] // whole sentences, matched with matchCommand
   keywords: string[][] // a group matches when all its words are in the sentence
   not?: string[] // any of these rules the script out

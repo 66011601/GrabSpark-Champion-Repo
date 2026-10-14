@@ -29,10 +29,11 @@ export function matchIntent(utterance: string, scripts: Script<ScriptId>[]): Scr
 /** "ยืนยัน", "ตกลง", "เปิดใช้งาน": only the merchant's tap does that, so the words start nothing. */
 export const asksToConfirm = (utterance: string) => /ยืนยัน|ตกลง|เปิดใช้งาน|ส่งเลย|ติ๊ก/.test(utterance)
 
-export type Control = 'home' | 'stop'
+export type Control = 'home' | 'back' | 'stop'
 
 /** Words that steer the run itself. None of them confirms anything: only a tap does. */
 export const CONTROLS: VoiceCommand<Control>[] = [
   { id: 'home', phrases: ['กลับหน้าหลัก', 'กลับหน้าแรก', 'ไปหน้าหลัก', 'หน้าหลัก'] },
+  { id: 'back', phrases: ['กลับ', 'ย้อนกลับ', 'ถอยกลับ', 'กลับไป', 'ย้อน'] },
   { id: 'stop', phrases: ['หยุด', 'พอแล้ว', 'ยกเลิก', 'ไม่ต้องแล้ว', 'หยุดก่อน'] },
 ]

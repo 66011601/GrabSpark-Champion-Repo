@@ -36,7 +36,7 @@ export function HomeGrid({ highlight, change, ask }: PanelProps) {
       </header>
 
       <main className="flex flex-1 flex-col gap-3 overflow-y-auto bg-canvas pb-3">
-        <button type="button" onClick={() => change({ screen: 'INSIGHTS' })} className="mx-4 mt-3 flex cursor-pointer items-center gap-3 rounded-2xl bg-surface p-4 text-left ring-1 ring-line active:bg-ok-bg">
+        <button type="button" data-nav="see-insights" onClick={() => change({ screen: 'INSIGHTS' })} className="mx-4 mt-3 flex cursor-pointer items-center gap-3 rounded-2xl bg-surface p-4 text-left ring-1 ring-line active:bg-ok-bg">
           <div className="min-w-0 flex-1">
             <p className="text-sm text-ink-muted">{t.sales7}</p>
             <p className="text-money font-bold tabular-nums">{formatTHB(sales.totalTHB)}</p>
@@ -57,7 +57,7 @@ export function HomeGrid({ highlight, change, ask }: PanelProps) {
                 <button
                   type="button"
                   data-nav={`grid-${id}`}
-                  onClick={() => change({ screen: opens ?? 'PAGE', page: id })}
+                  onClick={() => change({ screen: opens ?? 'PAGE', page: id, sub: null })}
                   className={`flex min-h-22 w-full cursor-pointer flex-col items-center justify-start gap-1 rounded-xl px-0.5 pt-1 text-center text-sm leading-tight text-balance active:bg-ok-bg ${mark(highlight, `grid-${id}`)}`}
                 >
                   <span className="flex size-12 items-center justify-center rounded-2xl bg-ok-bg">

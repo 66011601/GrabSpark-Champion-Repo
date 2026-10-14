@@ -1,10 +1,9 @@
-import { CircleCheck, Megaphone, Sparkles, TriangleAlert, UtensilsCrossed } from 'lucide-react'
+import { CircleCheck, Sparkles, TriangleAlert, UtensilsCrossed } from 'lucide-react'
 import { draftChecks } from '@/ai/guardrail/checks.ts'
 import { estimateImpact, profitPerUnit } from '@/ai/guardrail/promoMath.ts'
-import { buildRainPromo } from '@/ai/navigator/drafts.ts'
+import { BUTTONS } from '@/ai/navigator/buttons.ts'
 import type { PromoDraft } from '@/ai/navigator/types.ts'
 import { mark } from '@/components/navigator/mark.ts'
-import { Button } from '@/components/ui/Button.tsx'
 import { Switch } from '@/components/ui/Switch.tsx'
 import { th } from '@/copy/th.ts'
 import { formatTHB } from '@/lib/format.ts'
@@ -12,14 +11,10 @@ import { getMerchant } from '@/services/merchantApi.ts'
 import { AppHeader } from './AppHeader.tsx'
 import { ConfirmBar, StopPromoButton } from './ConfirmBar.tsx'
 import type { PanelProps } from './props.ts'
-import { TabBar } from './TabBar.tsx'
+import { ButtonList, SubPage } from './SubPage.tsx'
 
 const t = th.act2.promo
-const TABS = [
-  { id: 'promos' as const, label: t.tabs.promos },
-  { id: 'ads' as const, label: t.tabs.ads, disabled: true },
-  { id: 'campaigns' as const, label: t.tabs.campaigns, disabled: true },
-]
+const BOOST_BUTTONS = BUTTONS.filter((button) => button.screen === 'BOOST')
 const card = 'rounded-2xl bg-surface ring-1 ring-line'
 const span = (window: [string, string]) => `${window[0]}-${window[1]} น.`
 
@@ -96,10 +91,10 @@ function PromoForm({ promo, highlight, onOpened }: { promo: PromoDraft; highligh
 
 export function Boost({ nav, highlight, change, announce, home }: PanelProps) {
   const promo = nav.promo
+  if (nav.sub) return <SubPage key={nav.sub} id={nav.sub} back={() => change({ sub: null })} announce={announce} />
   return (
     <>
       <AppHeader title={t.title} onBack={home} />
-      <TabBar tabs={TABS} current="promos" onPick={() => {}} />
       <main className="flex flex-1 flex-col overflow-y-auto bg-canvas">
         {nav.done === 'promo' && promo ? (
           <section className="m-4 flex flex-col gap-3 rounded-2xl bg-ok-bg p-4 ring-1 ring-action">
@@ -128,22 +123,15 @@ export function Boost({ nav, highlight, change, announce, home }: PanelProps) {
             }}
           />
         ) : (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 text-center">
-            <span className="flex size-20 items-center justify-center rounded-full bg-ok-bg text-action">
-              <Megaphone className="size-10" aria-hidden />
-            </span>
-            <p className="text-lg font-bold">{t.empty}</p>
-            <p className="text-ink-muted">{t.emptyBody}</p>
+          <div className="flex flex-col gap-3 px-4 py-3">
+            <p className="text-lg">{th.act2.pages.boost}</p>
+            <ButtonList buttons={BOOST_BUTTONS} highlight={highlight} change={change} />
+            <p className="text-ink-muted">
+              {t.empty} · {t.emptyBody}
+            </p>
           </div>
         )}
       </main>
-      {!promo && (
-        <footer className="border-t border-line bg-surface px-4 pt-3 pb-3">
-          <Button fullWidth data-nav="create-promo" className={mark(highlight, 'create-promo')} onClick={() => change({ promo: buildRainPromo(getMerchant()) })}>
-            {t.create}
-          </Button>
-        </footer>
-      )}
     </>
   )
 }

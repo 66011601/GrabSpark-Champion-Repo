@@ -25,11 +25,11 @@ export const GRID: { id: GridId; label: string; names: string[]; opens?: NavScre
   ] as const
 ).map((item, index) => ({ ...item, names: [...item.names], label: th.act2.grid[index] }))
 
-const VERBS = ['', 'เปิด', 'ไป', 'ไปที่', 'ไปหน้า', 'เปิดหน้า', 'เข้า', 'เข้าไป', 'เข้าไปที่']
+export const VERBS = ['', 'เปิด', 'ไป', 'ไปที่', 'ไปหน้า', 'เปิดหน้า', 'เข้า', 'เข้าไป', 'เข้าไปที่']
 // Polite padding around a command: "ช่วยเปิดเมนูให้หน่อยค่ะ" is "เปิดเมนู". Applied to both sides, so a name
 // that happens to contain one ("ความช่วยเหลือ") still compares equal.
 const PADDING = /กด|ช่วย|ขอ|เลย|หน่อย|ด้วย|แล้ว|ให้|นะ/g
-const plain = (text: string) => stripParticles(text).toLowerCase().replace(/\s+/g, '').replace(PADDING, '')
+export const plain = (text: string) => stripParticles(text).toLowerCase().replace(/\s+/g, '').replace(PADDING, '')
 
 const SAYINGS = new Map<string, GridId>()
 for (const item of GRID) for (const name of [item.label, ...item.names]) for (const verb of VERBS) SAYINGS.set(plain(verb + name), item.id)
@@ -50,6 +50,7 @@ export function openScript(id: GridId): Script {
   const about = th.act2.pages[id]
   return {
     id: `open-${id}`,
+    title: item.label,
     phrases: [],
     keywords: [],
     steps: [

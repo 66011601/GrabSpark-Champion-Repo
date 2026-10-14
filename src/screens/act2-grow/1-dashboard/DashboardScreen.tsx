@@ -1,9 +1,10 @@
 import { SkipForward } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
+import { backScript, matchButton, pressScript } from '@/ai/navigator/buttons.ts'
 import { BACK_TIMES, findItem } from '@/ai/navigator/drafts.ts'
 import { asksToConfirm, CONTROLS, matchIntent } from '@/ai/navigator/matchIntent.ts'
-import { GRID, matchOpen, openScript } from '@/ai/navigator/openPage.ts'
+import { matchOpen, openScript } from '@/ai/navigator/openPage.ts'
 import { runScript, type RunnerIO, type Slots } from '@/ai/navigator/runner.ts'
 import { SCRIPTS } from '@/ai/navigator/scripts.ts'
 import { INITIAL_NAV, type NavScreen, type NavState, type Script, type ScriptId, type SoldOutUntil } from '@/ai/navigator/types.ts'
@@ -111,14 +112,13 @@ export function DashboardScreen() {
   }, [])
 
   const start = useCallback(
-    async (chosen: Script, slots: Slots = {}) => {
+    async (chosen: Script, slots: Slots = {}, fromHere = false) => {
       run.current?.abort()
       const mine = new AbortController()
       run.current = mine
       fast.current = false
-      setNav(INITIAL_NAV) // every run starts from the home screen
-      const last = chosen.steps[chosen.steps.length - 1]
-      setHeading(last.screen === 'PAGE' ? (GRID.find((item) => item.id === chosen.steps[0].set?.page)?.label ?? '') : WHERE[last.screen])
+      if (!fromHere) setNav(INITIAL_NAV) // a script starts from the home screen; a button press from where the owner is
+      setHeading(chosen.title ?? WHERE[chosen.steps[chosen.steps.length - 1].screen])
       setRunning(true)
       const finished = await runScript(chosen, io, mine.signal, slots)
       if (run.current !== mine) return // a newer run took over
@@ -161,6 +161,11 @@ export function DashboardScreen() {
       goHome()
       return true
     }
+    if (control === 'back') {
+      const back = backScript(nav)
+      if (back) void start(back, {}, true)
+      return true
+    }
     const until = nav.soldOut && !nav.soldOut.until && nav.done !== 'soldOut' ? matchCommand(text, BACK_TIMES) : null
     if (until) {
       pick(until)
@@ -171,6 +176,13 @@ export function DashboardScreen() {
     if (page) {
       askedWhich.current = false
       void start(openScript(page))
+      return true
+    }
+    // "ส่งของข้ามสาขา", "แท็บรีวิว", "7 วัน": any button, pressed from wherever the owner is.
+    const button = matchButton(text)
+    if (button) {
+      askedWhich.current = false
+      void start(pressScript(button, nav), {}, true)
       return true
     }
     const id = matchIntent(text, SCRIPTS)

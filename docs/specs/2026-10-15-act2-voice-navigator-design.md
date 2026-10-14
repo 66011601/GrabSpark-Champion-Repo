@@ -44,6 +44,10 @@ Build order if time runs short: 1 → 3 → 4 → 2 → 5.
 
 **Opening any home item.** Besides the five scripts, a plain "open X" for any of the 13 home items ("เปิดเมนู", "ไปที่ส่งด่วน", or just "แคชเชียร์") plays a two-step script built from the grid (`src/ai/navigator/openPage.ts`): tap the tile, then show the screen and say what the item is for. The whole sentence must be the command (after polite padding such as ช่วย / ให้ / หน่อย is dropped), so questions still reach the five scripts. Items without a demo screen open a page with their purpose, taken from Grab's guide.
 
+**Pressing any button.** Every button a merchant can see is in one registry (`src/ai/navigator/buttons.ts`): its data-nav id, the names an owner may say, the screen it lives on, the tab or filter it sits under (`after`), and the state it sets. A tap and a spoken press set the same state. `pressScript(id, nav)` builds the walk from where the owner is: back out of a sub-page, or through the home tile, then the prerequisite tab or filter, then the button. A spoken button press starts from the current screen, not from home. Button names never shadow a script phrase or a home item (tested), and the bare words a script owns ("ยอดขาย", "รีวิว", "พรุ่งนี้ฝนตก") stay with the script. Confirm buttons are not in the registry, so voice cannot press them; "ยืนยัน…" still gets the tap-only reply.
+
+**Sample pages behind the buttons.** คำสั่งซื้อ (รับคำสั่งซื้อ, ประวัติคำสั่งซื้อ), เพิ่มยอดขาย (สร้างแคมเปญโฆษณา, ดูแคมเปญ, จัดโปรโมชัน; the last one is the rain promo draft), พนักงาน (เพิ่มพนักงาน, ดูบัญชีพนักงาน), ส่งด่วน (heading บริการเรียกไรเดอร์: ส่งของทันใจ; heading ตอบโจทย์: ส่งออเดอร์นอกระบบ, ส่งของข้ามสาขา) and Smart Link (ดูลิงก์ร้าน, คัดลอกลิงก์, แชร์ลิงก์). Each opens a sample page marked "ตัวอย่าง". A page that would change the shop shows a draft and a tap-only confirm that sends nothing and only says it worked. No delivery fee or other Grab number is shown.
+
 ## 5. Script format
 
 A script is data, not a hand-coded screen:
