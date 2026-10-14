@@ -20,6 +20,14 @@ describe('readLink', () => {
     expect(readLink('13.8016, 100.6033')).toEqual({ kind: 'point', lat: 13.8016, lng: 100.6033 })
   })
 
+  it('reads the point from a later link when an earlier one has none', () => {
+    expect(readLink('https://www.facebook.com/shop https://maps.google.com/?q=13.8016,100.6033')).toEqual({ kind: 'point', lat: 13.8016, lng: 100.6033 })
+  })
+
+  it('reads a coordinate pair inside a sentence', () => {
+    expect(readLink('หมุดอยู่ที่ 13.8016, 100.6033 ค่ะ')).toEqual({ kind: 'point', lat: 13.8016, lng: 100.6033 })
+  })
+
   it('says a short link or another link cannot be read', () => {
     expect(readLink('https://maps.app.goo.gl/AbCdEf123')).toEqual({ kind: 'unreadable' })
     expect(readLink('https://www.facebook.com/kruapadaeng')).toEqual({ kind: 'unreadable' })
