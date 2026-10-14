@@ -13,12 +13,23 @@ const CATEGORIES = [
   { label: 'ของหวาน', words: ['ของหวาน', 'ขนม'], hints: ['บิงซู', 'ไอศกรีม', 'บัวลอย'] },
 ]
 
-export const CATEGORY_LABELS = CATEGORIES.map((category) => category.label)
+// Regional kitchens: checked before อาหารไทย (น้ำพริกหนุ่ม is Northern before it is "น้ำพริก"), listed after the
+// five everyday types so 3/7's first four chips do not change.
+const REGIONAL = [
+  { label: 'อาหารเหนือ', words: ['อาหารเหนือ'], hints: ['ข้าวซอย', 'ไส้อั่ว', 'แกงฮังเล', 'น้ำพริกหนุ่ม', 'น้ำพริกอ่อง', 'ขนมจีนน้ำเงี้ยว'] },
+  { label: 'อาหารอีสาน', words: ['อาหารอีสาน'], hints: ['ส้มตำ', 'ตำบักหุ่ง', 'ตำปู', 'ลาบ', 'ก้อย', 'น้ำตกหมู', 'ปิ้งไก่'] },
+  { label: 'อาหารใต้', words: ['อาหารใต้', 'อาหารปักษ์ใต้'], hints: ['แกงไตปลา', 'ขนมจีนแกงใต้', 'คั่วกลิ้ง', 'ข้าวยำ'] },
+]
+const MATCH_ORDER = [...REGIONAL, ...CATEGORIES]
+
+export const CATEGORY_LABELS = [...CATEGORIES, ...REGIONAL].map((category) => category.label)
 
 export function parseCategory(text: string): { value: string; confidence: number } | null {
-  const stated = CATEGORIES.find((category) => category.words.some((word) => text.includes(word)))
+  // ขนมจีน is a noodle, not "ขนม" (a sweet): without this it would beat the Southern and Northern dishes.
+  const named = text.replaceAll('ขนมจีน', '')
+  const stated = MATCH_ORDER.find((category) => category.words.some((word) => named.includes(word)))
   if (stated) return { value: stated.label, confidence: STATED_CONFIDENCE }
-  const inferred = CATEGORIES.find((category) => category.hints.some((hint) => text.includes(hint)))
+  const inferred = MATCH_ORDER.find((category) => category.hints.some((hint) => text.includes(hint)))
   return inferred ? { value: inferred.label, confidence: INFERRED_CONFIDENCE } : null
 }
 
