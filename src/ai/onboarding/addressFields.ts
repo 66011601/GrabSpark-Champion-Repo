@@ -17,7 +17,8 @@ export function addressFromLocation(point: GeoPoint, heardFrom: string, sure = f
   const street = point.parts ? streetLine(point.parts) : ''
   const full = point.address ?? (point.parts ? formatThaiAddress(point.parts) : '')
   return {
-    building: { value: street || point.text, confidence: DERIVED_CONFIDENCE, heardFrom },
+    // The "pinned here" label is not a street, and a bare name is the only other thing to show.
+    ...(street || point.text !== th.places.pinnedHere ? { building: { value: street || point.text, confidence: DERIVED_CONFIDENCE, heardFrom } } : {}),
     address: full
       ? { value: full, confidence: sure ? MAP_ADDRESS_CONFIDENCE : DERIVED_CONFIDENCE, heardFrom }
       : { value: point.text, confidence: DERIVED_CONFIDENCE, heardFrom },

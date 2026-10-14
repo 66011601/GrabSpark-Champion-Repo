@@ -35,6 +35,21 @@ describe('addressFromLocation for a dropped pin', () => {
   })
 })
 
+describe('addressFromLocation for a pin with an area but no street', () => {
+  it('drafts the address but never "pinned here" as the building', () => {
+    const point = {
+      text: th.places.pinnedHere,
+      parts: { subdistrict: 'ดอนช้าง', district: 'เมืองขอนแก่น', province: 'ขอนแก่น', postcode: '40000' },
+      address: 'ต.ดอนช้าง อ.เมืองขอนแก่น จ.ขอนแก่น 40000',
+      lat: 16.4,
+      lng: 102.8,
+    }
+    const drafts = addressFromLocation(point, 'x')
+    expect(drafts.building).toBeUndefined()
+    expect(drafts.address?.value).toBe(point.address)
+  })
+})
+
 describe('withArea', () => {
   const AREA = { subdistrict: 'ดอนช้าง', district: 'เมืองขอนแก่น', province: 'ขอนแก่น', postcode: '40000' }
   const KHON_KAEN = 'ต.ดอนช้าง อ.เมืองขอนแก่น จ.ขอนแก่น 40000'

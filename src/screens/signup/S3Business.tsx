@@ -245,9 +245,13 @@ export function S3Business() {
       const expecting = question?.field ?? undefined
       const spoken = parseThaiAddress(text)
       const wantsPlace = expecting === 'location' || expecting === undefined || spoken !== null
-      const phrase = spoken ? formatThaiAddress(spoken) : wantsPlace ? locationPhrase(text, expecting === 'location') : null
-      const place = phrase ? await places.find(phrase) : null
+      // OpenStreetMap does not understand house numbers or ต./อ./จ.: look a spoken address up by its plain area words.
+      const areaWords = spoken ? [spoken.subdistrict, spoken.district, spoken.province].filter(Boolean).join(' ') : ''
+      const phrase = spoken ? areaWords || formatThaiAddress(spoken) : wantsPlace ? locationPhrase(text, expecting === 'location') : null
+      const found = phrase ? await places.find(phrase) : null
       if (!isCurrent()) return false // the screen was left or reset while the map was answering
+      // The pin's own address gains the ตำบล and postcode that were said, when it is in the same district.
+      const place = found && spoken ? { ...found, value: withArea(found.value, spoken) } : found
       const updates = businessUpdates(text, { expecting, landmarks, profile: state.profile, place })
       if (phrase && !place && Object.keys(updates).length === 0) return th.places.notFound
       fill(updates)
