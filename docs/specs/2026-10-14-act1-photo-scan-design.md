@@ -84,7 +84,7 @@ Returning merchant (เข้าสู่ระบบ): R1 ─► R2 ─► A1 T
 - **A3:**
   - The steps become "Grab ตรวจสอบข้อมูล (1–3 วันทำการ)" (Grab checks your info, 1–3 working days) → "เปิดรับออเดอร์" (start taking orders). The first step is marked "ต่อไป" (next).
   - The dock line becomes "เอกสารครบแล้วค่ะ รอ Grab ตรวจสอบแป๊บเดียว เดี๋ยวหนูบอกนะคะ" (documents complete; Grab will check shortly and I'll let you know).
-  - The elapsed line works for every path. It now counts from the first heard or scanned value.
+  - The elapsed line works for every path: it counts from the first heard or scanned value and reads "ใช้เวลาแค่ {duration} ก็เสร็จ" (took only {duration}), because the photo path never "talked" (คุยกัน).
 - **Transition:**
   - The body becomes the brief's line: "เปิดร้านบน Grab เรียบร้อยแล้ว! พร้อมเรียนรู้ฟีเจอร์ช่วยเพิ่มยอดขายในสเต็ปถัดไป" (your shop is open on Grab; ready to learn sales features in the next step).
   - The title "30 วันต่อมา…" (30 days later…) stays.
