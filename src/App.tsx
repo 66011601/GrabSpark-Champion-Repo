@@ -12,6 +12,8 @@ import { S2Phone } from '@/screens/signup/S2Phone.tsx'
 import { S3Business } from '@/screens/signup/S3Business.tsx'
 import { S4Shop } from '@/screens/signup/S4Shop.tsx'
 import { S5Owner } from '@/screens/signup/S5Owner.tsx'
+import { S6Bank } from '@/screens/signup/S6Bank.tsx'
+import { S7Confirm } from '@/screens/signup/S7Confirm.tsx'
 
 // Temporary while Plan 1c rebuilds Act 1 screen by screen; Task 13 removes it.
 function NotBuiltYet({ screen }: { screen: string }) {
@@ -37,6 +39,10 @@ function ScreenSwitch() {
       return <S4Shop />
     case 'S5_OWNER':
       return <S5Owner key={state.runId} />
+    case 'S6_BANK':
+      return <S6Bank key={state.runId} />
+    case 'S7_CONFIRM':
+      return <S7Confirm />
     case 'TRANSITION':
       return <ActTransition />
     case 'G1_DASHBOARD':
