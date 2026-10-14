@@ -13,6 +13,9 @@ const IMPORTS_REACT = /from\s+['"]react/
 const SUBMITTERS = ['/src/screens/signup/S7Confirm.tsx', '/src/screens/home/H2Menu.tsx', '/src/screens/home/H3Hours.tsx']
 const IMPORTS_SUBMIT = /(?:from\s+|import\s*\(\s*)['"][^'"]*(?:onboarding\/|\.\/)submit(?:\.ts)?['"]/
 
+// Map services (Google, OpenStreetMap) are called only from the places services, which know their rules.
+const MAP_HOSTS = /googleapis\.com|openstreetmap\.org|google\.com\/maps/
+
 const appFiles = Object.entries(sources).filter(([path]) => !/\.test\.tsx?$/.test(path))
 
 describe('architecture', () => {
@@ -41,6 +44,13 @@ describe('architecture', () => {
   it('only lets the confirm and set-up screens send', () => {
     const offenders = appFiles
       .filter(([path, source]) => !SUBMITTERS.includes(path) && IMPORTS_SUBMIT.test(source))
+      .map(([path]) => path)
+    expect(offenders).toEqual([])
+  })
+
+  it('keeps map services inside src/services/places', () => {
+    const offenders = appFiles
+      .filter(([path, source]) => !path.startsWith('/src/services/places/') && MAP_HOSTS.test(source))
       .map(([path]) => path)
     expect(offenders).toEqual([])
   })

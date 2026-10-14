@@ -1,5 +1,5 @@
 import { MapPin } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { SAY } from '@/ai/commands/phrases.ts'
 import { addressFromLocation } from '@/ai/onboarding/addressFields.ts'
@@ -18,13 +18,15 @@ import { fieldMark, needsAmber, TYPED } from '@/components/grab/fieldMarks.ts'
 import { inputClass } from '@/components/grab/inputClass.ts'
 import { problemText } from '@/components/grab/problemText.ts'
 import { StepShell } from '@/components/grab/StepShell.tsx'
+import { DrawnMap } from '@/components/map/DrawnMap.tsx'
 import { Button } from '@/components/ui/Button.tsx'
-import { MapPinConfirm } from '@/components/ui/MapPinConfirm.tsx'
 import { PlaceSuggestions } from '@/components/ui/PlaceSuggestions.tsx'
 import { th } from '@/copy/th.ts'
 import { getAccount, getLandmarks } from '@/services/merchantApi.ts'
 import { getPlaces, type PlaceSuggestion } from '@/services/places/places.ts'
 import type { ProfileFieldKey, ProfileUpdates } from '@/types/domain.ts'
+
+const PinMap = lazy(() => import('@/components/map/PinMap.tsx').then((module) => ({ default: module.PinMap })))
 
 const SUGGEST_AFTER_MS = 300
 const account = getAccount()
@@ -144,7 +146,9 @@ export function S3Business() {
       <Field id="s3-location" label={th.store.location} required mark={fieldMark(fields.location)} onCheck={null}>
         {fields.location.value ? (
           <div className="flex flex-col gap-2">
-            <MapPinConfirm point={fields.location.value} />
+            <Suspense fallback={<DrawnMap label={fields.location.value.text} />}>
+              <PinMap point={fields.location.value} />
+            </Suspense>
             <div className="flex flex-wrap gap-2">
               {fields.location.needsPinCheck && (
                 <Button variant="secondary" className="min-h-12!" icon={<MapPin className="size-5" aria-hidden />} onClick={() => dispatch({ type: 'CONFIRM_FIELD', field: 'location' })}>
