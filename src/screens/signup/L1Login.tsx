@@ -1,7 +1,6 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { confirmField, SUBMIT_FIELDS } from '@/ai/onboarding/profile.ts'
-import { demoProfile } from '@/app/demo/demoProfile.ts'
+import { submittedDemoProfile } from '@/app/demo/demoProfile.ts'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
 import { AiHelperBar } from '@/components/grab/AiHelperBar.tsx'
 import { Field } from '@/components/grab/Field.tsx'
@@ -38,7 +37,7 @@ export function L1Login() {
     setWorking(true)
     // Prototype: no real account service. The password stays in this screen and is dropped here.
     timer.current = window.setTimeout(() => {
-      const profile = SUBMIT_FIELDS.reduce((next, key) => confirmField(next, key), demoProfile())
+      const profile = submittedDemoProfile()
       dispatch({ type: 'LOGGED_IN', email: email.trim(), profile, at: Date.now() })
     }, SIGN_IN_MS)
   }

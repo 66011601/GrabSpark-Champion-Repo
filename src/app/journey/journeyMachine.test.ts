@@ -125,6 +125,14 @@ describe('journey: submit and set-up', () => {
     expect(next.profile).toBe(profile)
   })
 
+  it('loads a presenter profile, optionally with a verified phone', () => {
+    const profile = demoProfile()
+    const plain = journeyReducer(initialJourney(), { type: 'LOAD_PROFILE', profile })
+    expect(plain.profile).toBe(profile)
+    expect(plain.phoneVerified).toBe(false)
+    expect(journeyReducer(initialJourney(), { type: 'LOAD_PROFILE', profile, phoneVerified: true }).phoneVerified).toBe(true)
+  })
+
   it('resets everything and starts a new run', () => {
     const busy = run(at(initialJourney(), 'S1_SERVICE'), { type: 'CHOOSE_SERVICE', service: 'food' }, { type: 'NEXT' })
     expect(journeyReducer(busy, { type: 'RESET' })).toEqual({ ...initialJourney(), runId: 1 })

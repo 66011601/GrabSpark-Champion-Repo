@@ -19,6 +19,8 @@ describe('architecture', () => {
   it('sees the source tree', () => {
     expect(Object.keys(sources)).toContain('/src/ai/onboarding/submit.ts')
     expect(Object.keys(sources)).toContain('/src/services/ocr/mockOcr.ts')
+    expect(Object.keys(sources)).toContain('/src/screens/signup/S7Confirm.tsx')
+    expect(Object.keys(sources)).toContain('/src/screens/home/H2Menu.tsx')
     expect(IMPORTS_WRITE_API.test("import { submitApplication } from '@/services/merchantApi.write.ts'")).toBe(true)
   })
 

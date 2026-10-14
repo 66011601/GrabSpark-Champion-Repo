@@ -1,7 +1,7 @@
 import { addressFromLocation } from '@/ai/onboarding/addressFields.ts'
 import { scanToUpdates } from '@/ai/onboarding/documents/scanToUpdates.ts'
 import { extractProfile } from '@/ai/onboarding/extractProfile.ts'
-import { applyUpdates, createEmptyProfile, onlyEmptyFields } from '@/ai/onboarding/profile.ts'
+import { applyUpdates, confirmField, createEmptyProfile, onlyEmptyFields, SUBMIT_FIELDS } from '@/ai/onboarding/profile.ts'
 import { th } from '@/copy/th.ts'
 import script from '@/data/onboarding-script.json'
 import { getAccount, getLandmarks } from '@/services/merchantApi.ts'
@@ -27,4 +27,9 @@ export function demoProfile(): OnboardingProfile {
     contactEmail: { value: account.email, confidence: 1, heardFrom: th.sources.account },
   })
   return applyUpdates(profile, { ...scanToUpdates(sampleScan('idCard')), ...scanToUpdates(sampleScan('bankBook')) })
+}
+
+/** The sample merchant as 7/7 leaves them: everything the application is sent with is confirmed, the menu and hours are still drafts. */
+export function submittedDemoProfile(): OnboardingProfile {
+  return SUBMIT_FIELDS.reduce((profile, key) => confirmField(profile, key), demoProfile())
 }

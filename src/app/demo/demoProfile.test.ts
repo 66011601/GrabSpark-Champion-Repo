@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { ALL_FIELDS } from '@/ai/onboarding/profile.ts'
-import { demoProfile } from './demoProfile.ts'
+import { ALL_FIELDS, SETUP_FIELDS, SUBMIT_FIELDS } from '@/ai/onboarding/profile.ts'
+import { demoProfile, submittedDemoProfile } from './demoProfile.ts'
 
 describe('demoProfile', () => {
   // The presenter's "ข้อมูลตัวอย่าง": the demo script, the account and both sample documents.
@@ -21,5 +21,19 @@ describe('demoProfile', () => {
     expect(fields.payout.value?.bookPhoto).toBe('sample')
     expect(fields.hours.value).toEqual({ open: '10:00', close: '20:00', closedDays: [] })
     expect(fields.menu.value?.map((item) => item.priceTHB)).toEqual([89, 65, 75, 35, 30])
+  })
+})
+
+describe('submittedDemoProfile', () => {
+  // What the real flow produces at 7/7, so ส่งใบสมัคร can submit on stage.
+  const profile = submittedDemoProfile()
+
+  it('confirms every field the application is sent with, including the pin', () => {
+    expect(SUBMIT_FIELDS.map((key) => profile.fields[key].status)).toEqual(Array(SUBMIT_FIELDS.length).fill('confirmed'))
+    expect(profile.fields.location.needsPinCheck).toBe(false)
+  })
+
+  it('leaves the menu and hours as drafts for Home to set up', () => {
+    expect(SETUP_FIELDS.map((key) => profile.fields[key].status)).toEqual(['heard', 'heard'])
   })
 })

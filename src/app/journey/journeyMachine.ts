@@ -71,7 +71,7 @@ export type JourneyEvent =
   | { type: 'SUBMITTED'; at: number; profile: OnboardingProfile } // the profile that was sent
   | { type: 'SETUP_SAVED'; part: SetupPart; profile: OnboardingProfile }
   | { type: 'LOGGED_IN'; email: string; profile: OnboardingProfile; at: number }
-  | { type: 'LOAD_PROFILE'; profile: OnboardingProfile }
+  | { type: 'LOAD_PROFILE'; profile: OnboardingProfile; phoneVerified?: boolean } // presenter jump
   | { type: 'RESET' }
 
 export function initialJourney(): JourneyState {
@@ -145,7 +145,7 @@ export function journeyReducer(state: JourneyState, event: JourneyEvent): Journe
       if (state.screen !== 'L1_LOGIN') return state
       return { ...state, email: event.email, profile: event.profile, phoneVerified: true, startedAt: event.at, submittedAt: event.at, screen: 'H1_HOME' }
     case 'LOAD_PROFILE':
-      return { ...state, profile: event.profile }
+      return { ...state, profile: event.profile, phoneVerified: event.phoneVerified ?? state.phoneVerified }
     case 'RESET':
       return { ...initialJourney(), runId: state.runId + 1 }
   }

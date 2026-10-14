@@ -16,10 +16,13 @@ npm test        # unit + architecture tests
 ### Presenting the demo
 
 - Open on a desktop browser: the phone frame is on the left, the **Demo panel** on the right (press `D` to hide or show it).
-- **Register (R1-R2):** the demo opens on R1. Tap **ลงทะเบียน** → on R2 type any email and password, then choose how to fill in the shop: **พูด** (default), **ถ่ายภาพเอกสาร** or **พิมพ์เอง** → **ต่อไป**.
-- **Act 1 by voice:** on R3 play "บรรทัด 1" from the panel (or speak it) → **ต่อไป** → on A1 play "บรรทัด 2–3", tap **ใช่** for the phone → **ต่อไป** → S1 asks for the ID card and bank book: tap **ถ่ายรูป** → **ใช้รูปนี้** for each → A2.
-- **Act 1 by photo:** S1 scans the sample ID card, bank book and paper menu (one price is smudged on purpose and comes back amber) → A1 asks only for the location, hours and phone → A2. The panel's "S1 · ถ่ายรูปเอกสาร" jumps straight there.
-- **A2:** confirm each card (the owner and bank cards show masked numbers; **ถ่ายใหม่** rescans) → **ยืนยันข้อมูลและปักหมุดที่ตั้ง**. The guardrail checks the ID checksum and that the bank account is in the owner's name.
-- All documents are fictional samples stamped "ตัวอย่าง". An uploaded photo stays in the browser and still returns the sample data.
+- **The demo follows GrabMerchant's real sign-up** (merchant.grab.com guide "ขั้นตอนสมัครเป็นพาร์ทเนอร์ร้านค้า GrabFood บนแอป GrabMerchant"), with the AI helper bar above the green button on every step.
+- **Register:** หน้าแรก → **ลงทะเบียน** → 1/7 GrabFood → 2/7 type any email and password → phone: tap "ใช้เบอร์ … ในเครื่องนี้" → **ส่งรหัส OTP** (the companion fills 123456 from the mock SMS) → **ต่อไป**.
+- **3/7:** tap 🎤 and play "บรรทัด 1" from the panel (or speak it). Name, street, pin, address and food type fill in; tap **หมุดถูกแล้ว** and ✓ any amber box → **ต่อไป**.
+- **4/7:** tap "ใช้ธุรกิจส่วนตัว" → **ต่อไป**. **5/7:** tap 📷 → **ถ่ายรูป** → **ใช้รูปนี้** → **ต่อไป**. **6/7:** same with the bank book (the photo is attached) → **ต่อไป**.
+- **7/7:** read the summary (**ฟังสรุป** reads it aloud, numbers by their last 4 digits), tick both boxes yourself → **ส่งใบสมัคร**. Voice cannot tick or send.
+- **Home:** "อยู่ระหว่างตรวจสอบ" → **เพิ่มเมนู** (📷 paper menu: one price comes back amber, ✓ it; or play "บรรทัด 3") → **บันทึกเมนู** → **ตั้งเวลาเปิด-ปิด** (play "บรรทัด 2" or tap a chip) → **บันทึก** → **ดูต่อ: 30 วันต่อมา**.
+- **เข้าสู่ระบบ** goes straight to Home with the sample shop submitted. The panel's "(ข้อมูลตัวอย่าง)" jumps load the sample merchant.
+- All documents and numbers are fictional samples stamped "ตัวอย่าง". An uploaded photo stays in the browser.
 - "จำลองระบบล่ม" shows how a failed submit is handled; "เริ่มใหม่ทั้งหมด" resets.
 - Act 2 arrives with Plan 2.
