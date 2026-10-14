@@ -1667,6 +1667,7 @@ Expected: PASS.
 `src/screens/act1-onboarding/S1-scan/ScanResults.tsx`:
 
 ```tsx
+{% raw %}
 import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { CHECK_THRESHOLD } from '@/ai/onboarding/profile.ts'
 import { th } from '@/copy/th.ts'
@@ -1702,6 +1703,7 @@ export function ScanResults({ lines }: { lines: ScanLine[] }) {
     </ul>
   )
 }
+{% endraw %}
 ```
 
 - [ ] **Step 5: The screen**
