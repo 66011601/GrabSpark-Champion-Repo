@@ -48,6 +48,24 @@ describe('applyUpdates', () => {
     ])
   })
 
+  it('keeps a heard menu as unsure as its least sure dish when another is added', () => {
+    const scanned = applyUpdates(createEmptyProfile(), {
+      menu: { value: [{ name: 'ผัดไทย', priceTHB: 6 }], confidence: 0.6, heardFrom: 'photo' },
+    })
+    const typed = applyUpdates(scanned, { menu: { value: [{ name: 'ชาไทยเย็น', priceTHB: 35 }], confidence: 1, heardFrom: 'typed' } })
+    expect(typed.fields.menu.confidence).toBe(0.6)
+    expect(needsCheck(typed.fields.menu)).toBe(true)
+  })
+
+  it('takes the new confidence once the menu is empty or confirmed', () => {
+    const first = applyUpdates(createEmptyProfile(), { menu: { value: [{ name: 'ผัดไทย', priceTHB: 60 }], confidence: 0.6, heardFrom: 'photo' } })
+    const confirmed = confirmField(first, 'menu')
+    const added = applyUpdates(confirmed, { menu: { value: [{ name: 'ชาไทยเย็น', priceTHB: 35 }], confidence: 1, heardFrom: 'typed' } })
+    expect(added.fields.menu.confidence).toBe(1)
+    expect(first.fields.menu.confidence).toBe(0.6)
+    expect(applyUpdates(createEmptyProfile(), { menu: { value: [{ name: 'ก', priceTHB: 1 }], confidence: 0.7, heardFrom: 'x' } }).fields.menu.confidence).toBe(0.7)
+  })
+
   it('does not change the profile it was given', () => {
     const profile = createEmptyProfile()
     applyUpdates(profile, { category: { value: 'อาหารไทย', confidence: 0.9, heardFrom: 'x' } })

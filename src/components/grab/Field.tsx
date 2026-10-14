@@ -50,7 +50,7 @@ export function Field({ id, label, required = false, hint, error, mark, onCheck,
           {error}
         </p>
       ) : mark ? (
-        <p className="text-sm text-ink-muted">{mark.spoken ? th.grab.heard(mark.source) : th.grab.source(mark.source)}</p>
+        <p className="line-clamp-1 text-sm text-ink-muted">{mark.spoken ? th.grab.heard(mark.source) : th.grab.source(mark.source)}</p>
       ) : (
         hint && (
           <p id={`${id}-hint`} className="text-sm text-ink-muted">

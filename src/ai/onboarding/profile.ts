@@ -59,7 +59,10 @@ export function applyUpdates(profile: OnboardingProfile, updates: ProfileUpdates
     const update = updates[key]
     if (!update) continue
     const value = key === 'menu' ? mergeMenu(next.fields.menu.value, update.value as MenuEntry[]) : update.value
-    const change = { value, status: 'heard', confidence: update.confidence, heardFrom: update.heardFrom }
+    // A dish added to a menu still waiting for its check must not make an unchecked price look sure.
+    const unchecked = key === 'menu' && next.fields.menu.status === 'heard'
+    const confidence = unchecked ? Math.min(next.fields.menu.confidence ?? 1, update.confidence) : update.confidence
+    const change = { value, status: 'heard', confidence, heardFrom: update.heardFrom }
     next = patch(next, key, change as Partial<ProfileFields[typeof key]>)
   }
   if (updates.location) next = patch(next, 'location', { needsPinCheck: true })

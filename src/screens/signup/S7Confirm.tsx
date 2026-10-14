@@ -115,7 +115,7 @@ export function S7Confirm() {
                   </p>
                 ))}
               </div>
-              <Button variant="ghost" className="min-h-12! px-2!" icon={<Pencil className="size-4" aria-hidden />} onClick={() => dispatch({ type: 'GO', screen: SCREEN_FOR_STEP[row.step] })}>
+              <Button variant="ghost" className="min-h-12! px-2!" aria-label={`${th.s7.edit} ${row.title}`} icon={<Pencil className="size-4" aria-hidden />} onClick={() => dispatch({ type: 'GO', screen: SCREEN_FOR_STEP[row.step] })}>
                 {th.s7.edit}
               </Button>
             </li>

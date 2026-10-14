@@ -3,17 +3,17 @@ import { useJourney } from '@/app/journey/JourneyContext.ts'
 import type { Screen } from '@/app/journey/journeyMachine.ts'
 import { demoFlags } from '@/services/demoFlags.ts'
 import { demoBus } from './demoBus.ts'
-import { demoProfile, scriptLines, submittedDemoProfile } from './demoProfile.ts'
+import { scriptLines, step4DemoProfile, submittedDemoProfile } from './demoProfile.ts'
 
 // Presenter-only tooling (desktop, beside the phone). Press D to hide or show.
-const JUMPS: { label: string; screen: Screen; sample?: 'heard' | 'submitted' }[] = [
+const JUMPS: { label: string; screen: Screen; sample?: 'step4' | 'submitted' }[] = [
   { label: 'หน้าแรก GrabMerchant', screen: 'G0_WELCOME' },
   { label: 'เข้าสู่ระบบ', screen: 'L1_LOGIN' },
   { label: '1/7 เลือกบริการ', screen: 'S1_SERVICE' },
   { label: '2/7 อีเมลและรหัสผ่าน', screen: 'S2_ACCOUNT' },
   { label: '2/7 เบอร์โทรและ OTP', screen: 'S2_PHONE' },
   { label: '3/7 ข้อมูลธุรกิจ', screen: 'S3_BUSINESS' },
-  { label: '4/7 ข้อมูลร้าน (ข้อมูลตัวอย่าง)', screen: 'S4_SHOP', sample: 'heard' },
+  { label: '4/7 ข้อมูลร้าน (ข้อมูลตัวอย่าง)', screen: 'S4_SHOP', sample: 'step4' },
   { label: '5/7 ข้อมูลของคุณ', screen: 'S5_OWNER' },
   { label: '6/7 ข้อมูลธนาคาร', screen: 'S6_BANK' },
   { label: '7/7 คำยืนยัน (ข้อมูลตัวอย่าง)', screen: 'S7_CONFIRM', sample: 'submitted' },
@@ -60,7 +60,7 @@ export function DemoPanel() {
             type="button"
             className="min-h-12 rounded-xl px-3 text-left ring-1 ring-line hover:bg-canvas"
             onClick={() => {
-              if (jump.sample === 'heard') dispatch({ type: 'LOAD_PROFILE', profile: demoProfile() })
+              if (jump.sample === 'step4') dispatch({ type: 'LOAD_PROFILE', profile: step4DemoProfile(), phoneVerified: true })
               if (jump.sample === 'submitted') dispatch({ type: 'LOAD_PROFILE', profile: submittedDemoProfile(), phoneVerified: true })
               dispatch({ type: 'GO', screen: jump.screen })
             }}

@@ -22,7 +22,7 @@ export function H1Home() {
   ]
   return (
     <>
-      <header className="flex min-h-14 items-center justify-between bg-grab px-4 text-white">
+      <header className="flex min-h-14 items-center justify-between bg-action px-4 text-white">
         <p className="text-lg font-bold">{state.profile.fields.storeName.value ?? th.h1.heading}</p>
         <span className="flex size-12 items-center justify-center" title={th.h1.bell}>
           <Bell className="size-6" aria-hidden />

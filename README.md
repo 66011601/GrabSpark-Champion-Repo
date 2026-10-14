@@ -5,7 +5,7 @@
 
 ## Prototype: Grab Merchant Companion
 
-Design: [docs/specs/2026-10-13-merchant-companion-design.md](docs/specs/2026-10-13-merchant-companion-design.md)
+Design: [docs/specs/2026-10-13-merchant-companion-design.md](docs/specs/2026-10-13-merchant-companion-design.md), [docs/specs/2026-10-14-grab-style-signup-design.md](docs/specs/2026-10-14-grab-style-signup-design.md)
 
 ```bash
 npm install

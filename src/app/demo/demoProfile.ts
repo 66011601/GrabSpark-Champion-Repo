@@ -2,6 +2,7 @@ import { addressFromLocation } from '@/ai/onboarding/addressFields.ts'
 import { scanToUpdates } from '@/ai/onboarding/documents/scanToUpdates.ts'
 import { extractProfile } from '@/ai/onboarding/extractProfile.ts'
 import { applyUpdates, confirmField, createEmptyProfile, onlyEmptyFields, SUBMIT_FIELDS } from '@/ai/onboarding/profile.ts'
+import { confirmStep } from '@/ai/onboarding/steps.ts'
 import { th } from '@/copy/th.ts'
 import script from '@/data/onboarding-script.json'
 import { getAccount, getLandmarks } from '@/services/merchantApi.ts'
@@ -32,4 +33,9 @@ export function demoProfile(): OnboardingProfile {
 /** The sample merchant as 7/7 leaves them: everything the application is sent with is confirmed, the menu and hours are still drafts. */
 export function submittedDemoProfile(): OnboardingProfile {
   return SUBMIT_FIELDS.reduce((profile, key) => confirmField(profile, key), demoProfile())
+}
+
+/** The sample merchant arriving at 4/7: step 3 is done and confirmed, steps 4–6 are still heard so the ✨ marks show. */
+export function step4DemoProfile(): OnboardingProfile {
+  return confirmStep(demoProfile(), 3)
 }

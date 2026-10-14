@@ -129,13 +129,16 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false } = {})
     }
   })
 
+  /** Closes an open mic and ends the hands-free conversation (a sheet is about to speak over it). */
+  const stop = useCallback(() => {
+    if (micNow.current !== 'listening') return
+    handsFree = false
+    session.current?.stop()
+  }, [])
+
   /** Press to talk (this also cuts the companion off mid-sentence); press again to stop. */
   const toggleMic = () => {
-    if (micNow.current === 'listening') {
-      handsFree = false
-      session.current?.stop()
-      return
-    }
+    if (micNow.current === 'listening') return stop()
     listen(false)
   }
 
@@ -154,5 +157,5 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false } = {})
     [hear, setMic],
   )
 
-  return { mic, transcript, notice, setNotice, toggleMic, hear, onSpoken }
+  return { mic, transcript, notice, setNotice, toggleMic, stop, hear, onSpoken }
 }

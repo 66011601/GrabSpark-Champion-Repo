@@ -141,7 +141,7 @@ export function S3Business() {
       <Field id="s3-building" label={th.fields.building} required mark={fieldMark(fields.building)} onCheck={amber('building')}>
         <input id="s3-building" autoComplete="address-line1" value={fields.building.value ?? ''} onChange={(event) => type('building')(event.target.value)} className={inputClass()} />
       </Field>
-      <Field id="s3-location" label={th.store.location} required mark={fieldMark(fields.location)} onCheck={amber('location')}>
+      <Field id="s3-location" label={th.store.location} required mark={fieldMark(fields.location)} onCheck={null}>
         {fields.location.value ? (
           <div className="flex flex-col gap-2">
             <MapPinConfirm point={fields.location.value} />

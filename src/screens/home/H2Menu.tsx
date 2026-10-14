@@ -44,10 +44,11 @@ export function H2Menu() {
     }
   }, [])
 
-  const { mic, transcript, notice, toggleMic, hear, onSpoken } = useVoiceInput(
+  const { mic, transcript, notice, toggleMic, stop, hear, onSpoken } = useVoiceInput(
     (text) => {
       const command = matchCommand(text, COMMANDS)
       if (command === 'shoot') {
+        setTalking(false)
         setScanning(true)
         return true
       }
@@ -60,9 +61,14 @@ export function H2Menu() {
       dispatch({ type: 'FILL', updates: { menu: updates.menu }, at: Date.now() })
       return true
     },
-    { autoListen: talking },
+    { autoListen: talking && !scanning },
   )
 
+  const openScan = () => {
+    stop()
+    setTalking(false)
+    setScanning(true)
+  }
   const add = (event: FormEvent) => {
     event.preventDefault()
     const amount = Number(price)
@@ -91,7 +97,7 @@ export function H2Menu() {
       onBack={() => dispatch({ type: 'BACK' })}
       footer={
         <>
-          <AiHelperBar text={problem ?? th.h2.helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} action={{ kind: 'camera', label: th.h2.scan, onPress: () => setScanning(true) }} />
+          <AiHelperBar text={problem ?? th.h2.helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} action={{ kind: 'camera', label: th.h2.scan, onPress: openScan }} />
           <div className="flex gap-2">
             <Button variant="secondary" className="px-4!" onClick={() => setTalking(true)}>
               {th.h2.talk}

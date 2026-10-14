@@ -28,7 +28,7 @@ export function G0Welcome() {
   return (
     <>
       <main className="flex flex-1 flex-col overflow-y-auto">
-        <div className="bg-grab px-6 pt-14 pb-10 text-white">
+        <div className="bg-action px-6 pt-14 pb-10 text-white">
           <p className="text-3xl font-bold tracking-tight">{th.g0.wordmark}</p>
           <h1 className="mt-8 animate-rise text-[2.25rem] leading-tight font-bold">
             {th.g0.headline}

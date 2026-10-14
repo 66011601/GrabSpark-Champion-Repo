@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ALL_FIELDS, SETUP_FIELDS, SUBMIT_FIELDS } from '@/ai/onboarding/profile.ts'
-import { demoProfile, submittedDemoProfile } from './demoProfile.ts'
+import { STEP_FIELDS } from '@/ai/onboarding/steps.ts'
+import { demoProfile, step4DemoProfile, submittedDemoProfile } from './demoProfile.ts'
 
 describe('demoProfile', () => {
   // The presenter's "ข้อมูลตัวอย่าง": the demo script, the account and both sample documents.
@@ -35,5 +36,20 @@ describe('submittedDemoProfile', () => {
 
   it('leaves the menu and hours as drafts for Home to set up', () => {
     expect(SETUP_FIELDS.map((key) => profile.fields[key].status)).toEqual(['heard', 'heard'])
+  })
+})
+
+describe('step4DemoProfile', () => {
+  // The presenter's jump to 4/7: the earlier step is done, the later ones are still the companion's to show.
+  const profile = step4DemoProfile()
+
+  it('confirms the step 3 fields and the pin', () => {
+    expect(STEP_FIELDS[3].map((key) => profile.fields[key].status)).toEqual(Array(STEP_FIELDS[3].length).fill('confirmed'))
+    expect(profile.fields.location.needsPinCheck).toBe(false)
+  })
+
+  it('leaves steps 4 to 6 heard', () => {
+    expect(profile.fields.owner.status).toBe('heard')
+    expect(profile.fields.payout.status).toBe('heard')
   })
 })
