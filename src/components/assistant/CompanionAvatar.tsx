@@ -12,14 +12,14 @@ const RING: Record<CompanionState, string> = {
   private: 'ring-field',
 }
 
-function MicBadge({ state }: { state: MicState }) {
+function MicBadge({ state, small }: { state: MicState; small: boolean }) {
   const Icon = state === 'processing' ? Loader2 : state === 'error' ? MicOff : Mic
   return (
     <span
-      className={`absolute -top-1 -left-1 flex size-8 items-center justify-center rounded-full text-white ring-2 ring-surface ${state === 'error' ? 'bg-ink-muted' : 'bg-action'}`}
+      className={`absolute ${small ? '-top-1.5 -left-1.5 size-6' : '-top-1 -left-1 size-8'} flex items-center justify-center rounded-full text-white ring-2 ring-surface ${state === 'error' ? 'bg-ink-muted' : 'bg-action'}`}
       aria-hidden
     >
-      <Icon className={`size-5 ${state === 'processing' ? 'animate-spin' : ''}`} />
+      <Icon className={`${small ? 'size-4' : 'size-5'} ${state === 'processing' ? 'animate-spin' : ''}`} />
     </span>
   )
 }
@@ -32,22 +32,30 @@ export function CompanionAvatar({
   state = 'idle',
   speaking = false,
   onPress,
+  size = 'md',
 }: {
   state?: CompanionState
   speaking?: boolean
   onPress?: () => void
+  size?: 'md' | 'sm'
 }) {
   const face = (
     <>
       {state === 'listening' && <span className="absolute inset-0 animate-listen rounded-full bg-grab" aria-hidden />}
       {speaking && state === 'idle' && <span className="absolute inset-0 animate-speak rounded-full bg-grab" aria-hidden />}
-      <img src={FACE} alt="" width={72} height={72} className={`relative size-18 rounded-full object-cover ring-4 ${RING[state]}`} />
+      <img
+        src={FACE}
+        alt=""
+        width={size === 'sm' ? 48 : 72}
+        height={size === 'sm' ? 48 : 72}
+        className={`relative ${size === 'sm' ? 'size-12 ring-2' : 'size-18 ring-4'} rounded-full object-cover ${RING[state]}`}
+      />
       {state === 'private' && (
         <span className="absolute inset-0 flex animate-pop items-center justify-center rounded-full bg-ink/60 text-white" aria-hidden>
           <EyeOff className="size-8" />
         </span>
       )}
-      {onPress && state !== 'private' && <MicBadge state={state} />}
+      {onPress && state !== 'private' && <MicBadge state={state} small={size === 'sm'} />}
     </>
   )
 
