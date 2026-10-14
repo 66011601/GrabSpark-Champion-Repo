@@ -10,7 +10,7 @@ export function VoiceToggle() {
   useEffect(() => onVoicesChanged(() => setAvailable(getThaiVoice() !== undefined)), [])
   if (!available) {
     return (
-      <span className="flex size-11 shrink-0 items-center justify-center text-field" title={th.voice.unavailable}>
+      <span className="flex size-12 shrink-0 items-center justify-center text-field" title={th.voice.unavailable}>
         <VolumeX className="size-6" aria-hidden />
         <span className="sr-only">{th.voice.unavailable}</span>
       </span>
@@ -23,7 +23,7 @@ export function VoiceToggle() {
       onClick={() => setMuted(!muted)}
       aria-label={muted ? th.voice.unmute : th.voice.mute}
       aria-pressed={!muted}
-      className={`flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full active:bg-surface ${muted ? 'text-ink-muted' : 'text-action'}`}
+      className={`flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full active:bg-surface ${muted ? 'text-ink-muted' : 'text-action'}`}
     >
       <Icon className="size-6" aria-hidden />
     </button>
