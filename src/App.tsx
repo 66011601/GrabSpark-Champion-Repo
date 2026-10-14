@@ -4,6 +4,9 @@ import { JourneyProvider } from '@/app/journey/JourneyProvider.tsx'
 import { DeviceFrame } from '@/components/shell/DeviceFrame.tsx'
 import { DashboardScreen } from '@/screens/act2-grow/1-dashboard/DashboardScreen.tsx'
 import { ActTransition } from '@/screens/ActTransition.tsx'
+import { H1Home } from '@/screens/home/H1Home.tsx'
+import { H2Menu } from '@/screens/home/H2Menu.tsx'
+import { H3Hours } from '@/screens/home/H3Hours.tsx'
 import { G0Welcome } from '@/screens/signup/G0Welcome.tsx'
 import { L1Login } from '@/screens/signup/L1Login.tsx'
 import { S1Service } from '@/screens/signup/S1Service.tsx'
@@ -14,11 +17,6 @@ import { S4Shop } from '@/screens/signup/S4Shop.tsx'
 import { S5Owner } from '@/screens/signup/S5Owner.tsx'
 import { S6Bank } from '@/screens/signup/S6Bank.tsx'
 import { S7Confirm } from '@/screens/signup/S7Confirm.tsx'
-
-// Temporary while Plan 1c rebuilds Act 1 screen by screen; Task 13 removes it.
-function NotBuiltYet({ screen }: { screen: string }) {
-  return <p className="m-auto p-6 text-center text-ink-muted">{screen}</p>
-}
 
 function ScreenSwitch() {
   const { state } = useJourney()
@@ -43,12 +41,16 @@ function ScreenSwitch() {
       return <S6Bank key={state.runId} />
     case 'S7_CONFIRM':
       return <S7Confirm />
+    case 'H1_HOME':
+      return <H1Home />
+    case 'H2_MENU':
+      return <H2Menu key={state.runId} />
+    case 'H3_HOURS':
+      return <H3Hours key={state.runId} />
     case 'TRANSITION':
       return <ActTransition />
     case 'G1_DASHBOARD':
       return <DashboardScreen />
-    default:
-      return <NotBuiltYet screen={state.screen} />
   }
 }
 
