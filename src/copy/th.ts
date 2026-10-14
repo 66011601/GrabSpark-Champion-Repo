@@ -86,6 +86,8 @@ export const th = {
     areaChoices: 'เลือกตำบลให้ครบ',
     useHere: 'ใช้ตำแหน่งตอนนี้',
     pinOnMap: 'ปักหมุดบนแผนที่',
+    pinZoomIn: 'ซูมเข้าใกล้ร้านก่อนนะคะ แล้วค่อยกดใช้ตำแหน่งนี้',
+    osmNotice: 'หนูใช้ OpenStreetMap หาที่อยู่ ตำแหน่งที่ค้นหรือปักหมุดจะถูกส่งไปที่นั่น',
   },
   g0: {
     wordmark: 'GrabMerchant',

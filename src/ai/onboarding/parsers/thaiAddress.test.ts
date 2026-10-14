@@ -76,6 +76,21 @@ describe('parseThaiAddress', () => {
   })
 })
 
+describe('เลย (the province Loei, and a common filler word)', () => {
+  it('is a province only with its label', () => {
+    expect(findProvince('จ.เลย')).toBe('เลย')
+    expect(findProvince('จังหวัดเลย')).toBe('เลย')
+    expect(findProvince('เลย')).toBeNull()
+    expect(parseThaiAddress('ต.กุดป่อง อ.เมืองเลย จ.เลย 42000')?.province).toBe('เลย')
+  })
+
+  it('is never the province when it trails a street or stands alone', () => {
+    expect(parseThaiAddress('ร้านอยู่ถนนนิมมานเหมินท์ เลยค่ะ')).toBeNull()
+    expect(parseThaiAddress('ซอยสุขสบาย เลย ต.ในเมือง')?.province).toBeUndefined()
+    expect(parseThaiAddress('ต.ในเมือง อ.เมือง เลย')?.province).toBeUndefined()
+  })
+})
+
 describe('formatThaiAddress', () => {
   const khonKaen = { houseNo: '12/3', moo: '4', road: 'มิตรภาพ', subdistrict: 'ในเมือง', district: 'เมืองขอนแก่น', province: 'ขอนแก่น', postcode: '40000' }
   const latPhrao = { soi: 'ลาดพร้าว 71', road: 'ลาดพร้าว', subdistrict: 'ลาดพร้าว', district: 'ลาดพร้าว', province: BANGKOK, postcode: '10230' }

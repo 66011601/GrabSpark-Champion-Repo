@@ -76,6 +76,15 @@ describe('createNominatim', () => {
     expect((await nominatim.reverse(13.8014, 100.6033))?.text).toBe('แขวงลาดพร้าว เขตลาดพร้าว กรุงเทพมหานคร')
   })
 
+  it('sends coordinates rounded to 5 decimals (about a metre), but keeps the exact point', async () => {
+    const { nominatim, url } = answer({ body: KHON_KAEN })
+    const point = await nominatim.reverse(16.4210612345, 102.8378187654)
+    expect(url()).toContain('lat=16.42106&')
+    expect(url()).toContain('lon=102.83782&')
+    expect(url()).not.toContain('16.4210612345')
+    expect(point).toMatchObject({ lat: 16.4210612345, lng: 102.8378187654 })
+  })
+
   it('waits a second between calls and remembers answers', async () => {
     const { nominatim, fetchImpl, sleep } = answer({ body: [WAROROT] }, { body: [KHON_KAEN] })
     await nominatim.search('ตลาดวโรรส')

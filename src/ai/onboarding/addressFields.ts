@@ -15,10 +15,12 @@ export function addressFromLocation(point: GeoPoint, heardFrom: string, sure = f
   // A bare dropped pin has nothing to say about the address; its label is not an address.
   if (!point.address && !point.parts && point.text === th.places.pinnedHere) return {}
   const street = point.parts ? streetLine(point.parts) : ''
+  const building = point.parts ? street : point.text !== th.places.pinnedHere ? point.text : ''
   const full = point.address ?? (point.parts ? formatThaiAddress(point.parts) : '')
   return {
-    // The "pinned here" label is not a street, and a bare name is the only other thing to show.
-    ...(street || point.text !== th.places.pinnedHere ? { building: { value: street || point.text, confidence: DERIVED_CONFIDENCE, heardFrom } } : {}),
+    // The building box takes a street only. With parts the area line (แขวง/เขต…) belongs to the address box, so no draft;
+    // a point with no parts has nothing but its name to show, unless that name is the "pinned here" label.
+    ...(building ? { building: { value: building, confidence: DERIVED_CONFIDENCE, heardFrom } } : {}),
     address: full
       ? { value: full, confidence: sure ? MAP_ADDRESS_CONFIDENCE : DERIVED_CONFIDENCE, heardFrom }
       : { value: point.text, confidence: DERIVED_CONFIDENCE, heardFrom },

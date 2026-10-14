@@ -31,5 +31,7 @@ npm test        # unit + architecture tests
 ### Credits
 
 - Map pictures and place search: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL), via Nominatim, within its [usage policy](https://operations.osmfoundation.org/policies/nominatim/).
-- Thai sub-district and postcode data: [thai-address-database](https://github.com/Sellsuki/thai-address-database) 0.0.33 (ISC), copied as `src/data/thai-address.json`.
+- Places a merchant searches, pins or locates are sent to OpenStreetMap's Nominatim to find the address. The prototype's own documents and applications are not sent anywhere.
+- Nominatim allows 1 request per second, and that limit is shared by everyone using the hosted demo. When it is busy the app falls back to its own sample places and sub-district data.
+- Thai sub-district and postcode data: [thai-address-database](https://github.com/Sellsuki/thai-address-database) 0.0.33 (ISC), copied as `src/data/thai-address.json`. Its licence notice is in `src/data/thai-address.LICENSE.md`.
 - Map view: [Leaflet](https://leafletjs.com) (BSD-2-Clause).

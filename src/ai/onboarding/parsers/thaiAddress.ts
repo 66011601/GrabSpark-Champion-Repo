@@ -29,9 +29,14 @@ const PROVINCE_NICKNAMES: Record<string, string> = {
   นครศรี: 'นครศรีธรรมราช',
 }
 
-/** "ขอนแก่น", "จ.ขอนแก่น", "กทม." → the province's full name, or null. */
+// "เลย" is also a filler word ("ไม่ได้ไปเลย"): it names the province only with a label.
+const NEEDS_LABEL = 'เลย'
+
+/** "ขอนแก่น", "จ.ขอนแก่น", "กทม." → the province's full name, or null. A bare "เลย" is not Loei: say "จ.เลย". */
 export function findProvince(word: string): string | null {
-  const name = word.trim().replace(/^(?:จังหวัด|จ\.)/, '').replace(/\.$/, '')
+  const bare = word.trim()
+  const name = bare.replace(/^(?:จังหวัด|จ\.)/, '').replace(/\.$/, '')
+  if (name === NEEDS_LABEL && name === bare) return null
   if (PROVINCES.includes(name)) return name
   return PROVINCE_NICKNAMES[name] ?? null
 }
@@ -123,7 +128,7 @@ export function parseThaiAddress(input: string): ThaiAddress | null {
       while (words.length > 1 && findProvince(words[words.length - 1])) spare.push(words.pop()!)
       parts[part] = nameWithNumber(words.join(' '))
     } else if (part === 'province') {
-      const province = findProvince(first)
+      const province = findProvince(`จ.${first}`) // the label was cut off the value; it still counts
       if (province) parts.province = province
     } else {
       parts[part] = first

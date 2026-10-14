@@ -8,9 +8,26 @@ import { Button } from '@/components/ui/Button.tsx'
 import { PlaceSuggestions } from '@/components/ui/PlaceSuggestions.tsx'
 import { th } from '@/copy/th.ts'
 import type { PlaceSuggestion } from '@/services/places/places.ts'
-import type { ProfileFields } from '@/types/domain.ts'
+import type { GeoPoint, ProfileFields } from '@/types/domain.ts'
 
-const PinMap = lazy(() => import('@/components/map/PinMap.tsx').then((module) => ({ default: module.PinMap })))
+/** The map chunk could not be fetched (offline, or a new version was deployed): the drawn map and the place still show. */
+function PinMapUnavailable({ point }: { point: GeoPoint }) {
+  return (
+    <figure className="overflow-hidden rounded-2xl ring-1 ring-line">
+      <DrawnMap label={point.text} />
+      <figcaption className="px-4 py-2 text-base">
+        {point.text}
+        {point.address && point.address !== point.text && <span className="block text-ink-muted">{point.address}</span>}
+      </figcaption>
+    </figure>
+  )
+}
+
+const PinMap = lazy(() =>
+  import('@/components/map/PinMap.tsx')
+    .then((module) => ({ default: module.PinMap }))
+    .catch(() => ({ default: PinMapUnavailable })),
+)
 
 interface LocationFieldProps {
   field: ProfileFields['location']
@@ -83,6 +100,7 @@ export function LocationField(props: LocationFieldProps) {
               {th.places.pinOnMap}
             </Button>
           </div>
+          <p className="text-sm text-ink-muted">{th.places.osmNotice}</p>
           <PlaceSuggestions suggestions={props.suggestions} live={props.live} onPick={props.onPick} />
         </div>
       )}

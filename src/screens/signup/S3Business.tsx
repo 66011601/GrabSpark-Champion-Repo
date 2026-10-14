@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { SAY } from '@/ai/commands/phrases.ts'
 import { DERIVED_CONFIDENCE, GPS_CONFIDENCE, LINK_CONFIDENCE, redraftAddress, withArea } from '@/ai/onboarding/addressFields.ts'
@@ -17,6 +17,7 @@ import { fieldMark, needsAmber, TYPED } from '@/components/grab/fieldMarks.ts'
 import { inputClass } from '@/components/grab/inputClass.ts'
 import { problemText } from '@/components/grab/problemText.ts'
 import { StepShell } from '@/components/grab/StepShell.tsx'
+import type { PinSheet as PinSheetComponent } from '@/components/map/PinSheet.tsx' // type only: the code itself loads lazily
 import { Button } from '@/components/ui/Button.tsx'
 import { th } from '@/copy/th.ts'
 import { getAccount, getLandmarks } from '@/services/merchantApi.ts'
@@ -29,7 +30,28 @@ import type { ProfileFieldKey, ProfileUpdates, ThaiAddress } from '@/types/domai
 import { AddressField } from './s3/AddressField.tsx'
 import { LocationField } from './s3/LocationField.tsx'
 
-const PinSheet = lazy(() => import('@/components/map/PinSheet.tsx').then((module) => ({ default: module.PinSheet })))
+type PinSheetProps = ComponentProps<typeof PinSheetComponent>
+
+/** The pin sheet's code could not be fetched (offline, or a new version was deployed): say so and let the merchant close it. */
+function PinSheetUnavailable({ onClose }: PinSheetProps) {
+  return (
+    <div role="dialog" aria-modal="true" aria-label={th.places.pinTitle} className="absolute inset-0 z-30 flex flex-col bg-surface">
+      <div className="flex flex-col gap-4 p-4">
+        <h2 className="text-lg font-bold">{th.places.pinTitle}</h2>
+        <p className="rounded-xl bg-warn-bg p-3 text-base text-warn-ink">{th.places.mapFailed}</p>
+        <Button fullWidth onClick={onClose}>
+          {th.grab.close}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+const PinSheet = lazy(() =>
+  import('@/components/map/PinSheet.tsx')
+    .then((module) => ({ default: module.PinSheet }))
+    .catch(() => ({ default: PinSheetUnavailable })),
+)
 
 const SUGGEST_AFTER_MS = 300
 const account = getAccount()
@@ -252,7 +274,7 @@ export function S3Business() {
       if (!isCurrent()) return false // the screen was left or reset while the map was answering
       // The pin's own address gains the ตำบล and postcode that were said, when it is in the same district.
       const place = found && spoken ? { ...found, value: withArea(found.value, spoken) } : found
-      const updates = businessUpdates(text, { expecting, landmarks, profile: state.profile, place })
+      const updates = businessUpdates(text, { expecting, landmarks, profile: latestProfile.current, place })
       if (phrase && !place && Object.keys(updates).length === 0) return th.places.notFound
       fill(updates)
       return Object.keys(updates).length > 0
@@ -356,7 +378,12 @@ export function S3Business() {
             describe={(lat, lng) => places.reverse(lat, lng)}
             onLocate={async () => {
               const fix = await locateDevice()
-              return typeof fix === 'string' ? null : fix
+              if (typeof fix === 'string') return null
+              if (!isInThailand(fix.lat, fix.lng)) {
+                setPlaceNotice(th.places.outsideThailand) // the sheet stays where it is rather than jump abroad
+                return null
+              }
+              return fix
             }}
             onUse={(match) => {
               const { area } = pinView

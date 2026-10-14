@@ -35,6 +35,25 @@ describe('addressFromLocation for a dropped pin', () => {
   })
 })
 
+describe('addressFromLocation for a point with parts but no street', () => {
+  it('never drafts the area line as the building, only the address', () => {
+    const point = {
+      text: 'แขวงลาดพร้าว เขตลาดพร้าว กรุงเทพมหานคร',
+      parts: { subdistrict: 'ลาดพร้าว', district: 'ลาดพร้าว', province: 'กรุงเทพมหานคร', postcode: '10230' },
+      lat: 13.8,
+      lng: 100.6,
+    }
+    const drafts = addressFromLocation(point, 'x')
+    expect('building' in drafts).toBe(false)
+    expect(drafts.address?.value).toBe('แขวงลาดพร้าว เขตลาดพร้าว กรุงเทพมหานคร 10230')
+  })
+
+  it('drafts a named place with parts but no street without a building too', () => {
+    const point = { text: 'ตลาดนัดสวนจตุจักร', parts: { subdistrict: 'จตุจักร', district: 'จตุจักร', province: 'กรุงเทพมหานคร' }, lat: 13.8, lng: 100.55 }
+    expect('building' in addressFromLocation(point, 'x')).toBe(false)
+  })
+})
+
 describe('addressFromLocation for a pin with an area but no street', () => {
   it('drafts the address but never "pinned here" as the building', () => {
     const point = {

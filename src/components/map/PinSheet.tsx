@@ -3,7 +3,7 @@ import { LocateFixed, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button.tsx'
 import { th } from '@/copy/th.ts'
-import { PIN_ZOOM, type MapView } from '@/services/places/bounds.ts'
+import { AREA_ZOOM, isInThailand, PIN_ZOOM, type MapView } from '@/services/places/bounds.ts'
 import type { PlaceMatch } from '@/services/places/places.ts'
 import { createLeafletMap, PIN_SVG } from './leafletMap.ts'
 
@@ -32,7 +32,8 @@ function PinSheetBody({ start, describe, onUse, onLocate, onClose }: Omit<PinShe
   useEffect(() => {
     latest.current = { describe }
   })
-  const [centre, setCentre] = useState({ lat: start.lat, lng: start.lng })
+  // Where the map is now: the centre is the pin, and the zoom says whether it can sit on one shop.
+  const [view, setView] = useState({ lat: start.lat, lng: start.lng, zoom: start.zoom })
   const [found, setFound] = useState<{ at: string; match: PlaceMatch | null } | null>(null)
   const [failed, setFailed] = useState(false)
 
@@ -44,9 +45,11 @@ function PinSheetBody({ start, describe, onUse, onLocate, onClose }: Omit<PinShe
     let alive = true
     let waiting: number | undefined
     let newest = 0 // only the latest lookup may answer; an older, slower one must not overwrite it
-    const lookUp = (lat: number, lng: number) => {
+    const lookUp = (lat: number, lng: number, zoom: number) => {
       window.clearTimeout(waiting)
       const mine = ++newest
+      // Nothing to find at country zoom or abroad, and no reason to send such a point to the map service.
+      if (zoom < AREA_ZOOM || !isInThailand(lat, lng)) return
       waiting = window.setTimeout(async () => {
         let match: PlaceMatch | null = null
         try {
@@ -57,12 +60,14 @@ function PinSheetBody({ start, describe, onUse, onLocate, onClose }: Omit<PinShe
         if (alive && mine === newest) setFound({ at: keyOf(lat, lng), match })
       }, DESCRIBE_AFTER_MS)
     }
+    // A zoom ends with a moveend as well, so this one handler follows both the centre and the zoom.
     made.on('moveend', () => {
       const { lat, lng } = made.getCenter()
-      setCentre({ lat, lng })
-      lookUp(lat, lng)
+      const zoom = made.getZoom()
+      setView({ lat, lng, zoom })
+      lookUp(lat, lng, zoom)
     })
-    lookUp(start.lat, start.lng)
+    lookUp(start.lat, start.lng, start.zoom)
     const sizing = requestAnimationFrame(() => made.invalidateSize())
     return () => {
       alive = false
@@ -91,9 +96,18 @@ function PinSheetBody({ start, describe, onUse, onLocate, onClose }: Omit<PinShe
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const here = found && found.at === keyOf(centre.lat, centre.lng) ? found : null
-  const bare: PlaceMatch = { value: { text: th.places.pinnedHere, lat: centre.lat, lng: centre.lng }, confidence: 1 }
-  const line = here === null ? th.places.pinLooking : (here.match?.value.address ?? here.match?.value.text ?? th.places.pinNoAddress)
+  const here = found && found.at === keyOf(view.lat, view.lng) ? found : null
+  const bare: PlaceMatch = { value: { text: th.places.pinnedHere, lat: view.lat, lng: view.lng }, confidence: 1 }
+  // A pin abroad, or on a map still showing the whole country, cannot be the shop: it is not offered.
+  const abroad = !isInThailand(view.lat, view.lng)
+  const tooFar = view.zoom < AREA_ZOOM
+  const line = abroad
+    ? th.places.outsideThailand
+    : tooFar
+      ? th.places.pinZoomIn
+      : here === null
+        ? th.places.pinLooking
+        : (here.match?.value.address ?? here.match?.value.text ?? th.places.pinNoAddress)
 
   const jumpToPhone = async () => {
     const fix = await onLocate()
@@ -118,10 +132,11 @@ function PinSheetBody({ start, describe, onUse, onLocate, onClose }: Omit<PinShe
         <p aria-live="polite" className="min-h-14 text-base">
           {line}
         </p>
+        <p className="-mt-2 text-sm text-ink-muted">{th.places.osmNotice}</p>
         <Button variant="secondary" icon={<LocateFixed className="size-5" aria-hidden />} onClick={() => void jumpToPhone()}>
           {th.places.pinLocate}
         </Button>
-        <Button fullWidth onClick={() => onUse(here?.match ? { ...here.match, value: { ...here.match.value, lat: centre.lat, lng: centre.lng } } : bare)}>
+        <Button fullWidth disabled={abroad || tooFar} onClick={() => onUse(here?.match ? { ...here.match, value: { ...here.match.value, lat: view.lat, lng: view.lng } } : bare)}>
           {th.places.pinUse}
         </Button>
       </div>

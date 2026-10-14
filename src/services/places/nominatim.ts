@@ -110,7 +110,8 @@ export function createNominatim({
       }),
     reverse: (lat, lng) =>
       rememberedAs(`reverse:${lat.toFixed(5)},${lng.toFixed(5)}`, async () => {
-        const data = (await call('/reverse', { lat: String(lat), lon: String(lng), zoom: '18' })) as NominatimPlace | null
+        // 5 decimals is about a metre: all the lookup needs, and no more of the merchant's position than that leaves the phone.
+        const data = (await call('/reverse', { lat: lat.toFixed(5), lon: lng.toFixed(5), zoom: '18' })) as NominatimPlace | null
         if (!data || typeof data !== 'object' || 'error' in data) return null
         const point = toPoint(data, false)
         return point ? { ...point, lat, lng } : null
