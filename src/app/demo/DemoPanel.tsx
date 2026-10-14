@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
-import type { Screen } from '@/app/journey/journeyMachine.ts'
+import { PHOTO_PATH, type Screen } from '@/app/journey/journeyMachine.ts'
+import type { DocKind } from '@/types/domain.ts'
 import { demoFlags } from '@/services/demoFlags.ts'
 import { demoBus } from './demoBus.ts'
 import { demoProfile, scriptLines } from './demoProfile.ts'
 
 // Presenter-only tooling (desktop, beside the phone). Press D to hide or show.
-const JUMPS: { label: string; screen: Screen; withProfile?: boolean }[] = [
+const JUMPS: { label: string; screen: Screen; withProfile?: boolean; scan?: DocKind[] }[] = [
   { label: 'R1 · หน้าแรก', screen: 'R1_WELCOME' },
   { label: 'R2 · อีเมลและรหัสผ่าน', screen: 'R2_ACCOUNT' },
   { label: 'R3 · ข้อมูลร้าน', screen: 'R3_STORE' },
   { label: 'A1 · คุยเปิดร้าน', screen: 'A1_TALK' },
+  { label: 'S1 · ถ่ายรูปเอกสาร (ทางถ่ายรูป)', screen: 'S1_SCAN', scan: PHOTO_PATH },
   { label: 'A2 · ตรวจทาน (ข้อมูลตัวอย่าง)', screen: 'A2_REVIEW', withProfile: true },
   { label: 'A3 · ส่งแล้ว', screen: 'A3_SUBMITTED', withProfile: true },
   { label: '30 วันต่อมา…', screen: 'TRANSITION' },
@@ -55,7 +57,8 @@ export function DemoPanel() {
             className="min-h-12 rounded-xl px-3 text-left ring-1 ring-line hover:bg-canvas"
             onClick={() => {
               if (jump.withProfile) dispatch({ type: 'LOAD_PROFILE', profile: demoProfile() })
-              dispatch({ type: 'GO', screen: jump.screen })
+              if (jump.scan) dispatch({ type: 'START_SCAN', docs: jump.scan, returnTo: 'A1_TALK' })
+              else dispatch({ type: 'GO', screen: jump.screen })
             }}
           >
             {jump.label}

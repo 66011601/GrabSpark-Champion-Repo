@@ -16,7 +16,10 @@ npm test        # unit + architecture tests
 ### Presenting the demo
 
 - Open on a desktop browser: the phone frame is on the left, the **Demo panel** on the right (press `D` to hide or show it).
-- **Register (R1-R3):** the demo opens on R1. Tap **ลงทะเบียน** → on R2 type any email and password → on R3 play "บรรทัด 1" from the panel (or speak it) → **ต่อไป**. Or jump straight to A1 from the panel.
-- **Act 1:** on A1, play "บรรทัด 1–3" from the panel (or speak them in Chrome), tap **ใช่** for the phone, then **ตรวจทานข้อมูล** → confirm each card → **ยืนยันและส่งสมัคร**.
+- **Register (R1-R2):** the demo opens on R1. Tap **ลงทะเบียน** → on R2 type any email and password, then choose how to fill in the shop: **พูด** (default), **ถ่ายภาพเอกสาร** or **พิมพ์เอง** → **ต่อไป**.
+- **Act 1 by voice:** on R3 play "บรรทัด 1" from the panel (or speak it) → **ต่อไป** → on A1 play "บรรทัด 2–3", tap **ใช่** for the phone → **ต่อไป** → S1 asks for the ID card and bank book: tap **ถ่ายรูป** → **ใช้รูปนี้** for each → A2.
+- **Act 1 by photo:** S1 scans the sample ID card, bank book and paper menu (one price is smudged on purpose and comes back amber) → A1 asks only for the location, hours and phone → A2. The panel's "S1 · ถ่ายรูปเอกสาร" jumps straight there.
+- **A2:** confirm each card (the owner and bank cards show masked numbers; **ถ่ายใหม่** rescans) → **ยืนยันข้อมูลและปักหมุดที่ตั้ง**. The guardrail checks the ID checksum and that the bank account is in the owner's name.
+- All documents are fictional samples stamped "ตัวอย่าง". An uploaded photo stays in the browser and still returns the sample data.
 - "จำลองระบบล่ม" shows how a failed submit is handled; "เริ่มใหม่ทั้งหมด" resets.
 - Act 2 arrives with Plan 2.
