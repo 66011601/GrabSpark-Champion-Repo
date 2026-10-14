@@ -6,11 +6,11 @@ import { formatAccount, formatIdNumber, formatTHB } from '@/lib/format.ts'
 import { sampleScan } from '@/services/ocr/mockOcr.ts'
 import type { DocKind } from '@/types/domain.ts'
 
-/** The diagonal stamp that marks every sample as not a real document. */
+/** The diagonal watermark that marks every sample as not a real document; it sits behind the text. */
 function Stamp() {
   return (
     <span
-      className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-12 rounded-lg border-4 border-red-600/70 px-3 text-2xl font-bold text-red-600/70"
+      className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-12 rounded-lg border-4 border-red-600/30 px-3 text-3xl font-bold text-red-600/30"
       aria-hidden
     >
       {th.scan.sample}
@@ -19,7 +19,12 @@ function Stamp() {
 }
 
 function Paper({ className, children }: { className: string; children: ReactNode }) {
-  return <div className={`relative w-full max-w-xs overflow-hidden rounded-xl p-4 text-ink shadow-lg ${className}`}>{children}</div>
+  return (
+    <div className={`relative w-full max-w-xs overflow-hidden rounded-xl p-4 text-ink shadow-lg ${className}`}>
+      <Stamp />
+      <div className="relative">{children}</div>
+    </div>
+  )
 }
 
 function IdCardSample() {
@@ -38,7 +43,6 @@ function IdCardSample() {
           <UserRound className="size-10 text-ink-muted" aria-hidden />
         </span>
       </div>
-      <Stamp />
     </Paper>
   )
 }
@@ -56,7 +60,6 @@ function BankBookSample() {
         <dt>{th.scan.paper.accountName}</dt>
         <dd className="font-bold">{book.accountName}</dd>
       </dl>
-      <Stamp />
     </Paper>
   )
 }
@@ -75,7 +78,6 @@ function PaperMenuSample() {
           </li>
         ))}
       </ul>
-      <Stamp />
     </Paper>
   )
 }

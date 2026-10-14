@@ -22,8 +22,8 @@ export function ScanResults({ lines }: { lines: ScanLine[] }) {
             ) : (
               <CheckCircle2 className="size-6 shrink-0 text-action" aria-hidden />
             )}
-            <span className="w-32 shrink-0 text-base text-ink-muted">{line.label}</span>
-            <span className={`min-w-0 flex-1 font-bold ${unsure ? 'text-warn-ink' : ''}`}>
+            <span className="min-w-0 flex-1 text-base text-ink-muted">{line.label}</span>
+            <span className={`shrink-0 whitespace-nowrap text-right font-bold ${unsure ? 'text-warn-ink' : ''}`}>
               {line.value}
               {unsure && <span className="sr-only"> ({th.review.pleaseCheck})</span>}
             </span>
