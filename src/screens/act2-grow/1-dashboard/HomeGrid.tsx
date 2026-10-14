@@ -1,31 +1,13 @@
-import { Bell, Bot, Calculator, ChartColumn, ChevronRight, CircleHelp, Home, Link2, Megaphone, MessageSquareText, ReceiptText, ShoppingBasket, Store, User, UtensilsCrossed, Users, Zap } from 'lucide-react'
-import type { ComponentType } from 'react'
+import { Bell, ChevronRight, Home, ReceiptText, Store, User, UtensilsCrossed } from 'lucide-react'
 import { salesSummary } from '@/ai/navigator/insights.ts'
-import type { NavScreen } from '@/ai/navigator/types.ts'
+import { GRID } from '@/ai/navigator/openPage.ts'
 import { mark } from '@/components/navigator/mark.ts'
 import { Chip } from '@/components/ui/Chip.tsx'
 import { th } from '@/copy/th.ts'
 import { formatTHB } from '@/lib/format.ts'
 import { getMerchant } from '@/services/merchantApi.ts'
+import { GRID_ICONS } from './gridIcons.ts'
 import type { PanelProps } from './props.ts'
-
-// GrabMerchant's home, in the order of the real app (merchant.grab.com guide "วิธีการใช้แอป GrabMerchant เบื้องต้น").
-// Only four open a screen in this demo; the rest are there so the home looks like the one owners know.
-const ITEMS: { id: string; Icon: ComponentType<{ className?: string }>; opens?: NavScreen }[] = [
-  { id: 'orders', Icon: ReceiptText },
-  { id: 'menu', Icon: UtensilsCrossed, opens: 'MENU' },
-  { id: 'shop', Icon: Store },
-  { id: 'boost', Icon: Megaphone, opens: 'BOOST' },
-  { id: 'staff', Icon: Users },
-  { id: 'grabshop', Icon: ShoppingBasket },
-  { id: 'ai', Icon: Bot },
-  { id: 'insights', Icon: ChartColumn, opens: 'INSIGHTS' },
-  { id: 'feedback', Icon: MessageSquareText, opens: 'FEEDBACK' },
-  { id: 'cashier', Icon: Calculator },
-  { id: 'express', Icon: Zap },
-  { id: 'smartlink', Icon: Link2 },
-  { id: 'help', Icon: CircleHelp },
-]
 
 const EXAMPLES = ['sales', 'forecast', 'promo', 'soldOut', 'feedback'] as const
 const NAV_ICONS = [Home, ReceiptText, UtensilsCrossed, User]
@@ -67,22 +49,25 @@ export function HomeGrid({ highlight, change, ask }: PanelProps) {
         </button>
 
         <ul className="mx-4 grid grid-cols-4 gap-x-1 gap-y-2 rounded-2xl bg-surface px-1 py-3 ring-1 ring-line">
-          {ITEMS.map(({ id, Icon, opens }, index) => (
-            <li key={id}>
-              <button
-                type="button"
-                data-nav={`grid-${id}`}
-                aria-disabled={!opens}
-                onClick={() => opens && change({ screen: opens })}
-                className={`flex min-h-22 w-full flex-col items-center justify-start gap-1 rounded-xl px-0.5 pt-1 text-center text-sm leading-tight text-balance ${opens ? 'cursor-pointer active:bg-ok-bg' : 'cursor-default'} ${mark(highlight, `grid-${id}`)}`}
-              >
-                <span className="flex size-12 items-center justify-center rounded-2xl bg-ok-bg">
-                  <Icon className="size-6 text-action" aria-hidden />
-                </span>
-                {th.act2.grid[index]}
-              </button>
-            </li>
-          ))}
+          {GRID.map(({ id, label, opens }) => {
+            // Every item opens: four are built for the demo, the rest say what they are for (GrabMerchant's own order).
+            const Icon = GRID_ICONS[id]
+            return (
+              <li key={id}>
+                <button
+                  type="button"
+                  data-nav={`grid-${id}`}
+                  onClick={() => change({ screen: opens ?? 'PAGE', page: id })}
+                  className={`flex min-h-22 w-full cursor-pointer flex-col items-center justify-start gap-1 rounded-xl px-0.5 pt-1 text-center text-sm leading-tight text-balance active:bg-ok-bg ${mark(highlight, `grid-${id}`)}`}
+                >
+                  <span className="flex size-12 items-center justify-center rounded-2xl bg-ok-bg">
+                    <Icon className="size-6 text-action" aria-hidden />
+                  </span>
+                  {label}
+                </button>
+              </li>
+            )
+          })}
         </ul>
 
         <section className="mx-4 rounded-2xl bg-surface p-4 ring-1 ring-line">

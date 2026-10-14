@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType }
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { BACK_TIMES, findItem } from '@/ai/navigator/drafts.ts'
 import { asksToConfirm, CONTROLS, matchIntent } from '@/ai/navigator/matchIntent.ts'
+import { GRID, matchOpen, openScript } from '@/ai/navigator/openPage.ts'
 import { runScript, type RunnerIO, type Slots } from '@/ai/navigator/runner.ts'
 import { SCRIPTS } from '@/ai/navigator/scripts.ts'
 import { INITIAL_NAV, type NavScreen, type NavState, type Script, type ScriptId, type SoldOutUntil } from '@/ai/navigator/types.ts'
@@ -18,10 +19,11 @@ import { Feedback } from './Feedback.tsx'
 import { HomeGrid } from './HomeGrid.tsx'
 import { Insights } from './Insights.tsx'
 import { ItemMenu } from './ItemMenu.tsx'
+import { PageScreen } from './PageScreen.tsx'
 import type { PanelProps } from './props.ts'
 
-const PANELS: Record<NavScreen, ComponentType<PanelProps>> = { HOME: HomeGrid, INSIGHTS: Insights, BOOST: Boost, MENU: ItemMenu, FEEDBACK: Feedback }
-const WHERE: Record<NavScreen, string> = { HOME: th.act2.home, INSIGHTS: th.act2.grid[7], BOOST: th.act2.grid[3], MENU: th.act2.grid[1], FEEDBACK: th.act2.grid[8] }
+const PANELS: Record<NavScreen, ComponentType<PanelProps>> = { HOME: HomeGrid, INSIGHTS: Insights, BOOST: Boost, MENU: ItemMenu, FEEDBACK: Feedback, PAGE: PageScreen }
+const WHERE: Record<NavScreen, string> = { HOME: th.act2.home, INSIGHTS: th.act2.grid[7], BOOST: th.act2.grid[3], MENU: th.act2.grid[1], FEEDBACK: th.act2.grid[8], PAGE: '' }
 const script = (id: ScriptId) => SCRIPTS.find((entry) => entry.id === id) as Script
 
 // How long the cursor takes to arrive, to tap, and to settle. "ข้าม" / the S key makes all of these zero.
@@ -40,7 +42,7 @@ export function DashboardScreen() {
   const [highlight, setHighlight] = useState<string | null>(null)
   const [cursor, setCursor] = useState<{ target: string | null; taps: number }>({ target: null, taps: 0 })
   const [running, setRunning] = useState(false)
-  const [heading, setHeading] = useState<NavScreen>('HOME') // where the current run ends up, for the banner
+  const [heading, setHeading] = useState('') // where the current run ends up, for the banner
   const run = useRef<AbortController | null>(null)
   const fast = useRef(false)
   const wake = useRef<(() => void) | null>(null) // ends the wait in progress
@@ -115,7 +117,8 @@ export function DashboardScreen() {
       run.current = mine
       fast.current = false
       setNav(INITIAL_NAV) // every run starts from the home screen
-      setHeading(chosen.steps[chosen.steps.length - 1].screen)
+      const last = chosen.steps[chosen.steps.length - 1]
+      setHeading(last.screen === 'PAGE' ? (GRID.find((item) => item.id === chosen.steps[0].set?.page)?.label ?? '') : WHERE[last.screen])
       setRunning(true)
       const finished = await runScript(chosen, io, mine.signal, slots)
       if (run.current !== mine) return // a newer run took over
@@ -161,6 +164,13 @@ export function DashboardScreen() {
     const until = nav.soldOut && !nav.soldOut.until && nav.done !== 'soldOut' ? matchCommand(text, BACK_TIMES) : null
     if (until) {
       pick(until)
+      return true
+    }
+    // "เปิดเมนู", "ไปที่ส่งด่วน": a plain open command for any of the 13 home items.
+    const page = matchOpen(text)
+    if (page) {
+      askedWhich.current = false
+      void start(openScript(page))
       return true
     }
     const id = matchIntent(text, SCRIPTS)
@@ -220,7 +230,7 @@ export function DashboardScreen() {
       {running && (
         <div className="flex items-center gap-3 px-4 pt-2">
           <p aria-live="polite" className="flex-1 font-bold text-action">
-            {th.act2.banner(WHERE[heading])}
+            {th.act2.banner(heading)}
           </p>
           <Button variant="secondary" aria-label={th.act2.skipHelp} icon={<SkipForward className="size-5" aria-hidden />} onClick={skip}>
             {th.act2.skip}

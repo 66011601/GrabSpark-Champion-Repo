@@ -42,6 +42,8 @@ Controls any time: **ข้าม** button or the `S` key skips the animation (t
 
 Build order if time runs short: 1 → 3 → 4 → 2 → 5.
 
+**Opening any home item.** Besides the five scripts, a plain "open X" for any of the 13 home items ("เปิดเมนู", "ไปที่ส่งด่วน", or just "แคชเชียร์") plays a two-step script built from the grid (`src/ai/navigator/openPage.ts`): tap the tile, then show the screen and say what the item is for. The whole sentence must be the command (after polite padding such as ช่วย / ให้ / หน่อย is dropped), so questions still reach the five scripts. Items without a demo screen open a page with their purpose, taken from Grab's guide.
+
 ## 5. Script format
 
 A script is data, not a hand-coded screen:

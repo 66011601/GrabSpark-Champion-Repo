@@ -2,7 +2,7 @@ import { th } from '@/copy/th.ts'
 import { getMerchant } from '@/services/merchantApi.ts'
 import { buildRainPromo } from './drafts.ts'
 import { complaintTopics, rainForecast, salesSummary } from './insights.ts'
-import type { Script } from './types.ts'
+import type { Script, ScriptId } from './types.ts'
 
 const shop = getMerchant()
 const t = th.act2
@@ -16,7 +16,7 @@ const complaints = complaintTopics(shop)
  * The five things an owner can ask for. Each is data: the runner plays the steps, the screens just show state.
  * `{item}` and `{itemId}` are filled with the menu item the owner named.
  */
-export const SCRIPTS: Script[] = [
+export const SCRIPTS: Script<ScriptId>[] = [
   {
     id: 'sales',
     phrases: [t.ask.sales, 'ขอดูยอดขาย', 'ยอดขายเป็นยังไงบ้าง', 'วันนี้ขายได้เท่าไหร่', 'ยอดขายสัปดาห์นี้'],

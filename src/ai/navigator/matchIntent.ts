@@ -9,7 +9,7 @@ const squash = (text: string) => stripParticles(text).toLowerCase().replace(/\s+
  * Whole sentences go through matchCommand; longer or misheard ones fall back to keyword groups.
  * The best group (most letters matched) wins; on a tie the earlier script does.
  */
-export function matchIntent(utterance: string, scripts: Script[]): ScriptId | null {
+export function matchIntent(utterance: string, scripts: Script<ScriptId>[]): ScriptId | null {
   const said = squash(utterance)
   if (asksToConfirm(utterance)) return null
   const open = scripts.filter((script) => !script.not?.some((word) => said.includes(squash(word))))

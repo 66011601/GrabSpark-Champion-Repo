@@ -49,4 +49,5 @@ Each task: write the failing test, make it pass, run `npm test`, `npm run lint`,
 - [x] **T7. Mock app screens.** Host with cursor, skip (button and `S` key), banner; five screens; confirm bar; "หยุดโปรนี้".
 - [x] **T8. Presenter tools.** DemoPanel jump and five buttons; example chips on the phone; README section.
 - [x] **T8b. GrabMerchant look.** White headers, 4-column icon grid, underlined tabs, menu switches with "วันนี้" / "ไม่มีกำหนด", star rating and menu share (`ratingSummary`, `menuShare`, tested first).
+- [x] **T8c. Open any home item by voice.** `matchOpen` + `openScript` (13 items, other names, polite padding; questions left to the scripts), all tiles tappable, `PageScreen` for the nine items without a demo screen.
 - [ ] **T9. Real microphone and voice check.** Not done: needs Chrome or Edge with a mic, and the voice decision from the spec's open questions.

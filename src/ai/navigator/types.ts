@@ -1,4 +1,7 @@
-export type NavScreen = 'HOME' | 'INSIGHTS' | 'BOOST' | 'MENU' | 'FEEDBACK'
+export type NavScreen = 'HOME' | 'INSIGHTS' | 'BOOST' | 'MENU' | 'FEEDBACK' | 'PAGE'
+
+/** The 13 items on GrabMerchant's home. */
+export type GridId = 'orders' | 'menu' | 'shop' | 'boost' | 'staff' | 'grabshop' | 'ai' | 'insights' | 'feedback' | 'cashier' | 'express' | 'smartlink' | 'help'
 export type InsightsTab = 'overview' | 'sales' | 'trend'
 
 /** A promotion the AI prepared. It stays a draft until the merchant taps the confirm bar. */
@@ -28,6 +31,7 @@ export type Draft = PromoDraft | SoldOutDraft
 /** Everything the mock app shows. Scripts change it through `set`; they never write anywhere else. */
 export interface NavState {
   screen: NavScreen
+  page: GridId | null // which item 'PAGE' describes
   tab: InsightsTab
   period: 7 | 30
   compare: boolean
@@ -41,6 +45,7 @@ export interface NavState {
 
 export const INITIAL_NAV: NavState = {
   screen: 'HOME',
+  page: null,
   tab: 'overview',
   period: 30,
   compare: false,
@@ -62,8 +67,9 @@ export interface ScriptStep {
   say: string // one short line, spoken and shown in the helper bar
 }
 
-export interface Script {
-  id: ScriptId
+/** A feature script (ScriptId) or a plain "open this home item" one. */
+export interface Script<Id extends string = ScriptId | `open-${GridId}`> {
+  id: Id
   phrases: string[] // whole sentences, matched with matchCommand
   keywords: string[][] // a group matches when all its words are in the sentence
   not?: string[] // any of these rules the script out
