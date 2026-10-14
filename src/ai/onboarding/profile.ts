@@ -1,4 +1,5 @@
 import type {
+  DocKind,
   FieldStatus,
   MenuEntry,
   OnboardingProfile,
@@ -7,8 +8,17 @@ import type {
   ProfileUpdates,
 } from '@/types/domain.ts'
 
-/** The order the companion asks in, and the order fields are listed on screen. */
-export const PROFILE_FIELDS: ProfileFieldKey[] = ['storeName', 'category', 'location', 'hours', 'menu', 'phone']
+/** What A1 asks about, in the order it asks; also the A1 checklist. */
+export const TALK_FIELDS: ProfileFieldKey[] = ['storeName', 'category', 'location', 'hours', 'menu', 'phone']
+
+/** What only a photo fills (S1); never asked by voice. */
+export const DOC_FIELDS: ProfileFieldKey[] = ['owner', 'payout']
+
+/** Everything A2 shows and the guardrail requires confirmed. */
+export const REVIEW_FIELDS: ProfileFieldKey[] = [...TALK_FIELDS, ...DOC_FIELDS]
+
+/** Which document fills a document field: editing that field in A2 means photographing it again. */
+export const DOC_FOR_FIELD: Partial<Record<ProfileFieldKey, DocKind>> = { owner: 'idCard', payout: 'bankBook' }
 
 /** Heard values below this confidence are shown amber in A2. */
 export const CHECK_THRESHOLD = 0.8
@@ -23,6 +33,8 @@ export function createEmptyProfile(sessionId = 'onb_001'): OnboardingProfile {
       hours: { value: null, status: 'empty' },
       menu: { value: null, status: 'empty' },
       phone: { value: null, status: 'empty', suggestFromAccount: true },
+      owner: { value: null, status: 'empty' },
+      payout: { value: null, status: 'empty' },
     },
   }
 }
@@ -44,7 +56,7 @@ function mergeMenu(current: MenuEntry[] | null, incoming: MenuEntry[]): MenuEntr
 
 export function applyUpdates(profile: OnboardingProfile, updates: ProfileUpdates): OnboardingProfile {
   let next = profile
-  for (const key of PROFILE_FIELDS) {
+  for (const key of REVIEW_FIELDS) {
     const update = updates[key]
     if (!update) continue
     const value = key === 'menu' ? mergeMenu(next.fields.menu.value, update.value as MenuEntry[]) : update.value
@@ -53,6 +65,15 @@ export function applyUpdates(profile: OnboardingProfile, updates: ProfileUpdates
   }
   if (updates.location) next = patch(next, 'location', { needsPinCheck: true })
   return next
+}
+
+/** Keeps only the updates for fields that are still empty: a photo never replaces what the merchant already gave. */
+export function onlyEmptyFields(profile: OnboardingProfile, updates: ProfileUpdates): ProfileUpdates {
+  const kept: ProfileUpdates = {}
+  for (const key of REVIEW_FIELDS) {
+    if (updates[key] && profile.fields[key].status === 'empty') Object.assign(kept, { [key]: updates[key] })
+  }
+  return kept
 }
 
 export function confirmField(profile: OnboardingProfile, key: ProfileFieldKey): OnboardingProfile {
@@ -75,9 +96,17 @@ export function needsCheck(field: { status: FieldStatus; confidence?: number }):
 }
 
 export function countHeard(profile: OnboardingProfile): number {
-  return PROFILE_FIELDS.filter((key) => profile.fields[key].status !== 'empty').length
+  return TALK_FIELDS.filter((key) => profile.fields[key].status !== 'empty').length
 }
 
 export function isReadyForReview(profile: OnboardingProfile): boolean {
-  return countHeard(profile) === PROFILE_FIELDS.length
+  return countHeard(profile) === TALK_FIELDS.length
+}
+
+/** The documents still to photograph before review: the ID card while there is no owner, the bank book while there is no payout account. */
+export function missingDocs(profile: OnboardingProfile): DocKind[] {
+  const docs: DocKind[] = []
+  if (profile.fields.owner.status === 'empty') docs.push('idCard')
+  if (profile.fields.payout.status === 'empty') docs.push('bankBook')
+  return docs
 }

@@ -11,12 +11,19 @@ import { Button } from '@/components/ui/Button.tsx'
 import { TextField } from '@/components/ui/TextField.tsx'
 import { th } from '@/copy/th.ts'
 import { checkEmail, checkPassword, MIN_PASSWORD_LENGTH } from '@/lib/account.ts'
+import type { FillMethod } from '@/types/domain.ts'
+import { MethodPicker } from './MethodPicker.tsx'
 
 const SIGN_IN_MS = 600
 const FORM_ID = 'account-form'
 const COMMANDS = [
   { id: 'next' as const, phrases: SAY.next },
   { id: 'back' as const, phrases: SAY.back },
+]
+const METHOD_COMMANDS = [
+  { id: 'voice' as const, phrases: SAY.methodVoice },
+  { id: 'photo' as const, phrases: SAY.methodPhoto },
+  { id: 'type' as const, phrases: SAY.methodType },
 ]
 
 /** Email and password, for both new and returning merchants. The companion looks away from the password. */
@@ -25,6 +32,7 @@ export function AccountScreen() {
   const isNew = state.authMode === 'register'
   const [email, setEmail] = useState(state.email ?? '')
   const [password, setPassword] = useState('')
+  const [method, setMethod] = useState<FillMethod>(state.method)
   const [showPassword, setShowPassword] = useState(false)
   const [touched, setTouched] = useState({ email: false, password: false })
   const [inPassword, setInPassword] = useState(false)
@@ -46,11 +54,15 @@ export function AccountScreen() {
         ? th.account.passwordEmpty
         : th.account.passwordShort(MIN_PASSWORD_LENGTH)
 
-  // The companion never takes an email or password by ear; it only presses the buttons.
+  // The companion never takes an email or password by ear; it only presses buttons and picks a card.
   const { mic, transcript, notice, toggleMic } = useVoiceInput((text) => {
-    const command = matchCommand(text, COMMANDS)
+    const command = matchCommand(text, [...COMMANDS, ...METHOD_COMMANDS])
     if (command === 'next') form.current?.requestSubmit()
     if (command === 'back') dispatch({ type: 'GO', screen: 'R1_WELCOME' })
+    if (command === 'voice' || command === 'photo' || command === 'type') {
+      if (!isNew) return th.account.typeItYourself // a returning merchant has no method to choose
+      setMethod(command)
+    }
     return command ? true : th.account.typeItYourself
   })
 
@@ -61,7 +73,7 @@ export function AccountScreen() {
     if (passwordProblem) return passwordInput.current?.focus()
     setWorking(true)
     // Prototype: there is no real account service. The password stays in this screen and is dropped here.
-    signingIn.current = window.setTimeout(() => dispatch({ type: 'AUTHENTICATED', email: email.trim() }), SIGN_IN_MS)
+    signingIn.current = window.setTimeout(() => dispatch({ type: 'AUTHENTICATED', email: email.trim(), method }), SIGN_IN_MS)
   }
 
   return (
@@ -71,7 +83,11 @@ export function AccountScreen() {
       onBack={() => dispatch({ type: 'GO', screen: 'R1_WELCOME' })}
       dock={
         <CompanionDock
-          text={emailError ?? passwordError ?? (inPassword ? th.account.bubblePrivate : isNew ? th.account.bubbleRegister : th.account.bubbleLogin)}
+          text={
+            emailError ??
+            passwordError ??
+            (inPassword ? th.account.bubblePrivate : isNew ? (touched.password ? th.method.bubble : th.account.bubbleRegister) : th.account.bubbleLogin)
+          }
           notice={notice}
           hint={inPassword || mic === 'error' ? undefined : MIC_LABELS[mic]}
           heard={transcript}
@@ -130,6 +146,7 @@ export function AccountScreen() {
             </button>
           }
         />
+        {isNew && <MethodPicker value={method} onChange={setMethod} />}
         <Button variant="ghost" className="self-start px-0!" onClick={() => dispatch({ type: 'CHOOSE_AUTH', mode: isNew ? 'login' : 'register' })}>
           {isNew ? th.account.haveAccount : th.account.noAccount}
         </Button>

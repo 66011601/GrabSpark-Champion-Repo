@@ -1,9 +1,10 @@
 import { th } from '@/copy/th.ts'
 import type { Account, FollowUpChip, FollowUpQuestion, OnboardingProfile, ProfileFieldKey } from '@/types/domain.ts'
 import { CATEGORY_LABELS } from './parsers/category.ts'
-import { PROFILE_FIELDS } from './profile.ts'
+import { TALK_FIELDS } from './profile.ts'
 
-const QUESTIONS: Record<ProfileFieldKey, (account: Account) => FollowUpQuestion> = {
+/** Document fields (owner, payout) are photographed, never asked about. */
+const QUESTIONS: Partial<Record<ProfileFieldKey, (account: Account) => FollowUpQuestion>> = {
   storeName: () => ({ field: 'storeName', text: th.followUp.storeName, chips: [] }),
   category: () => ({
     field: 'category',
@@ -44,9 +45,9 @@ const QUESTIONS: Record<ProfileFieldKey, (account: Account) => FollowUpQuestion>
  */
 export function pickFollowUp(profile: OnboardingProfile, account: Account): FollowUpQuestion | null {
   const { fields } = profile
-  if (PROFILE_FIELDS.every((key) => fields[key].status === 'empty')) {
+  if (TALK_FIELDS.every((key) => fields[key].status === 'empty')) {
     return { field: null, text: th.followUp.open, chips: [] }
   }
-  const next = PROFILE_FIELDS.find((key) => fields[key].status === 'empty')
-  return next ? QUESTIONS[next](account) : null
+  const next = TALK_FIELDS.find((key) => fields[key].status === 'empty')
+  return next ? (QUESTIONS[next]?.(account) ?? null) : null
 }

@@ -1,0 +1,16 @@
+{
+  "idCard": { "kind": "idCard", "title": "นาง", "name": "แดง ใจดี", "idNumber": "1234567890121", "confidence": 0.97 },
+  "bankBook": { "kind": "bankBook", "bankName": "ธนาคารกสิกรไทย", "accountNumber": "1234567890", "accountName": "นาง แดง ใจดี", "confidence": 0.95 },
+  "menu": {
+    "kind": "menu",
+    "storeName": { "value": "ครัวป้าแดง", "confidence": 0.9 },
+    "category": { "value": "อาหารไทย", "confidence": 0.75 },
+    "items": [
+      { "name": "น้ำพริกกะปิปลาทู", "priceTHB": 89, "confidence": 0.6 },
+      { "name": "กะเพราหมูสับ", "priceTHB": 65, "confidence": 0.95 },
+      { "name": "แกงเขียวหวาน", "priceTHB": 75, "confidence": 0.95 },
+      { "name": "ชาไทยเย็น", "priceTHB": 35, "confidence": 0.95 },
+      { "name": "น้ำกระเจี๊ยบ", "priceTHB": 30, "confidence": 0.95 }
+    ]
+  }
+}

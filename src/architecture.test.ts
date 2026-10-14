@@ -9,11 +9,16 @@ const ALLOWED_WRITERS = ['/src/ai/onboarding/submit.ts', '/src/services/merchant
 const IMPORTS_WRITE_API = /(?:from\s+|import\s*\(\s*)['"][^'"]*merchantApi\.write/
 const IMPORTS_REACT = /from\s+['"]react/
 
-const appFiles = Object.entries(sources).filter(([path]) => !path.endsWith('.test.ts'))
+// Sending is a merchant's tap in A2, never a side effect of talking or scanning.
+const SUBMITTERS = ['/src/screens/act1-onboarding/A2-review/ReviewScreen.tsx']
+const IMPORTS_SUBMIT = /(?:from\s+|import\s*\(\s*)['"][^'"]*(?:onboarding\/|\.\/)submit(?:\.ts)?['"]/
+
+const appFiles = Object.entries(sources).filter(([path]) => !/\.test\.tsx?$/.test(path))
 
 describe('architecture', () => {
   it('sees the source tree', () => {
     expect(Object.keys(sources)).toContain('/src/ai/onboarding/submit.ts')
+    expect(Object.keys(sources)).toContain('/src/services/ocr/mockOcr.ts')
     expect(IMPORTS_WRITE_API.test("import { submitApplication } from '@/services/merchantApi.write.ts'")).toBe(true)
   })
 
@@ -27,6 +32,13 @@ describe('architecture', () => {
   it('keeps src/ai free of React', () => {
     const offenders = appFiles
       .filter(([path, source]) => path.startsWith('/src/ai/') && IMPORTS_REACT.test(source))
+      .map(([path]) => path)
+    expect(offenders).toEqual([])
+  })
+
+  it('only lets A2 send the application', () => {
+    const offenders = appFiles
+      .filter(([path, source]) => !SUBMITTERS.includes(path) && IMPORTS_SUBMIT.test(source))
       .map(([path]) => path)
     expect(offenders).toEqual([])
   })

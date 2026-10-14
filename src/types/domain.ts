@@ -27,6 +27,24 @@ export interface MenuEntry {
   priceTHB: number
 }
 
+/** How the merchant chose to fill in the shop on R2. */
+export type FillMethod = 'voice' | 'photo' | 'type'
+
+/** A document the scanner can read. */
+export type DocKind = 'idCard' | 'bankBook' | 'menu'
+
+export interface OwnerIdentity {
+  title: string // นาย / นาง / นางสาว, as printed
+  name: string // first and last name, without the title
+  idNumber: string // 13 digits, no dashes
+}
+
+export interface PayoutAccount {
+  bankName: string
+  accountNumber: string // digits only
+  accountName: string // as printed in the bank book, title included
+}
+
 export interface ProfileFields {
   storeName: ProfileField<string>
   category: ProfileField<string>
@@ -34,6 +52,8 @@ export interface ProfileFields {
   hours: ProfileField<OpeningHours>
   menu: ProfileField<MenuEntry[]>
   phone: ProfileField<string> & { suggestFromAccount?: boolean }
+  owner: ProfileField<OwnerIdentity>
+  payout: ProfileField<PayoutAccount>
 }
 
 export type ProfileFieldKey = keyof ProfileFields
@@ -84,3 +104,29 @@ export interface Account {
   maskedPhone: string
   deviceLocation: GeoPoint
 }
+
+/** What the (mock) OCR read from one photo. Values are drafts until the merchant confirms them in A2. */
+export interface IdCardScan {
+  kind: 'idCard'
+  title: string
+  name: string
+  idNumber: string
+  confidence: number
+}
+
+export interface BankBookScan {
+  kind: 'bankBook'
+  bankName: string
+  accountNumber: string
+  accountName: string
+  confidence: number
+}
+
+export interface MenuScan {
+  kind: 'menu'
+  storeName: { value: string; confidence: number } // from the menu's header
+  category: { value: string; confidence: number } // guessed from the dishes
+  items: { name: string; priceTHB: number; confidence: number }[]
+}
+
+export type ScanResult = IdCardScan | BankBookScan | MenuScan

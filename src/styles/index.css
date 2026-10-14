@@ -31,6 +31,7 @@
   --animate-rise: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-listen: listen 1.4s ease-out infinite;
   --animate-speak: speak 0.9s ease-in-out infinite alternate;
+  --animate-scan: scan 1.2s ease-in-out both;
 
   /* A soft glow behind the companion while it talks. */
   @keyframes speak {
@@ -53,6 +54,14 @@
     0% { transform: scale(0.6); opacity: 0; }
     70% { transform: scale(1.08); opacity: 1; }
     100% { transform: scale(1); }
+  }
+
+  /* The line that sweeps the viewfinder while a photo is read (lasts READ_MS). */
+  @keyframes scan {
+    0% { top: 6%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 94%; opacity: 0; }
   }
 }
 

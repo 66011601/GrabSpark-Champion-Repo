@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { submitApplication } from '@/services/merchantApi.write.ts'
 import type { OnboardingProfile, ProfileUpdates } from '@/types/domain.ts'
-import { applyUpdates, confirmField, createEmptyProfile, PROFILE_FIELDS } from './profile.ts'
+import { applyUpdates, confirmField, createEmptyProfile, REVIEW_FIELDS } from './profile.ts'
 import { runSubmissionChecks, SubmissionBlockedError, submitProfile } from './submit.ts'
 
 vi.mock('@/services/merchantApi.write.ts', () => ({
@@ -15,11 +15,13 @@ const VALID: ProfileUpdates = {
   hours: { value: { open: '10:00', close: '20:00', closedDays: [] }, confidence: 0.95, heardFrom: 'x' },
   menu: { value: [{ name: 'ชาไทยเย็น', priceTHB: 35 }], confidence: 0.9, heardFrom: 'x' },
   phone: { value: '0812344217', confidence: 1, heardFrom: 'x' },
+  owner: { value: { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890121' }, confidence: 0.97, heardFrom: 'x' },
+  payout: { value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง แดง ใจดี' }, confidence: 0.95, heardFrom: 'x' },
 }
 
 function confirmedProfile(overrides: ProfileUpdates = {}): OnboardingProfile {
   const heard = applyUpdates(createEmptyProfile(), { ...VALID, ...overrides })
-  return PROFILE_FIELDS.reduce((profile, key) => confirmField(profile, key), heard)
+  return REVIEW_FIELDS.reduce((profile, key) => confirmField(profile, key), heard)
 }
 
 const check = (profile: OnboardingProfile, id: string) => runSubmissionChecks(profile).find((c) => c.id === id)
@@ -35,7 +37,7 @@ describe('runSubmissionChecks', () => {
 
   it('counts unconfirmed fields', () => {
     const heardOnly = applyUpdates(createEmptyProfile(), VALID)
-    const twoLeft = PROFILE_FIELDS.slice(0, 4).reduce((profile, key) => confirmField(profile, key), heardOnly)
+    const twoLeft = REVIEW_FIELDS.slice(0, 6).reduce((profile, key) => confirmField(profile, key), heardOnly)
     expect(check(twoLeft, 'ALL_CONFIRMED')).toEqual({ id: 'ALL_CONFIRMED', pass: false, message: 'ยังมีข้อมูลที่ต้องยืนยัน 2 ข้อ' })
   })
 
@@ -57,6 +59,33 @@ describe('runSubmissionChecks', () => {
   it('rejects a phone number that is not 10 digits', () => {
     const short = confirmedProfile({ phone: { value: '12345', confidence: 0.9, heardFrom: 'x' } })
     expect(check(short, 'PHONE_VALID')?.pass).toBe(false)
+  })
+
+  it('rejects an ID number whose checksum is wrong', () => {
+    const typo = confirmedProfile({ owner: { value: { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890122' }, confidence: 0.97, heardFrom: 'x' } })
+    expect(check(typo, 'ID_VALID')).toEqual({ id: 'ID_VALID', pass: false, message: 'เลขบัตรไม่ถูกต้อง ถ่ายใหม่อีกครั้งนะคะ' })
+  })
+
+  it('requires the bank account to be in the owner’s name', () => {
+    const someoneElse = confirmedProfile({
+      payout: { value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาย สมชาย ขายดี' }, confidence: 0.95, heardFrom: 'x' },
+    })
+    expect(check(someoneElse, 'PAYOUT_NAME_MATCH')).toEqual({ id: 'PAYOUT_NAME_MATCH', pass: false, message: 'ชื่อบัญชีต้องตรงกับชื่อบนบัตรค่ะ' })
+  })
+
+  it('does not strip a title-like start of the given name on one side only', () => {
+    const profile = confirmedProfile({
+      owner: { value: { title: 'นาง', name: 'นางนุช ใจดี', idNumber: '1234567890121' }, confidence: 0.97, heardFrom: 'x' },
+      payout: { value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง นางนุช ใจดี' }, confidence: 0.95, heardFrom: 'x' },
+    })
+    expect(check(profile, 'PAYOUT_NAME_MATCH')?.pass).toBe(true)
+  })
+
+  it('fails both document checks when nothing was scanned', () => {
+    const heard = applyUpdates(createEmptyProfile(), { ...VALID, owner: undefined, payout: undefined })
+    expect(check(heard, 'ID_VALID')?.pass).toBe(false)
+    expect(check(heard, 'PAYOUT_NAME_MATCH')?.pass).toBe(false)
+    expect(check(heard, 'ALL_CONFIRMED')?.message).toBe('ยังมีข้อมูลที่ต้องยืนยัน 8 ข้อ')
   })
 })
 

@@ -77,5 +77,7 @@ function extractAnswer(text: string, field: ProfileFieldKey, landmarks: Landmark
       const phone = parsePhone(text)
       return phone ? { phone: { value: phone, confidence: PHONE_CONFIDENCE, heardFrom } } : {}
     }
+    default:
+      return {} // owner and payout come from a photo, never from speech
   }
 }

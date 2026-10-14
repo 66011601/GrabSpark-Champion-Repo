@@ -5,6 +5,7 @@ import { DeviceFrame } from '@/components/shell/DeviceFrame.tsx'
 import { TalkScreen } from '@/screens/act1-onboarding/A1-talk/TalkScreen.tsx'
 import { ReviewScreen } from '@/screens/act1-onboarding/A2-review/ReviewScreen.tsx'
 import { SubmittedScreen } from '@/screens/act1-onboarding/A3-submitted/SubmittedScreen.tsx'
+import { ScanScreen } from '@/screens/act1-onboarding/S1-scan/ScanScreen.tsx'
 import { DashboardScreen } from '@/screens/act2-grow/1-dashboard/DashboardScreen.tsx'
 import { ActTransition } from '@/screens/ActTransition.tsx'
 import { WelcomeScreen } from '@/screens/register/R1-welcome/WelcomeScreen.tsx'
@@ -22,6 +23,8 @@ function ScreenSwitch() {
       return <StoreBasicsScreen key={state.runId} />
     case 'A1_TALK':
       return <TalkScreen key={state.runId} />
+    case 'S1_SCAN':
+      return <ScanScreen key={`${state.runId}:${state.scan?.queue.join(',') ?? ''}`} />
     case 'A2_REVIEW':
       return <ReviewScreen />
     case 'A3_SUBMITTED':

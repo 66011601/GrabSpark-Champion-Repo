@@ -145,7 +145,7 @@ export function StoreBasicsScreen() {
       }
       return fill(text, isCurrent)
     },
-    { autoListen: true },
+    { autoListen: state.method !== 'type' },
   )
 
   const type = (field: BasicsField, set: (value: string) => void) => (value: string) => {
@@ -181,7 +181,9 @@ export function StoreBasicsScreen() {
 
   const untouched = !asked && !storeName && !location
   const bubble = untouched
-    ? th.store.bubbleOpen
+    ? state.method === 'type'
+      ? th.store.bubbleOpenTyping
+      : th.store.bubbleOpen
     : missing === 'storeName'
       ? th.followUp.storeName
       : missing === 'location'

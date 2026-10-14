@@ -5,7 +5,7 @@ import { SAY } from '@/ai/commands/phrases.ts'
 import { extractProfile } from '@/ai/onboarding/extractProfile.ts'
 import { locationPhrase } from '@/ai/onboarding/parsers/locationPhrase.ts'
 import { pickFollowUp } from '@/ai/onboarding/followUp.ts'
-import { countHeard, isReadyForReview, PROFILE_FIELDS } from '@/ai/onboarding/profile.ts'
+import { countHeard, isReadyForReview, missingDocs, TALK_FIELDS } from '@/ai/onboarding/profile.ts'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
 import { MIC_LABELS } from '@/components/assistant/companionState.ts'
 import { CompanionDock } from '@/components/assistant/CompanionDock.tsx'
@@ -36,7 +36,8 @@ export function TalkScreen() {
   const { profile } = state
   const question = useMemo(() => pickFollowUp(profile, account), [profile])
   const expecting = question?.field ?? undefined
-  const [typing, setTyping] = useState(false)
+  // On the typing path the keyboard box is open from the start and the companion does not listen by itself.
+  const [typing, setTyping] = useState(state.method === 'type')
   const menuHeard = profile.fields.menu.status !== 'empty'
 
   const record = useCallback(
@@ -45,6 +46,8 @@ export function TalkScreen() {
   )
 
   const ready = isReadyForReview(profile)
+  const docsLeft = missingDocs(profile).length > 0
+  const openMenuScan = () => dispatch({ type: 'START_SCAN', docs: ['menu'], returnTo: 'A1_TALK' })
   const menu = profile.fields.menu.value
 
   const takeAccountPhone = () => record({ phone: { value: account.phone, confidence: 1, heardFrom: th.review.fromAccount } })
@@ -68,7 +71,8 @@ export function TalkScreen() {
         takeDeviceLocation()
         return true
       case 'scanMenu':
-        return th.onboarding.scanMenuToast
+        openMenuScan()
+        return true
       case 'startMic':
         return th.followUp.sayPhone
       case 'typeInstead':
@@ -76,14 +80,14 @@ export function TalkScreen() {
         return true
       case 'review':
         if (!ready) return th.onboarding.notReady
-        dispatch({ type: 'GO', screen: 'A2_REVIEW' })
+        dispatch({ type: 'TALK_DONE' })
         return true
       default:
         return null
     }
   }
 
-  const { mic, transcript, notice, setNotice, toggleMic, hear, onSpoken } = useVoiceInput(
+  const { mic, transcript, notice, toggleMic, hear, onSpoken } = useVoiceInput(
     async (text, isCurrent) => {
       const obeyed = obey(text)
       if (obeyed !== null) return obeyed
@@ -104,7 +108,7 @@ export function TalkScreen() {
       record(updates)
       return Object.keys(updates).length > 0
     },
-    { autoListen: true },
+    { autoListen: state.method !== 'type' },
   )
 
   const onChip = (chip: FollowUpChip) => {
@@ -122,7 +126,7 @@ export function TalkScreen() {
         takeDeviceLocation()
         break
       case 'scanMenu':
-        setNotice(th.onboarding.scanMenuToast)
+        openMenuScan()
         break
     }
   }
@@ -130,10 +134,10 @@ export function TalkScreen() {
   return (
     <OnboardingShell
       title={th.onboarding.title}
-      progress={th.onboarding.progress(countHeard(profile), PROFILE_FIELDS.length)}
+      progress={th.onboarding.progress(countHeard(profile), TALK_FIELDS.length)}
       dock={
         <CompanionDock
-          text={question ? question.text : th.onboarding.allHeard}
+          text={question ? question.text : docsLeft ? th.onboarding.allHeardDocs : th.onboarding.allHeard}
           notice={notice}
           hint={mic === 'error' ? undefined : MIC_LABELS[mic]}
           state={mic}
@@ -165,8 +169,8 @@ export function TalkScreen() {
                 </Button>
               )}
               {ready && (
-                <Button className="min-w-0 flex-1" onClick={() => dispatch({ type: 'GO', screen: 'A2_REVIEW' })}>
-                  {th.onboarding.toReview}
+                <Button className="min-w-0 flex-1" onClick={() => dispatch({ type: 'TALK_DONE' })}>
+                  {docsLeft ? th.common.next : th.onboarding.toReview}
                 </Button>
               )}
             </div>
