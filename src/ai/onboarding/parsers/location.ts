@@ -1,4 +1,5 @@
 import type { GeoPoint, Landmark } from '@/types/domain.ts'
+import { formatThaiAddress } from './thaiAddress.ts'
 import { numbersToDigits } from './thaiNumber.ts'
 import { stripParticles } from './particles.ts'
 
@@ -27,5 +28,6 @@ export function parseLocation(text: string, landmarks: Landmark[]): { value: Geo
   if (!landmark) return null
   const phrase = nearPhrase(text)
   const label = phrase ? `${landmark.label} ${phrase}` : landmark.label
-  return { value: { text: label, lat: landmark.lat, lng: landmark.lng }, confidence: LOCATION_CONFIDENCE }
+  const address = landmark.parts ? { address: formatThaiAddress(landmark.parts), parts: landmark.parts } : {}
+  return { value: { text: label, ...address, lat: landmark.lat, lng: landmark.lng }, confidence: LOCATION_CONFIDENCE }
 }
