@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { th } from '@/copy/th.ts'
-import { addressFromLocation, DERIVED_CONFIDENCE, MAP_ADDRESS_CONFIDENCE, redraftAddress } from './addressFields.ts'
+import { addressFromLocation, DERIVED_CONFIDENCE, MAP_ADDRESS_CONFIDENCE, redraftAddress, withArea } from './addressFields.ts'
 import { applyUpdates, confirmField, createEmptyProfile } from './profile.ts'
 
 const BARE = { text: 'ลาดพร้าว 71', lat: 13.8, lng: 100.6 }
@@ -26,6 +26,38 @@ describe('addressFromLocation', () => {
       address: { value: WITH_PARTS.address, confidence: DERIVED_CONFIDENCE, heardFrom: 'x' },
     })
     expect(addressFromLocation(WITH_PARTS, 'x', true).address?.confidence).toBe(MAP_ADDRESS_CONFIDENCE)
+  })
+})
+
+describe('addressFromLocation for a dropped pin', () => {
+  it('drafts nothing from the "pinned here" label', () => {
+    expect(addressFromLocation({ text: th.places.pinnedHere, lat: 13.8, lng: 100.6 }, 'x')).toEqual({})
+  })
+})
+
+describe('withArea', () => {
+  const AREA = { subdistrict: 'ดอนช้าง', district: 'เมืองขอนแก่น', province: 'ขอนแก่น', postcode: '40000' }
+  const KHON_KAEN = 'ต.ดอนช้าง อ.เมืองขอนแก่น จ.ขอนแก่น 40000'
+
+  it('adds the picked ตำบล and postcode to a map answer that lacks them', () => {
+    const point = { text: 'x', parts: { district: 'เมืองขอนแก่น', province: 'ขอนแก่น' }, address: 'อ.เมืองขอนแก่น จ.ขอนแก่น', lat: 16.4, lng: 102.8 }
+    const merged = withArea(point, AREA)
+    expect(merged.parts).toEqual({ district: 'เมืองขอนแก่น', province: 'ขอนแก่น', subdistrict: 'ดอนช้าง', postcode: '40000' })
+    expect(merged.address).toBe(KHON_KAEN)
+    expect(merged.lat).toBe(16.4)
+  })
+
+  it('leaves a pin in another province or sub-district alone', () => {
+    const elsewhere = { text: 'x', parts: { district: 'เมืองเชียงใหม่', province: 'เชียงใหม่' }, lat: 18.8, lng: 99 }
+    expect(withArea(elsewhere, AREA)).toBe(elsewhere)
+    const otherSub = { text: 'x', parts: { subdistrict: 'ในเมือง', district: 'เมืองขอนแก่น', province: 'ขอนแก่น' }, lat: 16.4, lng: 102.8 }
+    expect(withArea(otherSub, AREA)).toBe(otherSub)
+  })
+
+  it('gives a pin with no parts the area as its address', () => {
+    const merged = withArea({ text: th.places.pinnedHere, lat: 16.4, lng: 102.8 }, AREA)
+    expect(merged.parts).toEqual(AREA)
+    expect(merged.address).toBe(KHON_KAEN)
   })
 })
 
