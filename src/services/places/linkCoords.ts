@@ -6,8 +6,8 @@ const IN_LINK = [
   /!3d(-?\d{1,2}\.\d+)!4d(-?\d{1,3}\.\d+)/, // …/data=…!3d13.80!4d100.60
   /[?&](?:q|query|ll|center|destination|daddr)=(?:loc:)?(-?\d{1,2}\.\d+)(?:,|%2C)\s*(-?\d{1,3}\.\d+)/i,
 ]
-// A pair copied from a map, alone or inside a sentence. The digit lookarounds stop it matching a piece of a longer number.
-const BARE = /(?<![\d.])(-?\d{1,2}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})(?![\d.])/
+// A pair copied from a map, alone or inside a sentence. The lookarounds stop it matching part of a longer number, but let a full stop follow.
+const BARE = /(?<![\d.])(-?\d{1,2}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})(?!\d|\.\d)/
 const LINKS = /https?:\/\/\S+/gi
 
 const point = (lat: string, lng: string): LinkReading => ({ kind: 'point', lat: Number(lat), lng: Number(lng) })
@@ -39,7 +39,8 @@ export function readLink(text: string): LinkReading | null {
     const found = pointIn(link)
     if (found) return found
   }
-  const bare = BARE.exec(text)
+  // Search the text with the links removed, so a pair inside a link's path is not read as a point.
+  const bare = BARE.exec(text.replace(LINKS, ' '))
   if (bare) return point(bare[1], bare[2])
   return links.length > 0 ? { kind: 'unreadable' } : null
 }
