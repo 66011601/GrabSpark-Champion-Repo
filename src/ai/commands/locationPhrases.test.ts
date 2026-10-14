@@ -15,13 +15,19 @@ const STEP3 = [
 describe('location commands on 3/7', () => {
   it('hears "use where I am"', () => {
     expect(matchCommand('ใช้ตำแหน่งนี้เลยค่ะ', STEP3)).toBe('here')
-    expect(matchCommand('ร้านอยู่ตรงนี้', STEP3)).toBe('here')
+    expect(matchCommand('ร้านอยู่ตรงนี้เลย', STEP3)).toBe('here')
     expect(matchCommand('อยู่ที่ร้านตอนนี้ค่ะ', STEP3)).toBe('here')
   })
 
   it('hears "let me pin it"', () => {
     expect(matchCommand('ปักหมุดเองค่ะ', STEP3)).toBe('pin')
     expect(matchCommand('ขอเลือกบนแผนที่', STEP3)).toBe('pin')
+  })
+
+  it('does not take short shop talk for a command', () => {
+    for (const said of ['ที่นี่ขายข้าว', 'ที่นี่ขายกาแฟ', 'ตรงนี้ขายน้ำ', 'อยู่ที่ร้านขายข้าว', 'อยู่ที่ร้านลาดพร้าว']) {
+      expect(matchCommand(said, STEP3), said).toBeNull()
+    }
   })
 
   it('leaves shop talk and other commands alone', () => {
