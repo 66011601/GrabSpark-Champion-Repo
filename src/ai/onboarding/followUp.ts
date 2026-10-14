@@ -14,7 +14,10 @@ const QUESTIONS: Partial<Record<ProfileFieldKey, (account: Account) => FollowUpQ
   location: () => ({
     field: 'location',
     text: th.followUp.location,
-    chips: [{ label: th.chips.useDeviceLocation, kind: 'useDeviceLocation' }],
+    chips: [
+      { label: th.chips.useDeviceLocation, kind: 'useDeviceLocation' },
+      { label: th.chips.pinOnMap, kind: 'pinOnMap' },
+    ],
   }),
   hours: () => ({
     field: 'hours',

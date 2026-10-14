@@ -34,6 +34,7 @@ export function DemoPanel() {
   const { state, dispatch } = useJourney()
   const [visible, setVisible] = useState(true)
   const [failApi, setFailApi] = useState(demoFlags.simulateApiFailure)
+  const [fakeLocation, setFakeLocation] = useState(demoFlags.simulateLocation)
   const [line, setLine] = useState('')
 
   useEffect(() => {
@@ -129,6 +130,18 @@ export function DemoPanel() {
       </section>
 
       <section className="flex flex-col gap-2">
+        <label className="flex min-h-12 items-center gap-3">
+          <input
+            type="checkbox"
+            className="size-5"
+            checked={fakeLocation}
+            onChange={(event) => {
+              demoFlags.simulateLocation = event.target.checked
+              setFakeLocation(event.target.checked)
+            }}
+          />
+          ตำแหน่งจำลอง (ใช้ตำแหน่งตอนนี้ = ลาดพร้าว 71)
+        </label>
         <label className="flex min-h-12 items-center gap-3">
           <input
             type="checkbox"

@@ -72,4 +72,11 @@ describe('pickFollowUp with a step’s own fields', () => {
   it('is done when those fields are filled', () => {
     expect(pickFollowUp(afterLine1, ['storeName', 'category'], account)).toBeNull()
   })
+
+  it('offers "use where I am" and "pin on the map" with the location question', () => {
+    const afterName = applyUpdates(createEmptyProfile(), { storeName: { value: 'ครัวป้าแดง', confidence: 1, heardFrom: 'x' } })
+    const question = pickFollowUp(afterName, ['storeName', 'location', 'category', 'building'], account)
+    expect(question?.field).toBe('location')
+    expect(question?.chips.map((chip) => chip.kind)).toEqual(['useDeviceLocation', 'pinOnMap'])
+  })
 })

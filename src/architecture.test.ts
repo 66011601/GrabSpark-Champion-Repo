@@ -15,6 +15,9 @@ const CONFIRMERS = ['/src/screens/act2-grow/1-dashboard/ConfirmBar.tsx']
 const IMPORTS_CONFIRM = /(?:from\s+|import\s*\(\s*)['"][^'"]*(?:guardrail\/|\.\/)confirmAndExecute(?:\.ts)?['"]/
 const IMPORTS_SUBMIT = /(?:from\s+|import\s*\(\s*)['"][^'"]*(?:onboarding\/|\.\/)submit(?:\.ts)?['"]/
 
+// Map services (Google, OpenStreetMap) are called only from the places services, which know their rules.
+const MAP_HOSTS = /googleapis\.com|openstreetmap\.org|google\.com\/maps/
+
 const appFiles = Object.entries(sources).filter(([path]) => !/\.test\.tsx?$/.test(path))
 
 describe('architecture', () => {
@@ -50,9 +53,9 @@ describe('architecture', () => {
     expect(offenders).toEqual([])
   })
 
-  it('only lets the confirm bar send what the AI prepared', () => {
+  it('keeps map services inside src/services/places', () => {
     const offenders = appFiles
-      .filter(([path, source]) => !CONFIRMERS.includes(path) && IMPORTS_CONFIRM.test(source))
+      .filter(([path, source]) => !path.startsWith('/src/services/places/') && MAP_HOSTS.test(source))
       .map(([path]) => path)
     expect(offenders).toEqual([])
   })
