@@ -1,5 +1,5 @@
 import type { GeoPoint } from '@/types/domain.ts'
-import type { PlaceMatch, Places, PlaceSuggestion } from './places.ts'
+import type { PlaceMatch, PlaceSource, PlaceSuggestion } from './places.ts'
 
 // Google Maps Platform, Places API (New), called straight from the browser with a referrer-restricted key.
 // Everything is limited to Thailand twice: in the request, and again on what comes back.
@@ -48,10 +48,9 @@ export function toGeoPoint(place: GooglePlace): GeoPoint | null {
 }
 
 /**
- * Shop addresses from Google Maps. If Google cannot be reached (no network, key not allowed),
- * free-text lookups fall back to `offline` so a demo still moves on.
+ * Shop addresses from Google Maps. Any failure gives an empty answer; the resolver then asks the next source.
  */
-export function createGooglePlaces(apiKey: string, offline: Places): Places {
+export function createGooglePlaces(apiKey: string): PlaceSource {
   let session = crypto.randomUUID() // groups the keystrokes of one address search into one billed session
 
   async function call<T>(path: string, fieldMask: string | null, body?: unknown): Promise<T> {
@@ -116,10 +115,10 @@ export function createGooglePlaces(apiKey: string, offline: Places): Places {
       const value = (data.places ?? []).map(toGeoPoint).find((point) => point !== null)
       return value ? { value, confidence: FOUND_CONFIDENCE } : null
     } catch (problem) {
-      console.warn('Google Maps search is unavailable, using the sample places:', problem)
-      return offline.find(text)
+      console.warn('Google Maps search is unavailable:', problem)
+      return null
     }
   }
 
-  return { live: true, suggest, pick, find, reverse: (lat, lng) => offline.reverse(lat, lng) }
+  return { suggest, pick, find }
 }

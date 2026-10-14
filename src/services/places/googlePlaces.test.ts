@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createGooglePlaces, FOUND_CONFIDENCE, isInThailand, PICKED_CONFIDENCE, toGeoPoint, type GooglePlace } from './googlePlaces.ts'
-import type { Places } from './places.ts'
 
 const THAI = { shortText: 'TH', types: ['country', 'political'] }
 const SOI: GooglePlace = {
@@ -11,8 +10,6 @@ const SOI: GooglePlace = {
   addressComponents: [THAI],
 }
 const VIENTIANE: GooglePlace = { ...SOI, id: 'laos', displayName: { text: 'ตลาดเช้า' }, addressComponents: [{ shortText: 'LA', types: ['country'] }] }
-
-const offline: Places = { live: false, suggest: vi.fn(async () => []), pick: vi.fn(async () => null), find: vi.fn(async () => null), reverse: vi.fn(async () => null) }
 
 /** Answers the next request with `body`, and remembers what was asked. */
 function answer(body: unknown, ok = true) {
@@ -59,7 +56,7 @@ describe('createGooglePlaces', () => {
         },
       ],
     })
-    const suggestions = await createGooglePlaces('test-key', offline).suggest('ลาดพร้าว 71')
+    const suggestions = await createGooglePlaces('test-key').suggest('ลาดพร้าว 71')
     expect(suggestions).toEqual([{ id: 'soi71', kind: 'place', title: 'ซอย ลาดพร้าว 71', subtitle: 'เขตวังทองหลาง กรุงเทพมหานคร' }])
     expect(asked().url).toBe('https://places.googleapis.com/v1/places:autocomplete')
     expect(asked().headers['X-Goog-Api-Key']).toBe('test-key')
@@ -68,13 +65,13 @@ describe('createGooglePlaces', () => {
 
   it('does not ask about one or two letters', async () => {
     const { fetchMock } = answer({})
-    expect(await createGooglePlaces('test-key', offline).suggest('ลา')).toEqual([])
+    expect(await createGooglePlaces('test-key').suggest('ลา')).toEqual([])
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('turns the chosen suggestion into a pin', async () => {
     const { asked } = answer(SOI)
-    const match = await createGooglePlaces('test-key', offline).pick({ id: 'soi71', kind: 'place', title: 'ซอย ลาดพร้าว 71', subtitle: '' })
+    const match = await createGooglePlaces('test-key').pick({ id: 'soi71', kind: 'place', title: 'ซอย ลาดพร้าว 71', subtitle: '' })
     expect(match?.confidence).toBe(PICKED_CONFIDENCE)
     expect(match?.value.lat).toBe(13.8016)
     expect(asked().url).toContain('/places/soi71?')
@@ -83,7 +80,7 @@ describe('createGooglePlaces', () => {
 
   it('searches spoken words inside the Thailand box and skips results across the border', async () => {
     const { asked } = answer({ places: [VIENTIANE, SOI] })
-    const match = await createGooglePlaces('test-key', offline).find('ลาดพร้าวซอย71 ตรงข้ามเซเว่น')
+    const match = await createGooglePlaces('test-key').find('ลาดพร้าวซอย71 ตรงข้ามเซเว่น')
     expect(match).toEqual({ value: toGeoPoint(SOI), confidence: FOUND_CONFIDENCE })
     expect(asked().body).toMatchObject({ textQuery: 'ลาดพร้าวซอย71 ตรงข้ามเซเว่น', regionCode: 'TH', languageCode: 'th' })
     expect(asked().body.locationRestriction.rectangle.low.latitude).toBeGreaterThan(5)
@@ -91,13 +88,12 @@ describe('createGooglePlaces', () => {
 
   it('finds nothing when every result is outside Thailand', async () => {
     answer({ places: [VIENTIANE] })
-    expect(await createGooglePlaces('test-key', offline).find('ตลาดเช้า เวียงจันทน์')).toBeNull()
+    expect(await createGooglePlaces('test-key').find('ตลาดเช้า เวียงจันทน์')).toBeNull()
   })
 
-  it('falls back to the sample places when Google refuses the request', async () => {
+  it('finds nothing when Google refuses the request', async () => {
     answer({}, false)
     vi.spyOn(console, 'warn').mockImplementation(() => {})
-    await createGooglePlaces('test-key', offline).find('ลาดพร้าว 71')
-    expect(offline.find).toHaveBeenCalledWith('ลาดพร้าว 71')
+    expect(await createGooglePlaces('test-key').find('ลาดพร้าว 71')).toBeNull()
   })
 })
