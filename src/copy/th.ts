@@ -164,6 +164,19 @@ export const th = {
     payoutNameOk: 'ชื่อบัญชีตรงกับบัตร',
     payoutNameMismatch: 'ชื่อบัญชีต้องตรงกับชื่อบนบัตรค่ะ',
   },
+  scan: {
+    // Where a scanned value came from; A2 shows it as "ที่มา: …", never "ได้ยินว่า".
+    source: { idCard: 'รูปบัตรประชาชน', bankBook: 'รูปสมุดบัญชี', menu: 'รูปเมนู' },
+    lines: {
+      name: 'ชื่อ-นามสกุล',
+      idNumber: 'เลขบัตรประชาชน',
+      bank: 'ธนาคาร',
+      accountNumber: 'เลขบัญชี',
+      accountName: 'ชื่อบัญชี',
+      storeName: 'ชื่อร้าน',
+      category: 'ประเภทอาหาร',
+    },
+  },
   submitted: {
     title: 'ส่งข้อมูลร้านแล้วค่ะ 🎉',
     elapsed: (duration: string) => `คุยกันแค่ ${duration} ก็เสร็จ`,

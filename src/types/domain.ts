@@ -104,3 +104,29 @@ export interface Account {
   maskedPhone: string
   deviceLocation: GeoPoint
 }
+
+/** What the (mock) OCR read from one photo. Values are drafts until the merchant confirms them in A2. */
+export interface IdCardScan {
+  kind: 'idCard'
+  title: string
+  name: string
+  idNumber: string
+  confidence: number
+}
+
+export interface BankBookScan {
+  kind: 'bankBook'
+  bankName: string
+  accountNumber: string
+  accountName: string
+  confidence: number
+}
+
+export interface MenuScan {
+  kind: 'menu'
+  storeName: { value: string; confidence: number } // from the menu's header
+  category: { value: string; confidence: number } // guessed from the dishes
+  items: { name: string; priceTHB: number; confidence: number }[]
+}
+
+export type ScanResult = IdCardScan | BankBookScan | MenuScan
