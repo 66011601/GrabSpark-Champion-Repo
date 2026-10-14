@@ -44,6 +44,12 @@ export const th = {
       noBookPhoto: 'แนบรูปสมุดบัญชีก่อนนะคะ',
     },
   },
+  sheet: {
+    talkTitle: 'คุยกับผู้ช่วย AI',
+    done: 'เสร็จแล้ว',
+    tapToTalk: 'แตะที่หนูแล้วพูดได้เลย พูดจบลงท้ายว่า "จ้า"',
+    scanTitle: (doc: string) => `ถ่ายรูป${doc}`,
+  },
   common: {
     back: 'ย้อนกลับ',
     next: 'ต่อไป',
