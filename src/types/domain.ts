@@ -9,9 +9,22 @@ export interface ProfileField<T> {
   heardFrom?: string // the words the value came from (shown in A2)
 }
 
+/** A Thai postal address in parts. The merchant sees it as one line (formatThaiAddress). */
+export interface ThaiAddress {
+  houseNo?: string // "12/3"
+  moo?: string // หมู่ "4"
+  soi?: string
+  road?: string
+  subdistrict?: string // ตำบล, or แขวง in Bangkok
+  district?: string // อำเภอ, or เขต in Bangkok
+  province?: string
+  postcode?: string // 5 digits
+}
+
 export interface GeoPoint {
   text: string
-  address?: string // the map's own full address, when the place came from Google Maps
+  address?: string // the full address on one line, when known
+  parts?: ThaiAddress // the same address in parts, when known
   lat: number
   lng: number
 }
@@ -112,6 +125,7 @@ export interface Landmark {
   match: string[] // place names as people say them, e.g. "ลาดพร้าวซอย 71"
   lat: number
   lng: number
+  parts?: ThaiAddress // the sample place's address, so it drafts a full address offline
 }
 
 export interface Account {
