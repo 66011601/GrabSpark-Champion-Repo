@@ -13,7 +13,7 @@ npm run dev     # http://localhost:5173
 npm test        # unit + architecture tests
 ```
 
-### Presenting the demo
+### Presenting the demo 
 
 - Open on a desktop browser: the phone frame is on the left, the **Demo panel** on the right (press `D` to hide or show it).
 - **The demo follows GrabMerchant's real sign-up** (merchant.grab.com guide "ขั้นตอนสมัครเป็นพาร์ทเนอร์ร้านค้า GrabFood บนแอป GrabMerchant"), with the AI helper bar above the green button on every step.
