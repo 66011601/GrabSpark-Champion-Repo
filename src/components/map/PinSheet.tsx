@@ -27,6 +27,7 @@ export function PinSheet({ open, ...props }: PinSheetProps) {
 function PinSheetBody({ start, describe, onUse, onLocate, onClose }: Omit<PinSheetProps, 'open'>) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
+  const closeButton = useRef<HTMLButtonElement>(null)
   const latest = useRef({ describe })
   useEffect(() => {
     latest.current = { describe }
@@ -42,11 +43,18 @@ function PinSheetBody({ start, describe, onUse, onLocate, onClose }: Omit<PinShe
     map.current = made
     let alive = true
     let waiting: number | undefined
+    let newest = 0 // only the latest lookup may answer; an older, slower one must not overwrite it
     const lookUp = (lat: number, lng: number) => {
       window.clearTimeout(waiting)
+      const mine = ++newest
       waiting = window.setTimeout(async () => {
-        const match = await latest.current.describe(lat, lng)
-        if (alive) setFound({ at: keyOf(lat, lng), match })
+        let match: PlaceMatch | null = null
+        try {
+          match = await latest.current.describe(lat, lng)
+        } catch {
+          match = null // a failed lookup means no address, not "looking" forever
+        }
+        if (alive && mine === newest) setFound({ at: keyOf(lat, lng), match })
       }, DESCRIBE_AFTER_MS)
     }
     made.on('moveend', () => {
@@ -64,6 +72,15 @@ function PinSheetBody({ start, describe, onUse, onLocate, onClose }: Omit<PinShe
       map.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the map is made once; `start` only places it
+  }, [])
+
+  // Focus moves into the sheet when it opens and back to where it was when it closes (no trap, like BottomSheet).
+  useEffect(() => {
+    const before = document.activeElement
+    closeButton.current?.focus()
+    return () => {
+      if (before instanceof HTMLElement) before.focus()
+    }
   }, [])
 
   useEffect(() => {
@@ -87,7 +104,7 @@ function PinSheetBody({ start, describe, onUse, onLocate, onClose }: Omit<PinShe
     <div role="dialog" aria-modal="true" aria-label={th.places.pinTitle} className="absolute inset-0 z-30 flex flex-col bg-surface">
       <div className="flex items-center justify-between gap-2 px-4 pt-3">
         <h2 className="text-lg font-bold">{th.places.pinTitle}</h2>
-        <button type="button" onClick={onClose} aria-label={th.grab.close} className="flex size-12 cursor-pointer items-center justify-center rounded-full active:bg-canvas">
+        <button ref={closeButton} type="button" onClick={onClose} aria-label={th.grab.close} className="flex size-12 cursor-pointer items-center justify-center rounded-full active:bg-canvas">
           <X className="size-6" aria-hidden />
         </button>
       </div>
