@@ -91,11 +91,13 @@ export function S5Owner() {
       <Field id="s5-name" label={th.s5.name} required hint={th.s5.nameHint} mark={mark}>
         <input id="s5-name" autoComplete="name" value={owner.name} onChange={(event) => edit('name')(event.target.value)} className={inputClass()} />
       </Field>
-      <Field id="s5-birth" label={th.s5.birthDate} required mark={mark} hint={owner.birthDate ? th.s5.asThai(formatThaiDate(owner.birthDate)) : undefined}>
+      <Field id="s5-birth" label={th.s5.birthDate} required mark={mark}>
         <input id="s5-birth" type="date" value={owner.birthDate} onChange={(event) => edit('birthDate')(event.target.value)} className={inputClass()} />
+        {owner.birthDate && <p className="mt-1 text-base">{th.s5.asThai(formatThaiDate(owner.birthDate))}</p>}
       </Field>
-      <Field id="s5-expiry" label={th.s5.idExpiry} required mark={mark} hint={owner.idExpiry ? th.s5.asThai(formatThaiDate(owner.idExpiry)) : undefined}>
+      <Field id="s5-expiry" label={th.s5.idExpiry} required mark={mark}>
         <input id="s5-expiry" type="date" value={owner.idExpiry} onChange={(event) => edit('idExpiry')(event.target.value)} className={inputClass()} />
+        {owner.idExpiry && <p className="mt-1 text-base">{th.s5.asThai(formatThaiDate(owner.idExpiry))}</p>}
       </Field>
 
       <ScanSheet
