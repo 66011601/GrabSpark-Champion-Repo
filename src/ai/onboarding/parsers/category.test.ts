@@ -22,6 +22,11 @@ describe('parseCategory', () => {
     expect(parseCategory('น้ำพริกปลาทู')?.value).toBe('อาหารไทย')
   })
 
+  it('hears ปักษ์ใต้ as Southern food, even after a central dish word', () => {
+    expect(parseCategory('ขายข้าวแกงปักษ์ใต้')?.value).toBe('อาหารใต้')
+    expect(parseCategory('อาหารปักษ์ใต้')?.value).toBe('อาหารใต้')
+  })
+
   it('keeps the first four chips as before', () => {
     expect(CATEGORY_LABELS.slice(0, 5)).toEqual(['อาหารไทย', 'อาหารตามสั่ง', 'ก๋วยเตี๋ยว', 'เครื่องดื่ม', 'ของหวาน'])
     expect(CATEGORY_LABELS).toContain('อาหารอีสาน')

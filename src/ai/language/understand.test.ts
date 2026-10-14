@@ -29,6 +29,34 @@ describe('understandThai — dialect', () => {
     expect(heard.regionWords.isan).toBe(2)
   })
 
+  it('turns Northern หื้อ and ข้าเจ้า into central Thai', () => {
+    expect(understandThai('ถ่ายบัตรหื้อเจ้า').text).toBe('ถ่ายบัตรให้')
+    expect(understandThai('ข้าเจ้ายังบ่เคยสมัครเจ้า').text).toBe('ฉันยังไม่เคยสมัคร')
+    expect(understandThai('ข้าเจ้ายังบ่เคยสมัครเจ้า').regionWords.north).toBe(2)
+  })
+
+  it('keeps central words that have a dialect word inside them', () => {
+    for (const said of ['อยู่ในตลาดศาลเจ้า', 'เจ้าหน้าที่บอกว่าต้องถ่ายบัตร', 'ข้าวซอยเจ้าดังอยู่ตรงนี้', 'ไปหลบฝนก่อน', 'แลเห็นป้ายร้าน', 'ไม่มีตำหนิ']) {
+      const heard = understandThai(said)
+      expect(heard.text, said).toBe(said)
+      expect(heard.dialectWords, said).toBe(0)
+    }
+    expect(understandThai('อยู่ในตลาดศาลเจ้าหนิ').text).toBe('อยู่ในตลาดศาลเจ้า')
+  })
+
+  it('still converts the dialect word when it stands on its own', () => {
+    expect(understandThai('หลบไปก่อนหนิ').text).toBe('กลับไปก่อน')
+    expect(understandThai('ลูกค้าแลเมนูหนิ').text).toBe('ลูกค้าดูเมนู')
+  })
+
+  it('hears a closing particle the word breaker glued to the word before it', () => {
+    // The breaker reads "พุ้นเด้อ" and "บนัวเด้อ" as one word each.
+    expect(understandThai('ร้านอยู่ตลาดต้นตาลพุ้นเด้อ').text).toBe('ร้านอยู่ตลาดต้นตาลโน้น')
+    const named = understandThai('ร้านข้อยชื่อแซ่บนัวเด้อ')
+    expect(named.text).toBe('ร้านฉันชื่อแซ่บนัว')
+    expect(named.shown).toBe('ร้านข้อยชื่อแซ่บนัวเด้อ')
+  })
+
   it('reads a lone Northern เจ้า as yes', () => {
     expect(understandThai('เจ้า').text).toBe('ใช่')
   })

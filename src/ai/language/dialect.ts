@@ -39,6 +39,7 @@ export const DIALECT: DialectWord[] = [
   w('กิ๋น', 'กิน', 'north', 'verb'),
   w('อู้', 'พูด', 'north', 'verb'),
   w('แอ่ว', 'เที่ยว', 'north', 'verb'),
+  w('หื้อ', 'ให้', 'north', 'verb'),
   w('แล', 'ดู', 'south', 'verb'),
   w('หลบ', 'กลับ', 'south', 'verb'),
   w('แหลง', 'พูด', 'south', 'verb'),
@@ -82,6 +83,7 @@ export const DIALECT: DialectWord[] = [
   w('ข้อย', 'ฉัน', 'isan', 'pronoun'),
   w('ข่อย', 'ฉัน', 'isan', 'pronoun'),
   w('เฮา', 'เรา', 'isan', 'pronoun'),
+  w('ข้าเจ้า', 'ฉัน', 'north', 'pronoun'),
   w('ฉาน', 'ฉัน', 'south', 'pronoun'),
   // particles
   w('เด้อ', '', 'isan', 'particle'),
@@ -102,4 +104,13 @@ export const DIALECT: DialectWord[] = [
   w('คัก', null, 'isan', 'evidence'),
   w('ลำ', null, 'north', 'evidence'),
   w('หรอย', null, 'south', 'evidence'),
+]
+
+/**
+ * Central words with a dialect word inside them, kept as said: ศาลเจ้า is a shrine, not ศาล + Northern เจ้า,
+ * and หลบฝน is "shelter from the rain", not Southern หลบ (go back).
+ */
+export const CENTRAL_WORDS: string[] = [
+  'ศาลเจ้า', 'พระเจ้า', 'เทพเจ้า', 'เจ้าหน้าที่', 'เจ้าภาพ', 'เจ้าพระยา', 'เจ้าดัง', 'เจ้าเก่า', 'เจ้าประจำ', 'เจ้าอื่น',
+  'หลบฝน', 'หลบแดด', 'หลบหน้า', 'หลบมุม', 'แลเห็น', 'แลดู', 'ตำหนิ',
 ]

@@ -1,5 +1,5 @@
 import { stripParticles } from '@/ai/onboarding/parsers/particles.ts'
-import { DIALECT, type DialectWord, type Region } from './dialect.ts'
+import { CENTRAL_WORDS, DIALECT, type DialectWord, type Region } from './dialect.ts'
 import { RUDE } from './rude.ts'
 import { phraseEnd, splitWords, type Piece } from './words.ts'
 
@@ -17,6 +17,24 @@ const length = (phrase: string) => phrase.replace(/\s+/g, '').length
 // Longest first, so "บ่แม่น" wins over "บ่" and "ไอ้ควาย" over nothing.
 const RUDE_WORDS = [...RUDE].sort((a, b) => length(b) - length(a))
 const DIALECT_WORDS = [...DIALECT].sort((a, b) => length(b.word) - length(a.word))
+const KEPT_WORDS = [...CENTRAL_WORDS].sort((a, b) => length(b) - length(a))
+// Closing particles the word breaker may glue to the word before them, because it does not know the dialect word
+// ("…ต้นตาลพุ้นเด้อ" comes out as "พุ้นเด้อ"). Two-letter ones (ก่) are left out: แก่ ends with the same letters.
+const GLUED_PARTICLES = DIALECT.filter((entry) => entry.kind === 'particle' && length(entry.word) >= 3).map((entry) => entry.word)
+
+/** The last word of a phrase with a closing particle glued on is split in two, so the particle is heard. */
+function unglueParticles(pieces: Piece[]): Piece[] {
+  return pieces.flatMap((piece, index) => {
+    const endsPhrase = !pieces[index + 1]?.word
+    if (!piece.word || !endsPhrase || CENTRAL_WORDS.includes(piece.text)) return [piece]
+    const particle = GLUED_PARTICLES.find((word) => piece.text.length > word.length && piece.text.endsWith(word))
+    if (!particle) return [piece]
+    return [
+      { text: piece.text.slice(0, -particle.length), word: true },
+      { text: particle, word: true },
+    ]
+  })
+}
 
 function firstMatch<T>(pieces: Piece[], from: number, list: T[], phrase: (item: T) => string): { item: T; end: number } | null {
   for (const item of list) {
@@ -42,7 +60,7 @@ export function maskRude(text: string): string {
 
 /** Rude words out, dialect function words into central Thai. Pure; the same sentence always gives the same result. */
 export function understandThai(input: string): Understood {
-  const pieces = splitWords(input)
+  const pieces = unglueParticles(splitWords(input))
   const regionWords: Record<Region, number> = { isan: 0, north: 0, south: 0 }
   let shown = ''
   let text = ''
@@ -58,6 +76,14 @@ export function understandThai(input: string): Understood {
       text += ' '
       rude += 1
       index = rudeMatch.end
+      continue
+    }
+    const kept = piece.word ? firstMatch(pieces, index, KEPT_WORDS, (word) => word) : null
+    if (kept) {
+      const words = said(pieces, index, kept.end)
+      shown += words
+      text += words
+      index = kept.end
       continue
     }
     const dialect = piece.word ? firstMatch(pieces, index, DIALECT_WORDS, (entry) => entry.word) : null
