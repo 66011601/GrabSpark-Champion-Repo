@@ -1,8 +1,9 @@
 import type { GeoPoint, Landmark, OnboardingProfile, ProfileFieldKey, ProfileUpdates } from '@/types/domain.ts'
-import { addressFromLocation } from './addressFields.ts'
+import { addressFromLocation, DERIVED_CONFIDENCE } from './addressFields.ts'
 import { extractProfile } from './extractProfile.ts'
 import { BUILDING_CONFIDENCE, parseBuilding } from './parsers/building.ts'
 import { stripParticles } from './parsers/particles.ts'
+import { formatThaiAddress, parseThaiAddress, streetLine } from './parsers/thaiAddress.ts'
 import { onlyEmptyFields } from './profile.ts'
 
 /** The 3/7 fields the companion asks about by voice, in order; the address is drafted from the location. */
@@ -12,8 +13,11 @@ export interface BusinessTalkContext {
   expecting?: ProfileFieldKey // the field the companion just asked about
   landmarks: Landmark[]
   profile: OnboardingProfile // what is already filled, so drafts never replace it
-  place?: { value: GeoPoint; confidence: number } | null // a Google Maps match for the words, when there is one
+  place?: { value: GeoPoint; confidence: number } | null // the resolver's match for the words (map or sample place), when there is one
 }
+
+/** A full address the merchant said: their own words, but heard, so it is checked. */
+export const SPOKEN_ADDRESS_CONFIDENCE = 0.75
 
 /** What one sentence on 3/7 fills. Hours, menu and phone are left for later steps even if they were said. */
 export function businessUpdates(text: string, ctx: BusinessTalkContext): ProfileUpdates {
@@ -24,16 +28,21 @@ export function businessUpdates(text: string, ctx: BusinessTalkContext): Profile
   const location = ctx.place ? { ...ctx.place, heardFrom: text } : heard.location
   if (location) updates.location = location
 
+  const spoken = parseThaiAddress(text)
+  if (spoken) updates.address = { value: formatThaiAddress(spoken), confidence: SPOKEN_ADDRESS_CONFIDENCE, heardFrom: text }
+
   const named = parseBuilding(text)
   if (named) updates.building = { ...named, heardFrom: text }
   else if (ctx.expecting === 'building' && stripParticles(text)) {
     updates.building = { value: stripParticles(text), confidence: BUILDING_CONFIDENCE, heardFrom: text }
+  } else if (spoken && streetLine(spoken)) {
+    updates.building = { value: streetLine(spoken), confidence: DERIVED_CONFIDENCE, heardFrom: text }
   }
 
   if (location) {
     const drafted = onlyEmptyFields(ctx.profile, addressFromLocation(location.value, text))
     if (drafted.building && !updates.building) updates.building = drafted.building
-    if (drafted.address) updates.address = drafted.address
+    if (drafted.address && !updates.address) updates.address = drafted.address
   }
   return updates
 }

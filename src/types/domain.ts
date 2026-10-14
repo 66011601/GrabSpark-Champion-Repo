@@ -101,7 +101,7 @@ export type ProfileUpdates = {
   }
 }
 
-export type ChipKind = 'say' | 'startMic' | 'useAccountPhone' | 'useDeviceLocation' | 'scanMenu'
+export type ChipKind = 'say' | 'startMic' | 'useAccountPhone' | 'useDeviceLocation' | 'pinOnMap' | 'scanMenu'
 
 export interface FollowUpChip {
   label: string
