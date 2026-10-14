@@ -143,7 +143,6 @@ export const th = {
     pinQuestion: 'หมุดถูกไหมคะ?',
     building: 'อาคาร',
     mapAlt: (place: string) => `แผนที่ร้าน: ${place}`,
-    owner: 'เจ้าของร้าน',
     fromAccount: 'จากบัญชีที่ล็อกอิน',
     submit: 'ยืนยันข้อมูลและปักหมุดที่ตั้ง',
     submitting: 'กำลังส่งข้อมูล…',
