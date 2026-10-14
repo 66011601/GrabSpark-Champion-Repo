@@ -1,0 +1,33 @@
+{
+  "note": "ตัวอย่าง: simulated Day-30 merchant. Not real Grab data.",
+  "storeName": "ครัวป้าแดง",
+  "hours": { "open": "10:00", "close": "20:00", "closedDays": [] },
+  "commissionRate": 0.3,
+  "maxDailyPromoSpendTHB": 500,
+  "menu": [
+    { "id": "M01", "name": "น้ำพริกกะปิ ปลาทูทอด ผักลวก", "aliases": ["น้ำพริก", "ปลาทู"], "type": "main", "priceTHB": 89, "costTHB": 38, "sold28d": 530 },
+    { "id": "M02", "name": "ข้าวกะเพราหมูสับไข่ดาว", "aliases": ["กะเพรา"], "type": "main", "priceTHB": 65, "costTHB": 28, "sold28d": 410 },
+    { "id": "M03", "name": "แกงเขียวหวานไก่ราดข้าว", "aliases": ["เขียวหวาน"], "type": "main", "priceTHB": 75, "costTHB": 32, "sold28d": 210 },
+    { "id": "M04", "name": "ข้าวหมูกรอบ", "aliases": ["หมูกรอบ"], "type": "main", "priceTHB": 79, "costTHB": 33, "sold28d": 260 },
+    { "id": "D01", "name": "ชาไทยเย็น", "aliases": ["ชาไทย"], "type": "drink", "priceTHB": 35, "costTHB": 9, "sold28d": 380 },
+    { "id": "D02", "name": "น้ำกระเจี๊ยบ", "aliases": ["กระเจี๊ยบ"], "type": "drink", "priceTHB": 30, "costTHB": 6, "sold28d": 95 }
+  ],
+  "activePromotions": [],
+  "sales": {
+    "days": ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."],
+    "thisWeekTHB": [1850, 2100, 1980, 2300, 2650, 3100, 2900],
+    "lastWeekTHB": [1700, 1900, 2050, 2100, 2400, 2800, 2750]
+  },
+  "baselineOrdersByHour": { "10": 2, "11": 6, "12": 9, "13": 6, "14": 3, "15": 2, "16": 2, "17": 4, "18": 7, "19": 5 },
+  "rainLiftPct": [10, 25],
+  "bundleLiftPct": [40, 70],
+  "reviews": [
+    { "stars": 5, "text": "อร่อยมาก น้ำพริกหอม" },
+    { "stars": 5, "text": "ชาไทยกำลังดี" },
+    { "stars": 4, "text": "ของมาครบ อร่อย" },
+    { "stars": 2, "text": "ส่งช้ามาก ของเย็นแล้ว", "topic": "ส่งช้า" },
+    { "stars": 2, "text": "รอนานเกือบชั่วโมง", "topic": "ส่งช้า" },
+    { "stars": 3, "text": "ชาไทยหวานไปหน่อย", "topic": "หวานเกินไป" },
+    { "stars": 5, "text": "หมูกรอบกรอบจริง" }
+  ]
+}

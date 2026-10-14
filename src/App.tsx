@@ -50,7 +50,7 @@ function ScreenSwitch() {
     case 'TRANSITION':
       return <ActTransition />
     case 'G1_DASHBOARD':
-      return <DashboardScreen />
+      return <DashboardScreen key={state.runId} />
   }
 }
 

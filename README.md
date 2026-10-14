@@ -26,7 +26,21 @@ npm test        # unit + architecture tests
 - **เข้าสู่ระบบ** goes straight to Home with the sample shop submitted. The panel's "(ข้อมูลตัวอย่าง)" jumps load the sample merchant.
 - All documents and numbers are fictional samples stamped "ตัวอย่าง". An uploaded photo stays in the browser.
 - "จำลองระบบล่ม" shows how a failed submit is handled; "เริ่มใหม่ทั้งหมด" resets.
-- Act 2 arrives with Plan 2.
+
+### Presenting Act 2 (the voice navigator)
+
+- **Get there:** finish Act 1 (Home → **ดูต่อ: 30 วันต่อมา** → **ไปที่หน้าร้าน**), or press the panel's **Act 2: หน้าหลัก GrabMerchant**. You land on a mock GrabMerchant home with the 13 real menu items and five example chips. Every figure is a sample (ตัวอย่าง).
+- **Ask in any of three ways:** tap the avatar and speak, tap an example chip, or press one of the five **Act 2** buttons in the Demo panel (or type a line in "พูดเอง"). They all go through the same matching.
+- **What you will see:** the AI says where it is going, a finger moves there and taps, and the screen changes. **ข้าม** or the S key skips the animation (the final line is still said). Saying "หยุด" stops, "กลับหน้าหลัก" goes home.
+  1. "ขอดูยอดขายหน่อย": ข้อมูลเชิงลึก → ยอดขาย → 7 วัน → compare with last week → best item.
+  2. "พรุ่งนี้ฝนตก ออเดอร์จะเป็นไง": แนวโน้ม → rain on → a range (51–58 orders) and a prep suggestion; a button offers the promotion.
+  3. "ทำโปรวันฝนตกให้หน่อย": เพิ่มยอดขาย → a pre-filled bundle, each row says "AI เลือกเพราะ…", the safety list, an estimate range. It **stops at ยืนยันและเปิดใช้งาน**.
+  4. "หมูกรอบหมดแล้ว": เมนู → the AI slides the dish's switch off and asks how long, as GrabMerchant does: "วันนี้" or "ไม่มีกำหนด" (tap or say it). **ยืนยันปิดการขาย** is yours to tap.
+  5. "ลูกค้าบ่นอะไรบ้าง": ฟีดแบก → unhappy reviews, a summary, a 2-minute lesson (**อ่านให้ฟัง**).
+- **Open any of the 13 home items by voice:** say its name, alone or with "เปิด" / "ไป" / "ไปที่" / "ไปหน้า" / "เข้า" (e.g. "เปิดเมนู", "ไปที่ข้อมูลเชิงลึก", "ช่วยเปิดส่งด่วนให้หน่อย"). Other names work too: ออเดอร์, ร้านค้า, อินไซต์, ฟีดแบ็ก, สมาร์ทลิงก์, ผู้ช่วยเอไอ, ศูนย์ช่วยเหลือ. The finger taps the tile; เมนู, เพิ่มยอดขาย, ข้อมูลเชิงลึก and ฟีดแบก open their demo screens, and the other nine open a page saying what the item is for. Questions ("ขอดูยอดขายหน่อย") still run the five scripts.
+- **Press any button by voice, from any screen:** say the button's name ("ส่งของข้ามสาขา", "แท็บรีวิว", "7 วัน", "อ่านให้ฟัง", "จัดโปรโมชัน"). If it is on another screen, the finger walks there: home, the tile, the tab or filter it sits under, then the button. "กลับ" closes a sub-page or the lesson, then goes home. คำสั่งซื้อ, เพิ่มยอดขาย, พนักงาน, ส่งด่วน and Smart Link now have their own buttons, each opening a sample page; the ones that would change the shop (รับคำสั่งซื้อ, เพิ่มพนักงาน, เรียกไรเดอร์, เริ่มแคมเปญ) only show a draft whose confirm button is tap-only.
+- **Trust rule to show the judges:** say "ยืนยัน" on the promotion: the AI answers that only you can press the button. Only a tap opens the promotion (then **หยุดโปรนี้** is one tap).
+- Forecast and impact are ranges labelled ประมาณการ. The rain and bundle lifts are demo assumptions, not Grab data. Speech works in Chrome and Edge; without a Thai voice each line stays on screen long enough to read.
 
 ### Credits
 

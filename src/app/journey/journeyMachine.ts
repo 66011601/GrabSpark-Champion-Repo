@@ -3,7 +3,7 @@ import { confirmStep, stepStatus, type FormStep } from '@/ai/onboarding/steps.ts
 import { th } from '@/copy/th.ts'
 import type { Consents, OnboardingProfile, ProfileFieldKey, ProfileUpdates, SetupPart } from '@/types/domain.ts'
 
-// Plan 2 adds G2_INTENT, G3_PREVIEW, G4_SUCCESS, G5_RECAP.
+// Act 2 is one screen, G1_DASHBOARD: the voice navigator (docs/specs/2026-10-15-act2-voice-navigator-design.md).
 export type Screen =
   | 'G0_WELCOME'
   | 'L1_LOGIN'

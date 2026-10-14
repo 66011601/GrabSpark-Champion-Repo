@@ -3,6 +3,7 @@ import { useJourney } from '@/app/journey/JourneyContext.ts'
 import type { Screen } from '@/app/journey/journeyMachine.ts'
 import { demoFlags } from '@/services/demoFlags.ts'
 import { demoBus } from './demoBus.ts'
+import { th } from '@/copy/th.ts'
 import { scriptLines, step4DemoProfile, submittedDemoProfile } from './demoProfile.ts'
 
 // Presenter-only tooling (desktop, beside the phone). Press D to hide or show.
@@ -21,10 +22,13 @@ const JUMPS: { label: string; screen: Screen; sample?: 'step4' | 'submitted' }[]
   { label: 'เพิ่มเมนู', screen: 'H2_MENU' },
   { label: 'เวลาเปิด-ปิด', screen: 'H3_HOURS' },
   { label: '30 วันต่อมา…', screen: 'TRANSITION' },
+  { label: 'Act 2: หน้าหลัก GrabMerchant', screen: 'G1_DASHBOARD' },
 ]
 
 // Screens where the companion is listening, so a line "spoken" from here is heard.
-const LISTENING_SCREENS: Screen[] = ['G0_WELCOME', 'S1_SERVICE', 'S3_BUSINESS', 'S4_SHOP', 'S5_OWNER', 'S6_BANK', 'S7_CONFIRM', 'H1_HOME', 'H2_MENU', 'H3_HOURS']
+const LISTENING_SCREENS: Screen[] = ['G0_WELCOME', 'S1_SERVICE', 'S3_BUSINESS', 'S4_SHOP', 'S5_OWNER', 'S6_BANK', 'S7_CONFIRM', 'H1_HOME', 'H2_MENU', 'H3_HOURS', 'G1_DASHBOARD']
+
+const ASKS = ['sales', 'forecast', 'promo', 'soldOut', 'feedback'] as const
 
 export function DemoPanel() {
   const { state, dispatch } = useJourney()
@@ -108,6 +112,21 @@ export function DemoPanel() {
             พูด
           </button>
         </form>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h3 className="font-bold">Act 2: สั่งด้วยเสียง (ข้ามแอนิเมชัน: กด S)</h3>
+        {ASKS.map((id) => (
+          <button
+            key={id}
+            type="button"
+            disabled={state.screen !== 'G1_DASHBOARD'}
+            className="min-h-12 rounded-xl px-3 py-2 text-left ring-1 ring-line hover:bg-canvas disabled:opacity-40"
+            onClick={() => demoBus.say(th.act2.ask[id])}
+          >
+            {th.act2.ask[id]}
+          </button>
+        ))}
       </section>
 
       <section className="flex flex-col gap-2">
