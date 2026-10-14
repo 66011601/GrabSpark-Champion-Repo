@@ -1,109 +1,108 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { submitApplication } from '@/services/merchantApi.write.ts'
+import { saveStoreSetup, submitApplication } from '@/services/merchantApi.write.ts'
 import type { OnboardingProfile, ProfileUpdates } from '@/types/domain.ts'
-import { applyUpdates, confirmField, createEmptyProfile, REVIEW_FIELDS } from './profile.ts'
-import { runSubmissionChecks, SubmissionBlockedError, submitProfile } from './submit.ts'
+import { applyUpdates, confirmField, createEmptyProfile, SUBMIT_FIELDS } from './profile.ts'
+import { runSetupChecks, runSubmissionChecks, saveSetup, SubmissionBlockedError, submitProfile, type SubmitContext } from './submit.ts'
 
 vi.mock('@/services/merchantApi.write.ts', () => ({
-  submitApplication: vi.fn(async () => ({ applicationId: 'APP-TEST', submittedAt: '2026-10-13T06:30:00.000Z' })),
+  submitApplication: vi.fn(async () => ({ applicationId: 'APP-TEST', submittedAt: '2026-10-14T06:30:00.000Z' })),
+  saveStoreSetup: vi.fn(async (part: string) => ({ part, savedAt: '2026-10-14T06:40:00.000Z' })),
 }))
 
+const OWNER = { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890121', birthDate: '1970-01-01', idExpiry: '2031-01-01' }
+const PAYOUT = { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง แดง ใจดี', bookPhoto: 'sample' }
+const sure = <T,>(value: T) => ({ value, confidence: 1, heardFrom: 'x' })
+
 const VALID: ProfileUpdates = {
-  storeName: { value: 'ครัวป้าแดง', confidence: 0.93, heardFrom: 'x' },
-  category: { value: 'อาหารไทย', confidence: 0.9, heardFrom: 'x' },
-  location: { value: { text: 'ลาดพร้าว 71', lat: 13.8016, lng: 100.6033 }, confidence: 0.62, heardFrom: 'x' },
-  hours: { value: { open: '10:00', close: '20:00', closedDays: [] }, confidence: 0.95, heardFrom: 'x' },
-  menu: { value: [{ name: 'ชาไทยเย็น', priceTHB: 35 }], confidence: 0.9, heardFrom: 'x' },
-  phone: { value: '0812344217', confidence: 1, heardFrom: 'x' },
-  owner: { value: { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890121', birthDate: '1970-01-01', idExpiry: '2031-01-01' }, confidence: 0.97, heardFrom: 'x' },
-  payout: { value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง แดง ใจดี', bookPhoto: 'sample' }, confidence: 0.95, heardFrom: 'x' },
+  storeName: sure('ครัวป้าแดง'),
+  building: sure('ลาดพร้าว 71'),
+  location: sure({ text: 'ลาดพร้าว 71', lat: 13.8016, lng: 100.6033 }),
+  address: sure('ลาดพร้าว 71 กรุงเทพฯ'),
+  category: sure('อาหารไทย'),
+  businessType: sure('personal' as const),
+  phone: sure('0812344217'),
+  contactEmail: sure('padaeng@example.com'),
+  owner: sure(OWNER),
+  payout: sure(PAYOUT),
 }
+const CTX: SubmitContext = { phoneVerified: true, consents: { terms: true, accurate: true }, today: '2026-10-14' }
 
 function confirmedProfile(overrides: ProfileUpdates = {}): OnboardingProfile {
   const heard = applyUpdates(createEmptyProfile(), { ...VALID, ...overrides })
-  return REVIEW_FIELDS.reduce((profile, key) => confirmField(profile, key), heard)
+  return SUBMIT_FIELDS.reduce((profile, key) => confirmField(profile, key), heard)
 }
-
-const check = (profile: OnboardingProfile, id: string) => runSubmissionChecks(profile).find((c) => c.id === id)
+const check = (profile: OnboardingProfile, id: string, ctx = CTX) => runSubmissionChecks(profile, ctx).find((c) => c.id === id)
 
 beforeEach(() => {
   vi.mocked(submitApplication).mockClear()
+  vi.mocked(saveStoreSetup).mockClear()
 })
 
 describe('runSubmissionChecks', () => {
-  it('passes every check for a fully confirmed, valid profile', () => {
-    expect(runSubmissionChecks(confirmedProfile()).every((c) => c.pass)).toBe(true)
+  it('passes every check for a confirmed, valid application', () => {
+    expect(runSubmissionChecks(confirmedProfile(), CTX).every((c) => c.pass)).toBe(true)
   })
 
-  it('counts unconfirmed fields', () => {
+  it('lists the checks in a fixed order', () => {
+    expect(runSubmissionChecks(confirmedProfile(), CTX).map((c) => c.id)).toEqual([
+      'ALL_CONFIRMED', 'PIN_CONFIRMED', 'PHONE_VALID', 'PHONE_VERIFIED', 'EMAIL_VALID', 'ID_VALID', 'ID_NOT_EXPIRED', 'PAYOUT_NAME_MATCH', 'BOOK_PHOTO_ATTACHED', 'CONSENTS_GIVEN',
+    ])
+  })
+
+  it('counts unconfirmed sign-up fields, ignoring menu and hours', () => {
     const heardOnly = applyUpdates(createEmptyProfile(), VALID)
-    const twoLeft = REVIEW_FIELDS.slice(0, 6).reduce((profile, key) => confirmField(profile, key), heardOnly)
-    expect(check(twoLeft, 'ALL_CONFIRMED')).toEqual({ id: 'ALL_CONFIRMED', pass: false, message: 'ยังมีข้อมูลที่ต้องยืนยัน 2 ข้อ' })
+    expect(check(heardOnly, 'ALL_CONFIRMED')?.message).toBe('ยังมีข้อมูลที่ต้องยืนยัน 10 ข้อ')
+    expect(check(confirmedProfile(), 'ALL_CONFIRMED')?.pass).toBe(true)
   })
 
-  it('requires the map pin to be confirmed', () => {
-    const pinNotChecked = applyUpdates(createEmptyProfile(), VALID)
-    expect(check(pinNotChecked, 'PIN_CONFIRMED')?.pass).toBe(false)
+  it('needs the OTP, both consents and a card that has not expired', () => {
+    expect(check(confirmedProfile(), 'PHONE_VERIFIED', { ...CTX, phoneVerified: false })?.pass).toBe(false)
+    expect(check(confirmedProfile(), 'CONSENTS_GIVEN', { ...CTX, consents: { terms: true, accurate: false } })?.pass).toBe(false)
+    expect(check(confirmedProfile({ owner: sure({ ...OWNER, idExpiry: '2026-10-13' }) }), 'ID_NOT_EXPIRED')?.pass).toBe(false)
   })
 
-  it('rejects a menu item without a price', () => {
-    const free = confirmedProfile({ menu: { value: [{ name: 'น้ำเปล่า', priceTHB: 0 }], confidence: 0.9, heardFrom: 'x' } })
-    expect(check(free, 'MENU_VALID')?.pass).toBe(false)
-  })
-
-  it('rejects identical open and close times', () => {
-    const same = confirmedProfile({ hours: { value: { open: '10:00', close: '10:00', closedDays: [] }, confidence: 0.95, heardFrom: 'x' } })
-    expect(check(same, 'HOURS_VALID')?.pass).toBe(false)
-  })
-
-  it('rejects a phone number that is not 10 digits', () => {
-    const short = confirmedProfile({ phone: { value: '12345', confidence: 0.9, heardFrom: 'x' } })
-    expect(check(short, 'PHONE_VALID')?.pass).toBe(false)
-  })
-
-  it('rejects an ID number whose checksum is wrong', () => {
-    const typo = confirmedProfile({ owner: { value: { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890122', birthDate: '1970-01-01', idExpiry: '2031-01-01' }, confidence: 0.97, heardFrom: 'x' } })
-    expect(check(typo, 'ID_VALID')).toEqual({ id: 'ID_VALID', pass: false, message: 'เลขบัตรไม่ถูกต้อง ถ่ายใหม่อีกครั้งนะคะ' })
-  })
-
-  it('requires the bank account to be in the owner’s name', () => {
-    const someoneElse = confirmedProfile({
-      payout: { value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาย สมชาย ขายดี', bookPhoto: 'sample' }, confidence: 0.95, heardFrom: 'x' },
-    })
-    expect(check(someoneElse, 'PAYOUT_NAME_MATCH')).toEqual({ id: 'PAYOUT_NAME_MATCH', pass: false, message: 'ชื่อบัญชีต้องตรงกับชื่อบนบัตรค่ะ' })
-  })
-
-  it('does not strip a title-like start of the given name on one side only', () => {
-    const profile = confirmedProfile({
-      owner: { value: { title: 'นาง', name: 'นางนุช ใจดี', idNumber: '1234567890121', birthDate: '1970-01-01', idExpiry: '2031-01-01' }, confidence: 0.97, heardFrom: 'x' },
-      payout: { value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง นางนุช ใจดี', bookPhoto: 'sample' }, confidence: 0.95, heardFrom: 'x' },
-    })
-    expect(check(profile, 'PAYOUT_NAME_MATCH')?.pass).toBe(true)
-  })
-
-  it('fails both document checks when nothing was scanned', () => {
-    const heard = applyUpdates(createEmptyProfile(), { ...VALID, owner: undefined, payout: undefined })
-    expect(check(heard, 'ID_VALID')?.pass).toBe(false)
-    expect(check(heard, 'PAYOUT_NAME_MATCH')?.pass).toBe(false)
-    expect(check(heard, 'ALL_CONFIRMED')?.message).toBe('ยังมีข้อมูลที่ต้องยืนยัน 8 ข้อ')
+  it('rejects a bad ID, another person’s account, a missing bank book photo and a bad email', () => {
+    expect(check(confirmedProfile({ owner: sure({ ...OWNER, idNumber: '1234567890122' }) }), 'ID_VALID')?.pass).toBe(false)
+    expect(check(confirmedProfile({ payout: sure({ ...PAYOUT, accountName: 'นาย สมชาย ขายดี' }) }), 'PAYOUT_NAME_MATCH')?.pass).toBe(false)
+    expect(check(confirmedProfile({ payout: sure({ ...PAYOUT, bookPhoto: null }) }), 'BOOK_PHOTO_ATTACHED')?.pass).toBe(false)
+    expect(check(confirmedProfile({ contactEmail: sure('padaeng') }), 'EMAIL_VALID')?.pass).toBe(false)
   })
 })
 
 describe('submitProfile', () => {
-  it('never calls the API when a check fails', async () => {
-    const heardOnly = applyUpdates(createEmptyProfile(), VALID)
-    await expect(submitProfile(heardOnly)).rejects.toBeInstanceOf(SubmissionBlockedError)
+  it('never calls the API when a check fails, and says which', async () => {
+    const error = await submitProfile(confirmedProfile(), { ...CTX, consents: { terms: false, accurate: false } }).catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(SubmissionBlockedError)
+    expect((error as SubmissionBlockedError).failed.map((c) => c.id)).toEqual(['CONSENTS_GIVEN'])
     expect(submitApplication).not.toHaveBeenCalled()
   })
 
-  it('reports which checks failed', async () => {
-    const heardOnly = applyUpdates(createEmptyProfile(), VALID)
-    const error = await submitProfile(heardOnly).catch((e: unknown) => e)
-    expect((error as SubmissionBlockedError).failed.map((c) => c.id)).toEqual(['ALL_CONFIRMED', 'PIN_CONFIRMED'])
+  it('submits once every check passes', async () => {
+    await expect(submitProfile(confirmedProfile(), CTX)).resolves.toMatchObject({ applicationId: 'APP-TEST' })
+    expect(submitApplication).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('shop set-up', () => {
+  const menu = (items: { name: string; priceTHB: number }[], confidence = 1) => applyUpdates(createEmptyProfile(), { menu: { value: items, confidence, heardFrom: 'x' } })
+
+  it('checks the menu: at least one dish, every price above zero, nothing left amber', () => {
+    expect(runSetupChecks('menu', menu([{ name: 'ชาไทยเย็น', priceTHB: 35 }]))[0]).toEqual({ id: 'MENU_VALID', pass: true, message: 'เมนูมีราคาครบ' })
+    expect(runSetupChecks('menu', menu([{ name: 'น้ำเปล่า', priceTHB: 0 }]))[0].pass).toBe(false)
+    expect(runSetupChecks('menu', menu([{ name: 'ชาไทยเย็น', priceTHB: 35 }], 0.6))[0].message).toBe('ช่วยเช็คเมนูที่ขึ้นสีส้มก่อนนะคะ')
+    expect(runSetupChecks('menu', createEmptyProfile())[0].pass).toBe(false)
   })
 
-  it('submits once every check passes', async () => {
-    await expect(submitProfile(confirmedProfile())).resolves.toEqual({ applicationId: 'APP-TEST', submittedAt: '2026-10-13T06:30:00.000Z' })
-    expect(submitApplication).toHaveBeenCalledTimes(1)
+  it('checks the hours: open and close must differ', () => {
+    const hours = (open: string, close: string) => applyUpdates(createEmptyProfile(), { hours: sure({ open, close, closedDays: [] }) })
+    expect(runSetupChecks('hours', hours('10:00', '20:00'))[0].pass).toBe(true)
+    expect(runSetupChecks('hours', hours('10:00', '10:00'))[0].pass).toBe(false)
+  })
+
+  it('saves only after its check passes', async () => {
+    await expect(saveSetup('menu', createEmptyProfile())).rejects.toBeInstanceOf(SubmissionBlockedError)
+    expect(saveStoreSetup).not.toHaveBeenCalled()
+    await expect(saveSetup('menu', menu([{ name: 'ชาไทยเย็น', priceTHB: 35 }]))).resolves.toMatchObject({ part: 'menu' })
+    expect(saveStoreSetup).toHaveBeenCalledTimes(1)
   })
 })

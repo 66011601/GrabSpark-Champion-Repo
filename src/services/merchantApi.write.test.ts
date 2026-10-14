@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createEmptyProfile } from '@/ai/onboarding/profile.ts'
 import { demoFlags } from './demoFlags.ts'
-import { ApiUnavailableError, submitApplication } from './merchantApi.write.ts'
+import { ApiUnavailableError, saveStoreSetup, submitApplication } from './merchantApi.write.ts'
 
 afterEach(() => {
   vi.useRealTimers()
@@ -22,5 +22,14 @@ describe('submitApplication (mock)', () => {
     const assertion = expect(submitApplication(createEmptyProfile())).rejects.toBeInstanceOf(ApiUnavailableError)
     await vi.advanceTimersByTimeAsync(800)
     await assertion
+  })
+})
+
+describe('saveStoreSetup (mock)', () => {
+  it('resolves with what was saved after the simulated delay', async () => {
+    vi.useFakeTimers()
+    const result = saveStoreSetup('hours', createEmptyProfile())
+    await vi.advanceTimersByTimeAsync(800)
+    await expect(result).resolves.toMatchObject({ part: 'hours' })
   })
 })

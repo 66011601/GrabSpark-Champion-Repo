@@ -15,9 +15,6 @@ export const SETUP_FIELDS: ProfileFieldKey[] = ['menu', 'hours']
 
 export const ALL_FIELDS: ProfileFieldKey[] = [...SUBMIT_FIELDS, ...SETUP_FIELDS]
 
-/** The old Act 1 review list; the guardrail still counts it until Task 5 rewrites submit.ts. */
-export const REVIEW_FIELDS: ProfileFieldKey[] = ['storeName', 'category', 'location', 'hours', 'menu', 'phone', 'owner', 'payout']
-
 /** Heard values below this confidence are shown amber in A2. */
 export const CHECK_THRESHOLD = 0.8
 
