@@ -13,7 +13,8 @@ export function H1Home() {
   const { state, dispatch } = useJourney()
   const { startedAt, submittedAt, setupDone } = state
   const allDone = setupDone.menu && setupDone.hours
-  const elapsed = startedAt !== null && submittedAt !== null ? formatDuration(submittedAt - startedAt) : null
+  // A returning merchant who logs in has startedAt equal to submittedAt: there is no sign-up time to show.
+  const elapsed = startedAt !== null && submittedAt !== null && submittedAt - startedAt > 0 ? formatDuration(submittedAt - startedAt) : null
   const { mic, notice, toggleMic, onSpoken } = useVoiceInput(() => false)
   const tasks = [
     { key: 'menu' as const, label: th.h1.menuTask, Icon: UtensilsCrossed, screen: 'H2_MENU' as const },
