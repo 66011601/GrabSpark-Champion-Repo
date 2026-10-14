@@ -78,7 +78,7 @@ export function S3Business() {
     setSearch('')
     const match = await places.pick(suggestion)
     if (!match) return
-    fill({ location: { ...match, heardFrom: th.sources.map }, ...onlyEmptyFields(state.profile, addressFromLocation(match.value, th.sources.map)) })
+    fill({ location: { ...match, heardFrom: th.sources.map }, ...onlyEmptyFields(state.profile, addressFromLocation(match.value, th.sources.map, true)) })
   }
 
   const { mic, transcript, notice, toggleMic, hear, onSpoken } = useVoiceInput(

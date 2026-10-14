@@ -63,8 +63,10 @@ export const th = {
   places: {
     choose: 'เลือกที่ตั้งจากแผนที่',
     fromGoogle: 'ข้อมูลสถานที่จาก Google Maps · เฉพาะในประเทศไทย',
-    fromSamples: 'ข้อมูลตัวอย่าง (ยังไม่ได้เชื่อม Google Maps)',
-    sampleArea: 'กรุงเทพมหานคร',
+    fromLocal: 'สถานที่ตัวอย่างและข้อมูลตำบลในเครื่อง · ค้นต่อได้ด้วย OpenStreetMap',
+    pinnedHere: 'ตำแหน่งที่ปักหมุดไว้',
+    areaHint: 'ตำบล/แขวง · แตะแล้วปักหมุดหน้าร้านต่อ',
+    searchRow: (query: string) => `ค้นหา “${query}” บนแผนที่`,
     picked: 'เลือกจากแผนที่',
     notFound: 'หนูหาที่นี่ในประเทศไทยไม่เจอค่ะ ลองบอกซอย ถนน หรือจุดสังเกตอีกครั้งนะคะ',
     mapTitle: (place: string) => `แผนที่ Google: ${place}`,

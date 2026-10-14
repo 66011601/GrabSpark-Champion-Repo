@@ -83,7 +83,7 @@ export function createGooglePlaces(apiKey: string, offline: Places): Places {
       return (data.suggestions ?? []).flatMap(({ placePrediction: place }) => {
         const title = place?.structuredFormat?.mainText?.text ?? place?.text?.text
         if (!place?.placeId || !title) return []
-        return [{ id: place.placeId, title, subtitle: withoutCountry(place.structuredFormat?.secondaryText?.text ?? '') }]
+        return [{ id: place.placeId, kind: 'place' as const, title, subtitle: withoutCountry(place.structuredFormat?.secondaryText?.text ?? '') }]
       })
     } catch (problem) {
       console.warn('Google Maps suggestions are unavailable:', problem)
@@ -121,5 +121,5 @@ export function createGooglePlaces(apiKey: string, offline: Places): Places {
     }
   }
 
-  return { live: true, suggest, pick, find }
+  return { live: true, suggest, pick, find, reverse: (lat, lng) => offline.reverse(lat, lng) }
 }

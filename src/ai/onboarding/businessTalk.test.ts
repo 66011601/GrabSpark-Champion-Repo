@@ -18,8 +18,8 @@ describe('businessUpdates', () => {
     expect(updates.storeName?.value).toBe('ครัวป้าแดง')
     expect(updates.category?.value).toBe('อาหารไทย')
     expect(updates.location?.value.text).toBe('ลาดพร้าว 71 ตรงข้ามเซเว่น')
-    expect(updates.building).toEqual({ value: 'ลาดพร้าว 71 ตรงข้ามเซเว่น', confidence: DERIVED_CONFIDENCE, heardFrom: line1 })
-    expect(updates.address?.value).toBe('ลาดพร้าว 71 ตรงข้ามเซเว่น')
+    expect(updates.building).toEqual({ value: 'ซอยลาดพร้าว 71 ถนนลาดพร้าว', confidence: DERIVED_CONFIDENCE, heardFrom: line1 })
+    expect(updates.address?.value).toBe('ซอยลาดพร้าว 71 ถนนลาดพร้าว แขวงลาดพร้าว เขตลาดพร้าว กรุงเทพมหานคร 10230')
   })
 
   it('never fills hours or menu on this step', () => {

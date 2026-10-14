@@ -32,7 +32,7 @@ export function PlaceSuggestions({
           </li>
         ))}
       </ul>
-      <p className="border-t border-line bg-canvas px-4 py-1.5 text-sm text-ink-muted">{live ? th.places.fromGoogle : th.places.fromSamples}</p>
+      <p className="border-t border-line bg-canvas px-4 py-1.5 text-sm text-ink-muted">{live ? th.places.fromGoogle : th.places.fromLocal}</p>
     </div>
   )
 }

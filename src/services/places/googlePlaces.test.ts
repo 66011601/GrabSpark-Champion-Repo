@@ -12,7 +12,7 @@ const SOI: GooglePlace = {
 }
 const VIENTIANE: GooglePlace = { ...SOI, id: 'laos', displayName: { text: 'ตลาดเช้า' }, addressComponents: [{ shortText: 'LA', types: ['country'] }] }
 
-const offline: Places = { live: false, suggest: vi.fn(async () => []), pick: vi.fn(async () => null), find: vi.fn(async () => null) }
+const offline: Places = { live: false, suggest: vi.fn(async () => []), pick: vi.fn(async () => null), find: vi.fn(async () => null), reverse: vi.fn(async () => null) }
 
 /** Answers the next request with `body`, and remembers what was asked. */
 function answer(body: unknown, ok = true) {
@@ -60,7 +60,7 @@ describe('createGooglePlaces', () => {
       ],
     })
     const suggestions = await createGooglePlaces('test-key', offline).suggest('ลาดพร้าว 71')
-    expect(suggestions).toEqual([{ id: 'soi71', title: 'ซอย ลาดพร้าว 71', subtitle: 'เขตวังทองหลาง กรุงเทพมหานคร' }])
+    expect(suggestions).toEqual([{ id: 'soi71', kind: 'place', title: 'ซอย ลาดพร้าว 71', subtitle: 'เขตวังทองหลาง กรุงเทพมหานคร' }])
     expect(asked().url).toBe('https://places.googleapis.com/v1/places:autocomplete')
     expect(asked().headers['X-Goog-Api-Key']).toBe('test-key')
     expect(asked().body).toMatchObject({ input: 'ลาดพร้าว 71', includedRegionCodes: ['th'], languageCode: 'th' })
@@ -74,7 +74,7 @@ describe('createGooglePlaces', () => {
 
   it('turns the chosen suggestion into a pin', async () => {
     const { asked } = answer(SOI)
-    const match = await createGooglePlaces('test-key', offline).pick({ id: 'soi71', title: 'ซอย ลาดพร้าว 71', subtitle: '' })
+    const match = await createGooglePlaces('test-key', offline).pick({ id: 'soi71', kind: 'place', title: 'ซอย ลาดพร้าว 71', subtitle: '' })
     expect(match?.confidence).toBe(PICKED_CONFIDENCE)
     expect(match?.value.lat).toBe(13.8016)
     expect(asked().url).toContain('/places/soi71?')
