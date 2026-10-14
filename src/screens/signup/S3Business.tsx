@@ -1,13 +1,12 @@
-import { MapPin } from 'lucide-react'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { SAY } from '@/ai/commands/phrases.ts'
-import { addressFromLocation } from '@/ai/onboarding/addressFields.ts'
+import { DERIVED_CONFIDENCE, GPS_CONFIDENCE, LINK_CONFIDENCE, redraftAddress } from '@/ai/onboarding/addressFields.ts'
 import { businessUpdates, STEP3_TALK } from '@/ai/onboarding/businessTalk.ts'
 import { pickFollowUp } from '@/ai/onboarding/followUp.ts'
 import { CATEGORY_LABELS } from '@/ai/onboarding/parsers/category.ts'
 import { locationPhrase } from '@/ai/onboarding/parsers/locationPhrase.ts'
-import { onlyEmptyFields } from '@/ai/onboarding/profile.ts'
+import { formatThaiAddress, parseThaiAddress } from '@/ai/onboarding/parsers/thaiAddress.ts'
 import { stepStatus } from '@/ai/onboarding/steps.ts'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
 import { TalkSheet } from '@/components/assistant/TalkSheet.tsx'
@@ -18,15 +17,19 @@ import { fieldMark, needsAmber, TYPED } from '@/components/grab/fieldMarks.ts'
 import { inputClass } from '@/components/grab/inputClass.ts'
 import { problemText } from '@/components/grab/problemText.ts'
 import { StepShell } from '@/components/grab/StepShell.tsx'
-import { DrawnMap } from '@/components/map/DrawnMap.tsx'
 import { Button } from '@/components/ui/Button.tsx'
-import { PlaceSuggestions } from '@/components/ui/PlaceSuggestions.tsx'
 import { th } from '@/copy/th.ts'
 import { getAccount, getLandmarks } from '@/services/merchantApi.ts'
-import { getPlaces, type PlaceSuggestion } from '@/services/places/places.ts'
+import { COUNTRY_ZOOM, isInThailand, PIN_ZOOM, THAILAND_CENTER, type MapView } from '@/services/places/bounds.ts'
+import { locateDevice, ROUGH_FIX_M } from '@/services/places/geolocation.ts'
+import { readLink } from '@/services/places/linkCoords.ts'
+import { getPlaces, type PlaceMatch, type PlaceSuggestion } from '@/services/places/places.ts'
+import { loadAreas, loadedAreas, postcodeMismatch, type Area } from '@/services/places/thaiAddressDb.ts'
 import type { ProfileFieldKey, ProfileUpdates } from '@/types/domain.ts'
+import { AddressField } from './s3/AddressField.tsx'
+import { LocationField } from './s3/LocationField.tsx'
 
-const PinMap = lazy(() => import('@/components/map/PinMap.tsx').then((module) => ({ default: module.PinMap })))
+const PinSheet = lazy(() => import('@/components/map/PinSheet.tsx').then((module) => ({ default: module.PinSheet })))
 
 const SUGGEST_AFTER_MS = 300
 const account = getAccount()
@@ -36,7 +39,11 @@ const COMMANDS = [
   { id: 'next' as const, phrases: SAY.next },
   { id: 'back' as const, phrases: SAY.back },
   { id: 'typeInstead' as const, phrases: SAY.typeInstead },
+  { id: 'here' as const, phrases: SAY.here },
+  { id: 'pin' as const, phrases: SAY.pin },
 ]
+
+const pointAt = (lat: number, lng: number) => ({ text: th.places.pinnedHere, lat, lng })
 
 /** 3/7 ข้อมูลธุรกิจ: name, building/street, map pin, address and food type. Tell the companion, or type. */
 export function S3Business() {
@@ -45,6 +52,10 @@ export function S3Business() {
   const [talking, setTalking] = useState(false)
   const [search, setSearch] = useState('')
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([])
+  const [areas, setAreas] = useState<Area[] | null>(loadedAreas)
+  const [placeNotice, setPlaceNotice] = useState<string | null>(null)
+  const [pinView, setPinView] = useState<MapView | null>(null) // the pin sheet is open while set
+  const [locating, setLocating] = useState(false)
   const question = useMemo(() => pickFollowUp(state.profile, STEP3_TALK, account), [state.profile])
   const status = stepStatus(state.profile, 3)
 
@@ -55,6 +66,19 @@ export function S3Business() {
     if (question === null) setTalking(false)
   }
 
+  // The Thai address data (sub-districts and postcodes) loads in the background the first time 3/7 opens.
+  useEffect(() => {
+    let current = true
+    loadAreas()
+      .then((loaded) => {
+        if (current) setAreas(loaded)
+      })
+      .catch((problem: unknown) => console.warn('Thai address data did not load:', problem))
+    return () => {
+      current = false
+    }
+  }, [])
+
   const fill = (updates: ProfileUpdates) => {
     if (Object.keys(updates).length > 0) dispatch({ type: 'FILL', updates, at: Date.now() })
   }
@@ -63,11 +87,53 @@ export function S3Business() {
     fill({ [key]: { value, confidence: 1, heardFrom: TYPED } } as ProfileUpdates)
   }
 
-  // Offer places a moment after the merchant stops typing in the location search.
+  /** A new location from anywhere: the box drafts follow it unless the merchant wrote them. */
+  const placeAt = (match: PlaceMatch, heardFrom: string, { sure = false, placedByMerchant = false } = {}) => {
+    setPlaceNotice(null)
+    fill({ location: { ...match, heardFrom }, ...redraftAddress(state.profile, match.value, heardFrom, sure) })
+    if (placedByMerchant) dispatch({ type: 'CONFIRM_FIELD', field: 'location' })
+  }
+
+  const openPin = () => {
+    setTalking(false)
+    const point = fields.location.value
+    setPinView(point ? { lat: point.lat, lng: point.lng, zoom: PIN_ZOOM } : { ...THAILAND_CENTER, zoom: COUNTRY_ZOOM })
+  }
+
+  const locateHere = async () => {
+    setLocating(true)
+    const fix = await locateDevice()
+    setLocating(false)
+    if (typeof fix === 'string') return setPlaceNotice(th.places.gpsFailed)
+    if (!isInThailand(fix.lat, fix.lng)) return setPlaceNotice(th.places.outsideThailand)
+    const found = await places.reverse(fix.lat, fix.lng)
+    placeAt({ value: found?.value ?? pointAt(fix.lat, fix.lng), confidence: GPS_CONFIDENCE }, th.sources.gps)
+    if (fix.accuracy > ROUGH_FIX_M) setPinView({ lat: fix.lat, lng: fix.lng, zoom: PIN_ZOOM })
+  }
+
+  /** A pasted or said map link (or "lat, lng"). False when the text is not one. */
+  const takeLink = (text: string): boolean => {
+    const link = readLink(text)
+    if (!link) return false
+    setSearch('')
+    if (link.kind === 'unreadable') {
+      setPlaceNotice(th.places.linkUnreadable)
+      return true
+    }
+    if (!isInThailand(link.lat, link.lng)) {
+      setPlaceNotice(th.places.outsideThailand)
+      return true
+    }
+    void places.reverse(link.lat, link.lng).then((found) => placeAt({ value: found?.value ?? pointAt(link.lat, link.lng), confidence: LINK_CONFIDENCE }, th.sources.link))
+    return true
+  }
+
+  // Offer places a moment after the merchant stops typing in the location search (never for a link).
   useEffect(() => {
     let current = true
     const waiting = window.setTimeout(async () => {
-      const found = search.trim() ? await places.suggest(search.trim()) : []
+      const typed = search.trim()
+      const found = typed && !readLink(typed) ? await places.suggest(typed) : []
       if (current) setSuggestions(found)
     }, SUGGEST_AFTER_MS)
     return () => {
@@ -78,16 +144,35 @@ export function S3Business() {
 
   const pickPlace = async (suggestion: PlaceSuggestion) => {
     setSearch('')
+    setSuggestions([])
     const match = await places.pick(suggestion)
-    if (!match) return
-    fill({ location: { ...match, heardFrom: th.sources.map }, ...onlyEmptyFields(state.profile, addressFromLocation(match.value, th.sources.map, true)) })
+    if (!match) return setPlaceNotice(th.places.notFound)
+    if (suggestion.kind === 'area') {
+      // A sub-district is not a shop: draft the address, then let the merchant place the pin.
+      if (fields.address.status === 'empty') fill({ address: { value: match.value.address ?? match.value.text, confidence: DERIVED_CONFIDENCE, heardFrom: th.sources.map } })
+      setPinView({ lat: match.value.lat, lng: match.value.lng, zoom: match.zoom ?? PIN_ZOOM })
+      return
+    }
+    placeAt(match, th.sources.map, { sure: suggestion.kind === 'place' })
   }
+
+  const searchNow = () => {
+    const typed = search.trim()
+    if (!typed || takeLink(typed)) return
+    void pickPlace({ id: `search:${typed}`, kind: 'search', title: typed, subtitle: '', query: typed })
+  }
+
+  // A postcode from another province stops ต่อไป until the merchant fixes or confirms the address.
+  const address = fields.address.value
+  const wrongPostcode = areas && address && fields.address.status !== 'confirmed' ? postcodeMismatch(areas, address) : null
+  const mismatch = wrongPostcode ? th.places.postcodeMismatch(wrongPostcode.postcode, wrongPostcode.actual, wrongPostcode.said) : null
+  const canGoOn = status.valid && mismatch === null
 
   const { mic, transcript, notice, toggleMic, hear, onSpoken } = useVoiceInput(
     async (text, isCurrent) => {
       const command = matchCommand(text, COMMANDS)
       if (command === 'next') {
-        dispatch({ type: 'NEXT' })
+        if (canGoOn) dispatch({ type: 'NEXT' })
         return true
       }
       if (command === 'back') {
@@ -98,9 +183,19 @@ export function S3Business() {
         setTalking(true)
         return true
       }
+      if (command === 'here') {
+        void locateHere()
+        return true
+      }
+      if (command === 'pin') {
+        openPin()
+        return true
+      }
+      if (takeLink(text)) return true
       const expecting = question?.field ?? undefined
-      const wantsPlace = places.live && (expecting === 'location' || expecting === undefined)
-      const phrase = wantsPlace ? locationPhrase(text, expecting === 'location') : null
+      const spoken = parseThaiAddress(text)
+      const wantsPlace = expecting === 'location' || expecting === undefined || spoken !== null
+      const phrase = spoken ? formatThaiAddress(spoken) : wantsPlace ? locationPhrase(text, expecting === 'location') : null
       const place = phrase ? await places.find(phrase) : null
       if (!isCurrent()) return false // the screen was left or reset while the map was answering
       const updates = businessUpdates(text, { expecting, landmarks, profile: state.profile, place })
@@ -108,11 +203,21 @@ export function S3Business() {
       fill(updates)
       return Object.keys(updates).length > 0
     },
-    { autoListen: talking },
+    { autoListen: talking && pinView === null },
   )
 
-  const line = question ? (question.field === null ? th.s3.helperStart : question.text) : status.valid ? th.s3.helperDone : problemText(status.issues[0])
+  const line = question
+    ? question.field === null
+      ? th.s3.helperStart
+      : question.text
+    : (mismatch ?? (status.valid ? th.s3.helperDone : problemText(status.issues[0])))
   const amber = (key: ProfileFieldKey) => (needsAmber(fields[key]) ? () => dispatch({ type: 'CONFIRM_FIELD', field: key }) : null)
+  const chips = (question?.chips ?? []).flatMap((chip) => {
+    if (chip.kind === 'say') return [{ label: chip.label, onPress: () => hear(chip.label) }]
+    if (chip.kind === 'useDeviceLocation') return [{ label: chip.label, onPress: () => void locateHere() }]
+    if (chip.kind === 'pinOnMap') return [{ label: chip.label, onPress: openPin }]
+    return []
+  })
 
   return (
     <StepShell
@@ -124,13 +229,13 @@ export function S3Business() {
         <>
           <AiHelperBar
             text={line}
-            notice={notice}
+            notice={placeNotice ?? notice}
             mic={mic}
             onAvatar={toggleMic}
             onSpoken={onSpoken}
             action={{ kind: 'mic', label: th.s3.talk, onPress: () => setTalking(true) }}
           />
-          <Button fullWidth disabled={!status.valid} onClick={() => dispatch({ type: 'NEXT' })}>
+          <Button fullWidth disabled={!canGoOn} onClick={() => dispatch({ type: 'NEXT' })}>
             {th.common.next}
           </Button>
         </>
@@ -143,36 +248,22 @@ export function S3Business() {
       <Field id="s3-building" label={th.fields.building} required mark={fieldMark(fields.building)} onCheck={amber('building')}>
         <input id="s3-building" autoComplete="address-line1" value={fields.building.value ?? ''} onChange={(event) => type('building')(event.target.value)} className={inputClass()} />
       </Field>
-      <Field id="s3-location" label={th.store.location} required mark={fieldMark(fields.location)} onCheck={null}>
-        {fields.location.value ? (
-          <div className="flex flex-col gap-2">
-            <Suspense fallback={<DrawnMap label={fields.location.value.text} />}>
-              <PinMap point={fields.location.value} />
-            </Suspense>
-            <div className="flex flex-wrap gap-2">
-              {fields.location.needsPinCheck && (
-                <Button variant="secondary" className="min-h-12!" icon={<MapPin className="size-5" aria-hidden />} onClick={() => dispatch({ type: 'CONFIRM_FIELD', field: 'location' })}>
-                  {th.s3.pinConfirm}
-                </Button>
-              )}
-              <Button variant="ghost" className="min-h-12! px-0!" onClick={() => dispatch({ type: 'CLEAR_FIELD', field: 'location' })}>
-                {th.s3.pinChange}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <div className="relative">
-              <MapPin className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-action" aria-hidden />
-              <input id="s3-location" autoComplete="off" placeholder={th.s3.locationPlaceholder} value={search} onChange={(event) => setSearch(event.target.value)} className={`${inputClass()} pl-11`} />
-            </div>
-            <PlaceSuggestions suggestions={suggestions} live={places.live} onPick={pickPlace} />
-          </div>
-        )}
-      </Field>
-      <Field id="s3-address" label={th.fields.address} required mark={fieldMark(fields.address)} onCheck={amber('address')}>
-        <textarea id="s3-address" rows={2} value={fields.address.value ?? ''} onChange={(event) => type('address')(event.target.value)} className={`${inputClass()} py-3`} />
-      </Field>
+      <LocationField
+        field={fields.location}
+        search={search}
+        onSearch={setSearch}
+        onPasteText={takeLink}
+        onEnter={searchNow}
+        suggestions={suggestions}
+        live={places.live}
+        locating={locating}
+        onPick={(suggestion) => void pickPlace(suggestion)}
+        onHere={() => void locateHere()}
+        onPin={openPin}
+        onConfirmPin={() => dispatch({ type: 'CONFIRM_FIELD', field: 'location' })}
+        onClear={() => dispatch({ type: 'CLEAR_FIELD', field: 'location' })}
+      />
+      <AddressField field={fields.address} areas={areas} mismatch={mismatch} onType={type('address')} onCheck={amber('address')} />
       <Field id="s3-category" label={th.fields.category} required mark={fieldMark(fields.category)} onCheck={amber('category')}>
         <Select
           id="s3-category"
@@ -187,12 +278,30 @@ export function S3Business() {
         open={talking}
         onClose={() => setTalking(false)}
         question={line}
-        chips={(question?.chips ?? []).filter((chip) => chip.kind === 'say').map((chip) => ({ label: chip.label, onPress: () => hear(chip.label) }))}
+        chips={chips}
         transcript={transcript}
         mic={mic}
         onMic={toggleMic}
         onType={hear}
       />
+      {pinView && (
+        <Suspense fallback={null}>
+          <PinSheet
+            open
+            start={pinView}
+            describe={(lat, lng) => places.reverse(lat, lng)}
+            onLocate={async () => {
+              const fix = await locateDevice()
+              return typeof fix === 'string' ? null : fix
+            }}
+            onUse={(match) => {
+              setPinView(null)
+              placeAt(match, th.sources.pin, { placedByMerchant: true })
+            }}
+            onClose={() => setPinView(null)}
+          />
+        </Suspense>
+      )}
     </StepShell>
   )
 }
