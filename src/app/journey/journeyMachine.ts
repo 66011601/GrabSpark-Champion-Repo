@@ -118,6 +118,8 @@ export function journeyReducer(state: JourneyState, event: JourneyEvent): Journe
       if (!isCurrentDoc(state, event.doc)) return state
       return nextDoc(state)
     case 'TALK_DONE':
+      // Only A1 sends this; a late or repeated one from elsewhere changes nothing.
+      if (state.screen !== 'A1_TALK') return state
       return startScan(state, missingDocs(state.profile), 'A2_REVIEW')
     case 'CONFIRM_FIELD':
       return { ...state, profile: confirmField(state.profile, event.field) }

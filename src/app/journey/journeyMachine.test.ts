@@ -172,13 +172,20 @@ describe('scanning', () => {
 })
 
 describe('after talking', () => {
+  const onA1 = () => journeyReducer(initialJourney(), { type: 'GO', screen: 'A1_TALK' })
+
+  it('ignores TALK_DONE when not on A1', () => {
+    const reviewing = journeyReducer(initialJourney(), { type: 'GO', screen: 'A2_REVIEW' })
+    expect(journeyReducer(reviewing, { type: 'TALK_DONE' })).toBe(reviewing)
+  })
+
   it('asks for the documents that are still missing', () => {
-    const talked = journeyReducer(initialJourney(), { type: 'TALK_DONE' })
+    const talked = journeyReducer(onA1(), { type: 'TALK_DONE' })
     expect(talked).toMatchObject({ screen: 'S1_SCAN', scan: { queue: ['idCard', 'bankBook'], returnTo: 'A2_REVIEW' } })
   })
 
   it('goes to review when the documents are already in', () => {
-    const scanned = journeyReducer(initialJourney(), { type: 'HEARD', updates: { ...ID, ...BANK }, at: 1 })
+    const scanned = journeyReducer(onA1(), { type: 'HEARD', updates: { ...ID, ...BANK }, at: 1 })
     expect(journeyReducer(scanned, { type: 'TALK_DONE' }).screen).toBe('A2_REVIEW')
   })
 

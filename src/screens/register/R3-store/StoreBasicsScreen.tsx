@@ -145,7 +145,7 @@ export function StoreBasicsScreen() {
       }
       return fill(text, isCurrent)
     },
-    { autoListen: true },
+    { autoListen: state.method !== 'type' },
   )
 
   const type = (field: BasicsField, set: (value: string) => void) => (value: string) => {
