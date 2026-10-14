@@ -5,7 +5,7 @@ import { SAY } from '@/ai/commands/phrases.ts'
 import { extractProfile } from '@/ai/onboarding/extractProfile.ts'
 import { locationPhrase } from '@/ai/onboarding/parsers/locationPhrase.ts'
 import { pickFollowUp } from '@/ai/onboarding/followUp.ts'
-import { countHeard, isReadyForReview, PROFILE_FIELDS } from '@/ai/onboarding/profile.ts'
+import { countHeard, isReadyForReview, TALK_FIELDS } from '@/ai/onboarding/profile.ts'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
 import { MIC_LABELS } from '@/components/assistant/companionState.ts'
 import { CompanionDock } from '@/components/assistant/CompanionDock.tsx'
@@ -130,7 +130,7 @@ export function TalkScreen() {
   return (
     <OnboardingShell
       title={th.onboarding.title}
-      progress={th.onboarding.progress(countHeard(profile), PROFILE_FIELDS.length)}
+      progress={th.onboarding.progress(countHeard(profile), TALK_FIELDS.length)}
       dock={
         <CompanionDock
           text={question ? question.text : th.onboarding.allHeard}

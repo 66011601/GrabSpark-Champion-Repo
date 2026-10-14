@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PROFILE_FIELDS } from '@/ai/onboarding/profile.ts'
+import { TALK_FIELDS } from '@/ai/onboarding/profile.ts'
 import { demoProfile } from './demoProfile.ts'
 
 describe('demoProfile', () => {
@@ -7,7 +7,7 @@ describe('demoProfile', () => {
   const profile = demoProfile()
 
   it('hears every field from the script, confirming none', () => {
-    expect(PROFILE_FIELDS.map((key) => profile.fields[key].status)).toEqual(Array(6).fill('heard'))
+    expect(TALK_FIELDS.map((key) => profile.fields[key].status)).toEqual(Array(6).fill('heard'))
   })
 
   it('matches the story told in Act 2', () => {

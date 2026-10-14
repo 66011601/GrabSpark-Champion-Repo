@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { SAY } from '@/ai/commands/phrases.ts'
-import { PROFILE_FIELDS } from '@/ai/onboarding/profile.ts'
+import { TALK_FIELDS } from '@/ai/onboarding/profile.ts'
 import { runSubmissionChecks, SubmissionBlockedError, submitProfile } from '@/ai/onboarding/submit.ts'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
 import { CompanionDock } from '@/components/assistant/CompanionDock.tsx'
@@ -34,7 +34,7 @@ export function ReviewScreen() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const canSubmit = runSubmissionChecks(profile).every((check) => check.pass)
-  const remaining = PROFILE_FIELDS.filter((key) => fields[key].status !== 'confirmed').length
+  const remaining = TALK_FIELDS.filter((key) => fields[key].status !== 'confirmed').length
 
   const reading = useRef<number | undefined>(undefined)
   const mounted = useRef(true)
@@ -57,7 +57,7 @@ export function ReviewScreen() {
   })
 
   const said =
-    remaining === PROFILE_FIELDS.length ? th.review.subtitle : remaining > 0 ? th.review.confirmedSoFar(remaining) : th.review.allConfirmed
+    remaining === TALK_FIELDS.length ? th.review.subtitle : remaining > 0 ? th.review.confirmedSoFar(remaining) : th.review.allConfirmed
 
   const card = (key: ProfileFieldKey) => ({
     label: th.fields[key],

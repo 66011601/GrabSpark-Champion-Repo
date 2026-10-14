@@ -10,6 +10,8 @@ export const th = {
     hours: 'เวลาเปิด-ปิด',
     menu: 'เมนู',
     phone: 'เบอร์ติดต่อ',
+    owner: 'เจ้าของร้าน',
+    payout: 'บัญชีรับเงิน',
   },
   common: {
     back: 'ย้อนกลับ',
@@ -144,6 +146,7 @@ export const th = {
     listen: 'ฟังสรุป',
     menuCount: (count: number) => `${count} รายการ`,
     moreItems: (count: number) => `และอีก ${count} เมนู`,
+    payoutSummary: (bank: string, last4: string) => `${bank} ลงท้ายด้วย ${last4}`,
   },
   checks: {
     allConfirmed: 'ยืนยันข้อมูลครบแล้ว',

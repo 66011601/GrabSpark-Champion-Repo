@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { submitApplication } from '@/services/merchantApi.write.ts'
 import type { OnboardingProfile, ProfileUpdates } from '@/types/domain.ts'
-import { applyUpdates, confirmField, createEmptyProfile, PROFILE_FIELDS } from './profile.ts'
+import { applyUpdates, confirmField, createEmptyProfile, TALK_FIELDS } from './profile.ts'
 import { runSubmissionChecks, SubmissionBlockedError, submitProfile } from './submit.ts'
 
 vi.mock('@/services/merchantApi.write.ts', () => ({
@@ -19,7 +19,7 @@ const VALID: ProfileUpdates = {
 
 function confirmedProfile(overrides: ProfileUpdates = {}): OnboardingProfile {
   const heard = applyUpdates(createEmptyProfile(), { ...VALID, ...overrides })
-  return PROFILE_FIELDS.reduce((profile, key) => confirmField(profile, key), heard)
+  return TALK_FIELDS.reduce((profile, key) => confirmField(profile, key), heard)
 }
 
 const check = (profile: OnboardingProfile, id: string) => runSubmissionChecks(profile).find((c) => c.id === id)
@@ -35,7 +35,7 @@ describe('runSubmissionChecks', () => {
 
   it('counts unconfirmed fields', () => {
     const heardOnly = applyUpdates(createEmptyProfile(), VALID)
-    const twoLeft = PROFILE_FIELDS.slice(0, 4).reduce((profile, key) => confirmField(profile, key), heardOnly)
+    const twoLeft = TALK_FIELDS.slice(0, 4).reduce((profile, key) => confirmField(profile, key), heardOnly)
     expect(check(twoLeft, 'ALL_CONFIRMED')).toEqual({ id: 'ALL_CONFIRMED', pass: false, message: 'ยังมีข้อมูลที่ต้องยืนยัน 2 ข้อ' })
   })
 

@@ -1,12 +1,12 @@
 import { th } from '@/copy/th.ts'
 import { submitApplication, type ApplicationReceipt } from '@/services/merchantApi.write.ts'
 import type { GuardrailCheck, OnboardingProfile } from '@/types/domain.ts'
-import { PROFILE_FIELDS } from './profile.ts'
+import { TALK_FIELDS } from './profile.ts'
 
 /** Deterministic checks run before anything leaves the phone (spec §6.5). */
 export function runSubmissionChecks(profile: OnboardingProfile): GuardrailCheck[] {
   const { fields } = profile
-  const unconfirmed = PROFILE_FIELDS.filter((key) => fields[key].status !== 'confirmed').length
+  const unconfirmed = TALK_FIELDS.filter((key) => fields[key].status !== 'confirmed').length
   const menu = fields.menu.value ?? []
   const hours = fields.hours.value
   const pinOk = fields.location.status === 'confirmed' && !fields.location.needsPinCheck

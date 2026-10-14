@@ -1,5 +1,5 @@
 import { CheckCircle2, Circle } from 'lucide-react'
-import { PROFILE_FIELDS } from '@/ai/onboarding/profile.ts'
+import { TALK_FIELDS } from '@/ai/onboarding/profile.ts'
 import { th } from '@/copy/th.ts'
 import type { OnboardingProfile } from '@/types/domain.ts'
 import { summarizeField } from '../summarizeField.ts'
@@ -8,7 +8,7 @@ import { summarizeField } from '../summarizeField.ts'
 export function LiveProfileChecklist({ profile }: { profile: OnboardingProfile }) {
   return (
     <ul className="divide-y divide-line rounded-3xl ring-1 ring-line">
-      {PROFILE_FIELDS.map((key) => {
+      {TALK_FIELDS.map((key) => {
         const heard = profile.fields[key].status !== 'empty'
         return (
           <li key={key} className="flex min-h-14 items-center gap-3 px-4 py-2">

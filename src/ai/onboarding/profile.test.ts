@@ -4,11 +4,14 @@ import {
   confirmField,
   countHeard,
   createEmptyProfile,
+  DOC_FIELDS,
   isReadyForReview,
+  missingDocs,
   needsCheck,
-  PROFILE_FIELDS,
   reaskField,
   removeMenuItem,
+  REVIEW_FIELDS,
+  TALK_FIELDS,
 } from './profile.ts'
 
 const PIN = { text: 'ลาดพร้าว 71', lat: 13.8016, lng: 100.6033 }
@@ -16,7 +19,7 @@ const PIN = { text: 'ลาดพร้าว 71', lat: 13.8016, lng: 100.6033 }
 describe('createEmptyProfile', () => {
   it('starts every field empty and offers the account phone', () => {
     const profile = createEmptyProfile()
-    expect(PROFILE_FIELDS.every((key) => profile.fields[key].status === 'empty')).toBe(true)
+    expect(REVIEW_FIELDS.every((key) => profile.fields[key].status === 'empty')).toBe(true)
     expect(profile.fields.phone.suggestFromAccount).toBe(true)
   })
 })
@@ -121,5 +124,47 @@ describe('progress', () => {
     })
     expect(countHeard(profile)).toBe(6)
     expect(isReadyForReview(profile)).toBe(true)
+  })
+})
+
+const OWNER = { value: { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890121' }, confidence: 0.97, heardFrom: 'รูปบัตรประชาชน' }
+const PAYOUT = {
+  value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง แดง ใจดี' },
+  confidence: 0.95,
+  heardFrom: 'รูปสมุดบัญชี',
+}
+
+describe('field groups', () => {
+  it('talks about six fields and scans two', () => {
+    expect(TALK_FIELDS).toEqual(['storeName', 'category', 'location', 'hours', 'menu', 'phone'])
+    expect(DOC_FIELDS).toEqual(['owner', 'payout'])
+    expect(REVIEW_FIELDS).toEqual([...TALK_FIELDS, ...DOC_FIELDS])
+  })
+
+  it('applies scanned document values as drafts', () => {
+    const profile = applyUpdates(createEmptyProfile(), { owner: OWNER })
+    expect(profile.fields.owner).toEqual({ ...OWNER, status: 'heard' })
+  })
+
+  it('does not wait for documents before review is possible from A1', () => {
+    const talked = applyUpdates(createEmptyProfile(), {
+      storeName: { value: 'ครัวป้าแดง', confidence: 0.93, heardFrom: 'x' },
+      category: { value: 'อาหารไทย', confidence: 0.9, heardFrom: 'x' },
+      location: { value: PIN, confidence: 0.62, heardFrom: 'x' },
+      hours: { value: { open: '10:00', close: '20:00', closedDays: [] }, confidence: 0.95, heardFrom: 'x' },
+      menu: { value: [{ name: 'ชาไทยเย็น', priceTHB: 35 }], confidence: 0.9, heardFrom: 'x' },
+      phone: { value: '0812344217', confidence: 1, heardFrom: 'x' },
+    })
+    expect(isReadyForReview(talked)).toBe(true)
+    expect(countHeard(talked)).toBe(6)
+  })
+})
+
+describe('missingDocs', () => {
+  it('asks for the ID card and the bank book until both are scanned', () => {
+    const empty = createEmptyProfile()
+    expect(missingDocs(empty)).toEqual(['idCard', 'bankBook'])
+    expect(missingDocs(applyUpdates(empty, { owner: OWNER }))).toEqual(['bankBook'])
+    expect(missingDocs(applyUpdates(empty, { owner: OWNER, payout: PAYOUT }))).toEqual([])
   })
 })

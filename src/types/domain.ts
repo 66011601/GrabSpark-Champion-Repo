@@ -27,6 +27,24 @@ export interface MenuEntry {
   priceTHB: number
 }
 
+/** How the merchant chose to fill in the shop on R2. */
+export type FillMethod = 'voice' | 'photo' | 'type'
+
+/** A document the scanner can read. */
+export type DocKind = 'idCard' | 'bankBook' | 'menu'
+
+export interface OwnerIdentity {
+  title: string // นาย / นาง / นางสาว, as printed
+  name: string // first and last name, without the title
+  idNumber: string // 13 digits, no dashes
+}
+
+export interface PayoutAccount {
+  bankName: string
+  accountNumber: string // digits only
+  accountName: string // as printed in the bank book, title included
+}
+
 export interface ProfileFields {
   storeName: ProfileField<string>
   category: ProfileField<string>
@@ -34,6 +52,8 @@ export interface ProfileFields {
   hours: ProfileField<OpeningHours>
   menu: ProfileField<MenuEntry[]>
   phone: ProfileField<string> & { suggestFromAccount?: boolean }
+  owner: ProfileField<OwnerIdentity>
+  payout: ProfileField<PayoutAccount>
 }
 
 export type ProfileFieldKey = keyof ProfileFields
