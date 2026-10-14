@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { SAY } from '@/ai/commands/phrases.ts'
-import { TALK_FIELDS } from '@/ai/onboarding/profile.ts'
+import { REVIEW_FIELDS } from '@/ai/onboarding/profile.ts'
 import { runSubmissionChecks, SubmissionBlockedError, submitProfile } from '@/ai/onboarding/submit.ts'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
 import { CompanionDock } from '@/components/assistant/CompanionDock.tsx'
@@ -11,8 +11,7 @@ import { useVoiceInput } from '@/components/assistant/useVoiceInput.ts'
 import { OnboardingShell } from '@/components/shell/OnboardingShell.tsx'
 import { Button } from '@/components/ui/Button.tsx'
 import { th } from '@/copy/th.ts'
-import { formatHours, formatPhone, formatTHB } from '@/lib/format.ts'
-import { getAccount } from '@/services/merchantApi.ts'
+import { formatHours, formatPhone, formatTHB, maskAccount, maskIdNumber } from '@/lib/format.ts'
 import { speak } from '@/services/speech/textToSpeech.ts'
 import type { ProfileFieldKey } from '@/types/domain.ts'
 import { profileSummary } from '../summarizeField.ts'
@@ -21,7 +20,6 @@ import { ReviewFieldCard } from './ReviewFieldCard.tsx'
 import { StorePreviewCard } from './StorePreviewCard.tsx'
 
 const READ_AFTER_MS = 150
-const account = getAccount()
 const COMMANDS = [
   { id: 'listenSummary' as const, phrases: SAY.listenSummary },
   { id: 'submit' as const, phrases: SAY.submit },
@@ -34,7 +32,7 @@ export function ReviewScreen() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const canSubmit = runSubmissionChecks(profile).every((check) => check.pass)
-  const remaining = TALK_FIELDS.filter((key) => fields[key].status !== 'confirmed').length
+  const remaining = REVIEW_FIELDS.filter((key) => fields[key].status !== 'confirmed').length
 
   const reading = useRef<number | undefined>(undefined)
   const mounted = useRef(true)
@@ -57,7 +55,7 @@ export function ReviewScreen() {
   })
 
   const said =
-    remaining === TALK_FIELDS.length ? th.review.subtitle : remaining > 0 ? th.review.confirmedSoFar(remaining) : th.review.allConfirmed
+    remaining === REVIEW_FIELDS.length ? th.review.subtitle : remaining > 0 ? th.review.confirmedSoFar(remaining) : th.review.allConfirmed
 
   const card = (key: ProfileFieldKey) => ({
     label: th.fields[key],
@@ -127,11 +125,30 @@ export function ReviewScreen() {
             ))}
           </ul>
         </ReviewFieldCard>
-        <ReviewFieldCard {...card('phone')}>
-          <p>{fields.phone.value && formatPhone(fields.phone.value)}</p>
-          <p className="text-base text-ink-muted">
-            {th.review.owner}: {account.ownerName} ({th.review.fromAccount})
-          </p>
+        <ReviewFieldCard {...card('phone')}>{fields.phone.value && formatPhone(fields.phone.value)}</ReviewFieldCard>
+        <ReviewFieldCard {...card('owner')} editLabel={fields.owner.value ? th.review.rescan : th.review.scanNow}>
+          {fields.owner.value ? (
+            <>
+              <p>{`${fields.owner.value.title} ${fields.owner.value.name}`}</p>
+              <p className="text-base text-ink-muted">
+                {th.review.idNumber} {maskIdNumber(fields.owner.value.idNumber)}
+              </p>
+            </>
+          ) : (
+            <p className="text-ink-muted">{th.review.notScanned}</p>
+          )}
+        </ReviewFieldCard>
+        <ReviewFieldCard {...card('payout')} editLabel={fields.payout.value ? th.review.rescan : th.review.scanNow}>
+          {fields.payout.value ? (
+            <>
+              <p>{fields.payout.value.bankName}</p>
+              <p className="text-base text-ink-muted">
+                {th.review.accountNumber} {maskAccount(fields.payout.value.accountNumber)} · {th.review.accountName} {fields.payout.value.accountName}
+              </p>
+            </>
+          ) : (
+            <p className="text-ink-muted">{th.review.notScanned}</p>
+          )}
         </ReviewFieldCard>
       </div>
     </OnboardingShell>

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { TALK_FIELDS } from '@/ai/onboarding/profile.ts'
+import { REVIEW_FIELDS } from '@/ai/onboarding/profile.ts'
 import { demoProfile } from './demoProfile.ts'
 
 describe('demoProfile', () => {
   // End-to-end check of the demo script the presenter plays.
   const profile = demoProfile()
 
-  it('hears every field from the script, confirming none', () => {
-    expect(TALK_FIELDS.map((key) => profile.fields[key].status)).toEqual(Array(6).fill('heard'))
+  it('hears every field from the script and the sample documents, confirming none', () => {
+    expect(REVIEW_FIELDS.map((key) => profile.fields[key].status)).toEqual(Array(8).fill('heard'))
   })
 
   it('matches the story told in Act 2', () => {
@@ -16,5 +16,7 @@ describe('demoProfile', () => {
     expect(profile.fields.hours.value).toEqual({ open: '10:00', close: '20:00', closedDays: [] })
     expect(profile.fields.menu.value?.map((item) => item.priceTHB)).toEqual([89, 65, 75, 35, 30])
     expect(profile.fields.phone.value).toBe('0812344217')
+    expect(profile.fields.owner.value?.name).toBe('แดง ใจดี')
+    expect(profile.fields.payout.value?.accountNumber).toBe('1234567890')
   })
 })
