@@ -3,6 +3,15 @@ export const th = {
   companion: {
     name: 'ผู้ช่วยร้าน',
   },
+  // Dialects and rude words (spec 2026-10-14-thai-language-design).
+  language: {
+    calm: 'หนูเข้าใจค่ะ ค่อยๆ ทำไปด้วยกันนะคะ',
+    greet: {
+      isan: 'สบายดีบ่คะ พูดอีสานได้เลย หนูฟังออกค่ะ',
+      north: 'สวัสดีเจ้า อู้คำเมืองได้เลย หนูฟังออกค่ะ',
+      south: 'แหลงใต้ได้เลยค่ะ หนูฟังออก',
+    },
+  },
   fields: {
     storeName: 'ชื่อร้าน',
     category: 'ประเภทอาหาร',
