@@ -18,7 +18,7 @@ const JUMPS: { label: string; screen: Screen; withProfile?: boolean }[] = [
 ]
 
 // Screens where the companion is listening, so a line "spoken" from here is heard.
-const LISTENING_SCREENS: Screen[] = ['R1_WELCOME', 'R2_ACCOUNT', 'R3_STORE', 'A1_TALK', 'A2_REVIEW']
+const LISTENING_SCREENS: Screen[] = ['R1_WELCOME', 'R2_ACCOUNT', 'R3_STORE', 'A1_TALK', 'S1_SCAN', 'A2_REVIEW']
 
 export function DemoPanel() {
   const { state, dispatch } = useJourney()

@@ -175,6 +175,29 @@ export const th = {
     payoutNameMismatch: 'ชื่อบัญชีต้องตรงกับชื่อบนบัตรค่ะ',
   },
   scan: {
+    title: 'ถ่ายรูปเอกสาร',
+    docs: { idCard: 'บัตรประชาชน', bankBook: 'สมุดบัญชี', menu: 'เมนู' },
+    aim: {
+      idCard: 'ถ่ายรูปบัตรประชาชนให้หนูหน่อยค่ะ หนูจะอ่านชื่อกับเลขบัตรให้เอง',
+      bankBook: 'ต่อไปเป็นหน้าแรกของสมุดบัญชีค่ะ เงินจากการขายจะโอนเข้าบัญชีนี้',
+      menu: 'ถ่ายรูปเมนูที่ร้านได้เลยค่ะ หนูจะอ่านชื่อเมนูกับราคาให้',
+    },
+    guide: { idCard: 'วางบัตรให้อยู่ในกรอบ', bankBook: 'เปิดหน้าที่มีชื่อและเลขบัญชี', menu: 'ถ่ายให้เห็นเมนูครบทุกรายการ' },
+    shoot: 'ถ่ายรูป',
+    reading: 'กำลังอ่าน…',
+    use: 'ใช้รูปนี้',
+    retake: 'ถ่ายใหม่',
+    skip: 'ข้ามไปก่อน',
+    upload: 'อัปโหลดรูปแทน',
+    uploadedAlt: 'รูปที่อัปโหลด',
+    demoUpload: 'โหมดสาธิต: ใช้ข้อมูลตัวอย่าง',
+    checkHint: 'ถูกไหมคะ? ถ้าถูกกด "ใช้รูปนี้"',
+    readId: (name: string, last4: string) => `อ่านได้แล้วค่ะ คุณ${name} บัตรลงท้ายด้วย ${last4}`,
+    readBank: (bank: string, last4: string) => `บัญชี${bank} ลงท้ายด้วย ${last4} ค่ะ`,
+    readMenu: (count: number, unclear: string | null) =>
+      unclear
+        ? `อ่านเมนูได้ ${count} รายการค่ะ ราคา${unclear}ไม่ค่อยชัด ช่วยดูอีกทีตอนตรวจนะคะ`
+        : `อ่านเมนูได้ ${count} รายการค่ะ`,
     // Where a scanned value came from; A2 shows it as "ที่มา: …", never "ได้ยินว่า".
     source: { idCard: 'รูปบัตรประชาชน', bankBook: 'รูปสมุดบัญชี', menu: 'รูปเมนู' },
     lines: {
