@@ -10,5 +10,14 @@ export const RUDE: string[] = [
   'ไอ้เหี้ย', 'อีเหี้ย', 'ไอ้เชี่ย', 'ไอ้ควย', 'ไอ้สัตว์', 'ไอ้สัส', 'ไอ้ควาย', 'อีควาย', 'บักควาย', 'ไอ้ห่า', 'อีห่า', 'บักห่า', 'ไอ้เวร', 'อีเวร',
 ]
 
-/** Ordinary words that start with a rude word: the breaker splits กูเกิล as "กู|เกิล", which must not be masked. */
-export const NOT_RUDE: string[] = ['กูเกิล']
+/**
+ * Ordinary words that start with a rude word: the breaker splits กูเกิล as "กู|เกิล" and กูรู (an expert, also a shop
+ * name) as "กู|รู", which must not be masked.
+ */
+export const NOT_RUDE: string[] = ['กูเกิล', 'กูรู']
+
+/**
+ * Exclamations that ride on a swear word ("แม่งเอ๊ย", "โว้ย"). They carry no request, so the screens never read them:
+ * with them gone, "แม่งเอ๊ย ต่อไปเลย" is just "ต่อไปเลย", and "เหี้ยเอ๊ย" alone is only rude words.
+ */
+export const INTERJECTIONS: string[] = ['เอ๊ย', 'เอ้ย', 'โว้ย', 'วะ', 'ว่ะ']

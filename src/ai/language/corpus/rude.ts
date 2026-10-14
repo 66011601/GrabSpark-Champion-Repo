@@ -38,4 +38,14 @@ export const RUDE_CORPUS: Utterance[] = [
   { say: 'แกงหอยขมเปิดขายวันพูกเจ้า', region: 'north', expect: { masked: false } },
   { say: 'หอยหวานผัดฉ่าหรอยหนิ', region: 'south', expect: { masked: false } },
   { say: 'แกงไตปลาใส่ตีนไก่ด้วยหนิ', region: 'south', expect: { masked: false } },
+  { say: 'ร้านชื่อกูรูก๋วยเตี๋ยวค่ะ', region: 'central', expect: { masked: false } },
+
+  // An exclamation after a swear word is dropped, so the request after it still works (the README's demo line)
+  { say: 'แม่งเอ๊ย ต่อไปเลย', region: 'central', expect: { screen: 'S3', command: 'next' } },
+  { say: 'แม่งเอ๊ย ต่อไปเลย', region: 'central', expect: { masked: true } },
+  { say: 'เหี้ยเอ้ย ไปต่อ', region: 'central', expect: { screen: 'S3', command: 'next' } },
+  { say: 'โว้ย ต่อไป', region: 'central', expect: { screen: 'S3', command: 'next' } },
+  { say: 'แม่งเอ๊ย ไปต่อโลดเด้อ', region: 'isan', expect: { screen: 'S3', command: 'next' } },
+  { say: 'ไอ้ห่าเอ๊ย ปิ๊กไปก่อนเจ้า', region: 'north', expect: { screen: 'S3', command: 'back' } },
+  { say: 'แม่งเอ้ย ต่อไปหนิ', region: 'south', expect: { screen: 'S3', command: 'next' } },
 ]

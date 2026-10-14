@@ -86,6 +86,18 @@ describe('understandThai — dialect', () => {
     expect(understandThai('เจ้า').text).toBe('ใช่')
   })
 
+  it('drops a particle only where it closes a phrase, so names keep it', () => {
+    for (const said of ['ร้านชื่อเจ้าสัวค่ะ', 'ร้านชื่อเจ้าพ่อหมูกระทะค่ะ', 'ร้านชื่อเจ้าคุณค่ะ', 'ร้านชื่อเจ้าแม่ค่ะ', 'ร้านชื่อเจ้านายค่ะ', 'ร้านชื่อเจ้าเล็กค่ะ']) {
+      const heard = understandThai(said)
+      expect(heard.text, said).toBe(said)
+      expect(heard.regionWords.north, said).toBe(0)
+    }
+    // still dropped before a gap, the end, a polite ending or another particle
+    expect(understandThai('ใช่เจ้าคะ').text).toBe('ใช่คะ')
+    expect(understandThai('ใช่เจ้า ต่อไปเลย').text).toBe('ใช่ ต่อไปเลย')
+    expect(understandThai('ลาบควายกิ๋นลำแต๊เจ้า').text).toBe('ลาบควายกินลำ')
+  })
+
   it('counts region words but never shared ones', () => {
     expect(understandThai('บ่แม่นเด้อ').regionWords).toEqual({ isan: 2, north: 0, south: 0 })
     expect(understandThai('บ่').regionWords).toEqual({ isan: 0, north: 0, south: 0 })
@@ -103,7 +115,28 @@ describe('understandThai — rude words', () => {
 
   it('flags a sentence that is only rude words', () => {
     expect(understandThai('ไอ้เหี้ย').onlyRude).toBe(true)
-    expect(understandThai('เหี้ยเอ๊ย ค่ะ').onlyRude).toBe(false) // เอ๊ย is a word, so there is something left
+    // Ruling (final review): an exclamation after a swear word is a particle, so nothing else was said.
+    expect(understandThai('เหี้ยเอ๊ย ค่ะ').onlyRude).toBe(true)
+    expect(understandThai('เหี้ยเอ๊ย').onlyRude).toBe(true)
+    expect(understandThai('แม่งโว้ย').onlyRude).toBe(true)
+  })
+
+  it('drops exclamations, so the request after them is heard', () => {
+    const heard = understandThai('แม่งเอ๊ย ต่อไปเลย')
+    expect(heard.text).toBe('ต่อไปเลย')
+    expect(heard.shown).toBe('***เอ๊ย ต่อไปเลย')
+    expect(heard.onlyRude).toBe(false)
+    expect(understandThai('แม่งเอ๊ยต่อไปเลย').text).toBe('ต่อไปเลย')
+    expect(understandThai('เอ้ย ไปต่อ').text).toBe('ไปต่อ')
+    expect(understandThai('โว้ย ต่อไป').text).toBe('ต่อไป')
+    expect(understandThai('ทำไมวะ').text).toBe('ทำไม')
+    expect(understandThai('ยากว่ะ').text).toBe('ยาก')
+  })
+
+  it('keeps exclamation letters inside other words and names', () => {
+    for (const said of ['ดูประวัติการขาย', 'ภาวะเศรษฐกิจไม่ดี', 'สภาวะตลาด', 'ร้านวะรินค่ะ', 'ร้านชื่อแม่วะรีค่ะ']) {
+      expect(understandThai(said).text, said).toBe(said)
+    }
   })
 
   it('never masks food or ordinary words', () => {
@@ -124,8 +157,8 @@ describe('understandThai — rude words', () => {
     }
   })
 
-  it('never masks กูเกิล', () => {
-    for (const said of ['กูเกิลแมปหาร้านเจอไหมคะ', 'ใช้กูเกิลหา']) expect(understandThai(said).shown, said).toBe(said)
+  it('never masks กูเกิล or กูรู', () => {
+    for (const said of ['กูเกิลแมปหาร้านเจอไหมคะ', 'ใช้กูเกิลหา', 'ร้านชื่อกูรูก๋วยเตี๋ยวค่ะ', 'เป็นกูรูเรื่องกาแฟ']) expect(understandThai(said).shown, said).toBe(said)
   })
 
   it('masks insult forms of food words', () => {

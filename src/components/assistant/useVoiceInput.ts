@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cutAtEndWord } from '@/ai/commands/endWord.ts'
-import { greetingFor, withGreeting } from '@/ai/language/greeting.ts'
+import { greetingFor, holdGreeting, takeGreeting } from '@/ai/language/greeting.ts'
 import { noteRegion } from '@/ai/language/region.ts'
 import { maskRude, understandThai } from '@/ai/language/understand.ts'
 import { demoBus } from '@/app/demo/demoBus.ts'
@@ -11,12 +11,12 @@ import { startListening, type ListenSession } from '@/services/speech/speechToTe
 import { isSpeaking, stopSpeaking } from '@/services/speech/textToSpeech.ts'
 import type { MicState } from './companionState.ts'
 import { createTurnGuard } from './turnGuard.ts'
+import { noticeFor, replyTo, type Reply } from './turnReply.ts'
 
 const THINKING_MS = 500
 const RESUME_MS = 800
 
-/** true = understood, false = not understood, or the companion's own reply to say instead. */
-export type Reply = boolean | string
+export type { Reply }
 
 // The merchant's last turn was spoken, so the companion listens again once it has answered.
 // Shared by every screen: a conversation carries on across them.
@@ -74,7 +74,7 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false } = {})
       // A scripted or typed line may close with "จ้า" too, just like a spoken one.
       const said = cutAtEndWord(words).text || words
       const heard = understandThai(said)
-      const greeting = greetingFor(noteRegion(heard.regionWords))
+      holdGreeting(greetingFor(noteRegion(heard.regionWords)))
       const isCurrent = guard.current.begin()
       setTranscript({ text: heard.shown, final: true })
       setMic('processing')
@@ -82,13 +82,10 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false } = {})
       thinking.current = window.setTimeout(async () => {
         if (!isCurrent()) return
         // Interpreting may take a moment (looking a place up on the map); a newer turn wins.
-        const reply: Reply = heard.onlyRude
-          ? th.language.calm
-          : heard.text
-            ? await Promise.resolve(latestInterpret.current(heard.text, isCurrent)).catch(() => false as const)
-            : false
+        const reply = await replyTo(heard, (text) => latestInterpret.current(text, isCurrent))
         if (!isCurrent()) return
-        setNotice(withGreeting(reply === true ? null : reply === false ? th.onboarding.notUnderstood : reply, greeting))
+        // The greeting is taken only here, where a notice is surely shown; a turn that left the screen keeps it waiting.
+        setNotice(noticeFor(reply, takeGreeting()))
         setMic('idle')
         // When the answer changed nothing the companion has nothing to say, so it just listens again.
         resuming.current = window.setTimeout(() => {

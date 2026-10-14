@@ -111,9 +111,11 @@ export const DIALECT: DialectWord[] = [
 
 /**
  * Central words with a dialect word inside them, kept as said: ศาลเจ้า is a shrine, not ศาล + Northern เจ้า,
- * and หลบฝน is "shelter from the rain", not Southern หลบ (go back).
+ * and หลบฝน is "shelter from the rain", not Southern หลบ (go back). The เจ้า- titles (เจ้าสัว, เจ้าพ่อ) are common in
+ * shop names; a particle inside a phrase is kept anyway, these are kept even before a gap.
  */
 export const CENTRAL_WORDS: string[] = [
   'ศาลเจ้า', 'พระเจ้า', 'เทพเจ้า', 'เจ้าหน้าที่', 'เจ้าภาพ', 'เจ้าพระยา', 'เจ้าดัง', 'เจ้าเก่า', 'เจ้าประจำ', 'เจ้าอื่น',
+  'เจ้าสัว', 'เจ้าพ่อ', 'เจ้าแม่', 'เจ้าคุณ', 'เจ้านาย',
   'หลบฝน', 'หลบแดด', 'หลบหน้า', 'หลบมุม', 'แลเห็น', 'แลดู', 'ตำหนิ',
 ]

@@ -1,11 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { th } from '@/copy/th.ts'
-import { greetingFor, withGreeting } from './greeting.ts'
+import { greetingFor, holdGreeting, takeGreeting, withGreeting } from './greeting.ts'
 import { noteRegion, regionNow, resetRegion } from './region.ts'
 
 const none = { isan: 0, north: 0, south: 0 }
 
-afterEach(() => resetRegion())
+afterEach(() => {
+  resetRegion()
+  takeGreeting()
+})
 
 describe('noteRegion', () => {
   it('is sure after two region words in one sentence, and says so once', () => {
@@ -33,5 +36,19 @@ describe('greeting', () => {
     expect(withGreeting('ยังไม่ได้กรอกชื่อร้านค่ะ', 'สวัสดีเจ้า')).toBe('สวัสดีเจ้า ยังไม่ได้กรอกชื่อร้านค่ะ')
     expect(withGreeting(null, 'สวัสดีเจ้า')).toBe('สวัสดีเจ้า')
     expect(withGreeting('x', null)).toBe('x')
+  })
+
+  it('keeps the greeting until a notice is shown, then gives it out once', () => {
+    expect(takeGreeting()).toBeNull()
+    holdGreeting(greetingFor(noteRegion({ ...none, north: 2 })))
+    // a turn that leaves the screen shows nothing and takes nothing; a later turn on any screen takes it
+    expect(takeGreeting()).toBe(th.language.greet.north)
+    expect(takeGreeting()).toBeNull()
+  })
+
+  it('is not cleared by a sentence that brings no greeting', () => {
+    holdGreeting(th.language.greet.isan)
+    holdGreeting(null)
+    expect(takeGreeting()).toBe(th.language.greet.isan)
   })
 })

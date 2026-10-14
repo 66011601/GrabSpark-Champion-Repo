@@ -1,6 +1,6 @@
 import { stripParticles } from '@/ai/onboarding/parsers/particles.ts'
 import { CENTRAL_WORDS, DIALECT, type DialectWord, type Region } from './dialect.ts'
-import { NOT_RUDE, RUDE } from './rude.ts'
+import { INTERJECTIONS, NOT_RUDE, RUDE } from './rude.ts'
 import { phraseEnd, splitWords, type Piece } from './words.ts'
 
 /** One heard sentence, ready for the screens. */
@@ -32,6 +32,9 @@ const SAFE_WORDS = [...NOT_RUDE, ...CENTRAL_WORDS]
 // Closing particles the word breaker may glue to the word before them, because it does not know the dialect word
 // ("…ต้นตาลพุ้นเด้อ" comes out as "พุ้นเด้อ"). Two-letter ones (ก่) are left out: แก่ ends with the same letters.
 const GLUED_PARTICLES = DIALECT.filter((entry) => entry.kind === 'particle' && length(entry.word) >= 3).map((entry) => entry.word)
+// What may follow a particle that closes a phrase: a polite ending, another particle or an exclamation ("…เจ้าคะ", "…เจ้าเน้อ").
+const POLITE_ENDINGS = ['นะคะ', 'นะครับ', 'ค่ะ', 'คะ', 'ค่า', 'ครับ', 'คับ', 'นะ', 'จ้า', 'จ้ะ', 'ฮะ']
+const CLOSERS = [...POLITE_ENDINGS, ...DIALECT.filter((entry) => entry.central === '').map((entry) => entry.word), ...INTERJECTIONS]
 
 const said = (pieces: Piece[], from: number, end: number) => pieces.slice(from, end).map((piece) => piece.text).join('')
 
@@ -92,6 +95,14 @@ function unglueParticles(pieces: Piece[]): Piece[] {
 
 const piecesOf = (text: string) => unglueParticles(unglueKnownWords(splitWords(text)))
 
+/**
+ * Whether the phrase is over at piece `at`: the end, a gap, or a closing word (polite ending, particle, exclamation).
+ * A particle is dropped only where it closes a phrase, because the same letters start names: "ร้านชื่อเจ้าสัวค่ะ"
+ * is the shop เจ้าสัว, not Northern เจ้า + สัว, and "ร้านวะรินค่ะ" keeps its วะ.
+ */
+const closesPhrase = (pieces: Piece[], at: number) =>
+  at >= pieces.length || !pieces[at].word || firstMatch(pieces, at, CLOSERS, (word) => word) !== null
+
 /** The rude word starting at piece `index`, unless a safe word (กูเกิล) starts there. */
 const rudeAt = (pieces: Piece[], index: number) =>
   pieces[index].word && !startsSafeWord(pieces, index) ? firstMatch(pieces, index, RUDE_WORDS, (word) => word) : null
@@ -125,6 +136,7 @@ export function understandThai(input: string): Understood {
   let rude = 0
   let dialectWords = 0
   const heard: DialectWord[] = []
+  let afterRude = false // the last word (gaps aside) was a rude word
 
   for (let index = 0; index < pieces.length; ) {
     const piece = pieces[index]
@@ -133,9 +145,18 @@ export function understandThai(input: string): Understood {
       shown += MASK
       text += ' '
       rude += 1
+      afterRude = true
       index = rudeMatch.end
       continue
     }
+    // An exclamation is dropped right after a swear word ("แม่งเอ๊ยต่อไป") or where it closes a phrase ("โว้ย ต่อไป").
+    const exclamation = piece.word ? firstMatch(pieces, index, INTERJECTIONS, (word) => word) : null
+    if (exclamation && (afterRude || closesPhrase(pieces, exclamation.end))) {
+      shown += said(pieces, index, exclamation.end)
+      index = exclamation.end
+      continue
+    }
+    if (piece.word) afterRude = false
     const kept = piece.word ? firstMatch(pieces, index, KEPT_WORDS, (word) => word) : null
     if (kept) {
       const words = said(pieces, index, kept.end)
@@ -145,7 +166,8 @@ export function understandThai(input: string): Understood {
       continue
     }
     const dialect = piece.word ? firstMatch(pieces, index, DIALECT_WORDS, (entry) => entry.word) : null
-    if (dialect) {
+    // A particle inside a phrase is part of a name (เจ้าพ่อหมูกระทะ): kept as said, and not evidence of a region.
+    if (dialect && (dialect.item.central !== '' || closesPhrase(pieces, dialect.end))) {
       const words = said(pieces, index, dialect.end)
       shown += words
       text += dialect.item.central ?? words
