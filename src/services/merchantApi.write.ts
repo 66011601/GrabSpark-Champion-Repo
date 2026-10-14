@@ -1,3 +1,4 @@
+import type { PromoDraft, SoldOutDraft } from '@/ai/navigator/types.ts'
 import type { OnboardingProfile, SetupPart } from '@/types/domain.ts'
 import { demoFlags } from './demoFlags.ts'
 
@@ -47,3 +48,29 @@ export function saveStoreSetup(part: SetupPart, profile: OnboardingProfile): Pro
     }, LATENCY_MS)
   })
 }
+
+export interface ActionReceipt {
+  id: string
+  at: string
+}
+
+function mockCall(id: string): Promise<ActionReceipt> {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (demoFlags.simulateApiFailure) {
+        reject(new ApiUnavailableError())
+        return
+      }
+      resolve({ id, at: new Date().toISOString() })
+    }, LATENCY_MS)
+  })
+}
+
+/** Act 2: opens a promotion the merchant confirmed. */
+export const openPromotion = (draft: PromoDraft) => mockCall(`PROMO-${draft.itemIds.join('-')}`)
+
+/** Act 2: takes the promotion down again. */
+export const stopPromotion = (promoId: string) => mockCall(promoId)
+
+/** Act 2: marks a dish sold out until the time the merchant chose. */
+export const markSoldOut = (draft: SoldOutDraft) => mockCall(`SOLDOUT-${draft.itemId}`)

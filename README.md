@@ -25,4 +25,16 @@ npm test        # unit + architecture tests
 - **เข้าสู่ระบบ** goes straight to Home with the sample shop submitted. The panel's "(ข้อมูลตัวอย่าง)" jumps load the sample merchant.
 - All documents and numbers are fictional samples stamped "ตัวอย่าง". An uploaded photo stays in the browser.
 - "จำลองระบบล่ม" shows how a failed submit is handled; "เริ่มใหม่ทั้งหมด" resets.
-- Act 2 arrives with Plan 2.
+
+### Presenting Act 2 (the voice navigator)
+
+- **Get there:** finish Act 1 (Home → **ดูต่อ: 30 วันต่อมา** → **ไปที่หน้าร้าน**), or press the panel's **Act 2: หน้าหลัก GrabMerchant**. You land on a mock GrabMerchant home with the 13 real menu items and five example chips. Every figure is a sample (ตัวอย่าง).
+- **Ask in any of three ways:** tap the avatar and speak, tap an example chip, or press one of the five **Act 2** buttons in the Demo panel (or type a line in "พูดเอง"). They all go through the same matching.
+- **What you will see:** the AI says where it is going, a finger moves there and taps, and the screen changes. **ข้าม** or the S key skips the animation (the final line is still said). Saying "หยุด" stops, "กลับหน้าหลัก" goes home.
+  1. "ขอดูยอดขายหน่อย": ข้อมูลเชิงลึก → ยอดขาย → 7 วัน → compare with last week → best item.
+  2. "พรุ่งนี้ฝนตก ออเดอร์จะเป็นไง": แนวโน้ม → rain on → a range (51–58 orders) and a prep suggestion; a button offers the promotion.
+  3. "ทำโปรวันฝนตกให้หน่อย": เพิ่มยอดขาย → a pre-filled bundle, each row says "AI เลือกเพราะ…", the safety list, an estimate range. It **stops at ยืนยันและเปิดใช้งาน**.
+  4. "หมูกรอบหมดแล้ว": เมนู → the dish is marked and the AI asks when it comes back (chips or say "บ่ายสอง"). **ยืนยันตั้งเป็นหมด** is yours to tap.
+  5. "ลูกค้าบ่นอะไรบ้าง": ฟีดแบก → unhappy reviews, a summary, a 2-minute lesson (**อ่านให้ฟัง**).
+- **Trust rule to show the judges:** say "ยืนยัน" on the promotion: the AI answers that only you can press the button. Only a tap opens the promotion (then **หยุดโปรนี้** is one tap).
+- Forecast and impact are ranges labelled ประมาณการ. The rain and bundle lifts are demo assumptions, not Grab data. Speech works in Chrome and Edge; without a Thai voice each line stays on screen long enough to read.

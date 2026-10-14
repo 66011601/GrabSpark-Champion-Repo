@@ -1,11 +1,234 @@
-import { OnboardingShell } from '@/components/shell/OnboardingShell.tsx'
+import { SkipForward } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
+import { matchCommand } from '@/ai/commands/matchCommand.ts'
+import { BACK_TIMES, findItem } from '@/ai/navigator/drafts.ts'
+import { asksToConfirm, CONTROLS, matchIntent } from '@/ai/navigator/matchIntent.ts'
+import { runScript, type RunnerIO, type Slots } from '@/ai/navigator/runner.ts'
+import { SCRIPTS } from '@/ai/navigator/scripts.ts'
+import { INITIAL_NAV, type NavScreen, type NavState, type Script, type ScriptId } from '@/ai/navigator/types.ts'
+import { useVoiceInput, type Interpret } from '@/components/assistant/useVoiceInput.ts'
+import { AiHelperBar } from '@/components/grab/AiHelperBar.tsx'
+import { NavCursor } from '@/components/navigator/NavCursor.tsx'
+import { Button } from '@/components/ui/Button.tsx'
 import { th } from '@/copy/th.ts'
+import { getMerchant } from '@/services/merchantApi.ts'
+import { stopSpeaking } from '@/services/speech/textToSpeech.ts'
+import { Boost } from './Boost.tsx'
+import { Feedback } from './Feedback.tsx'
+import { HomeGrid } from './HomeGrid.tsx'
+import { Insights } from './Insights.tsx'
+import { ItemMenu } from './ItemMenu.tsx'
+import type { PanelProps } from './props.ts'
 
-// Placeholder: Plan 2 replaces this with the proactive-nudge dashboard (spec §7.3, G1).
+const PANELS: Record<NavScreen, ComponentType<PanelProps>> = { HOME: HomeGrid, INSIGHTS: Insights, BOOST: Boost, MENU: ItemMenu, FEEDBACK: Feedback }
+const WHERE: Record<NavScreen, string> = { HOME: th.act2.home, INSIGHTS: th.act2.grid[7], BOOST: th.act2.grid[3], MENU: th.act2.grid[1], FEEDBACK: th.act2.grid[8] }
+const script = (id: ScriptId) => SCRIPTS.find((entry) => entry.id === id) as Script
+
+// How long the cursor takes to arrive, to tap, and to settle. "ข้าม" / the S key makes all of these zero.
+const SETTLE_MS = 500
+const TRAVEL_MS = 800
+const TAP_MS = 250
+
+/**
+ * Act 2: the GrabMerchant home, driven by voice. The owner asks, the runner plays a script (screen, cursor, tap, one spoken line),
+ * and anything that would change the shop stops at a confirm bar that only a tap can press.
+ */
 export function DashboardScreen() {
+  const shop = getMerchant()
+  const [nav, setNav] = useState<NavState>(INITIAL_NAV)
+  const [line, setLine] = useState<string>(th.act2.helper)
+  const [highlight, setHighlight] = useState<string | null>(null)
+  const [cursor, setCursor] = useState<{ target: string | null; taps: number }>({ target: null, taps: 0 })
+  const [running, setRunning] = useState(false)
+  const run = useRef<AbortController | null>(null)
+  const fast = useRef(false)
+  const wake = useRef<(() => void) | null>(null) // ends the wait in progress
+  const lineDone = useRef<(() => void) | null>(null) // the helper bar finished saying the line
+  const skipLine = useRef<(() => void) | null>(null)
+  const askedWhich = useRef(false) // "เมนูไหนหมดคะ" is waiting for a dish name
+  const resume = useRef<() => void>(() => {})
+
+  const change = useCallback((patch: Partial<NavState>) => setNav((state) => ({ ...state, ...patch })), [])
+
+  const wait = useCallback(
+    (ms: number) =>
+      new Promise<void>((resolve) => {
+        if (fast.current) return resolve()
+        const timer = setTimeout(resolve, ms)
+        wake.current = () => {
+          clearTimeout(timer)
+          resolve()
+        }
+      }),
+    [],
+  )
+
+  const io = useMemo<RunnerIO>(
+    () => ({
+      async go(step) {
+        setLine('') // so the next line is spoken even when it is the same words
+        setHighlight(null)
+        setCursor((now) => ({ ...now, target: null }))
+        change({ screen: step.screen })
+        await wait(SETTLE_MS)
+        if (step.target) {
+          setCursor((now) => ({ ...now, target: step.target ?? null }))
+          await wait(TRAVEL_MS)
+          setCursor((now) => ({ ...now, taps: now.taps + 1 }))
+          await wait(TAP_MS)
+        }
+        if (step.set) change(step.set)
+        setHighlight(step.highlight ?? null)
+      },
+      say(text) {
+        return new Promise<void>((resolve) => {
+          // A line stays up long enough to read, even when the device cannot speak it.
+          const readable = new Promise<void>((done) => setTimeout(done, fast.current ? 0 : Math.min(4000, 1200 + text.length * 35)))
+          const finish = () => {
+            lineDone.current = null
+            skipLine.current = null
+            resolve()
+          }
+          lineDone.current = () => void readable.then(finish)
+          skipLine.current = finish
+          setLine(text)
+          if (fast.current) finish()
+        })
+      },
+    }),
+    [change, wait],
+  )
+
+  const stopRun = useCallback(() => {
+    run.current?.abort()
+    run.current = null
+    stopSpeaking()
+    setRunning(false)
+    setCursor((now) => ({ ...now, target: null }))
+  }, [])
+
+  const start = useCallback(
+    async (chosen: Script, slots: Slots = {}) => {
+      run.current?.abort()
+      const mine = new AbortController()
+      run.current = mine
+      fast.current = false
+      setNav(INITIAL_NAV) // every run starts from the home screen
+      setRunning(true)
+      const finished = await runScript(chosen, io, mine.signal, slots)
+      if (run.current !== mine) return // a newer run took over
+      run.current = null
+      setRunning(false)
+      setCursor((now) => ({ ...now, target: null }))
+      if (finished) resume.current() // the companion listens again, as in Act 1
+    },
+    [io],
+  )
+
+  const skip = useCallback(() => {
+    if (!run.current) return
+    fast.current = true
+    stopSpeaking()
+    wake.current?.()
+    skipLine.current?.()
+  }, [])
+
+  const goHome = useCallback(() => {
+    stopRun()
+    setNav(INITIAL_NAV)
+    setHighlight(null)
+    setLine(th.act2.helper)
+  }, [stopRun])
+
+  const pick = (backAt: string) => {
+    setNav((state) => (state.soldOut ? { ...state, soldOut: { ...state.soldOut, backAt } } : state))
+    setLine(th.act2.soldOut.picked(backAt))
+  }
+
+  const interpret: Interpret = (text) => {
+    if (asksToConfirm(text)) return th.act2.confirm.byTap // only a tap on the confirm bar does that
+    const control = matchCommand(text, CONTROLS)
+    if (control === 'stop') {
+      stopRun()
+      return th.act2.stopped
+    }
+    if (control === 'home') {
+      goHome()
+      return true
+    }
+    const time = nav.soldOut && !nav.soldOut.backAt ? matchCommand(text, BACK_TIMES) : null
+    if (time) {
+      pick(BACK_TIMES.find((entry) => entry.id === time)?.backAt ?? '')
+      return true
+    }
+    const id = matchIntent(text, SCRIPTS)
+    if (id === 'soldOut' || (askedWhich.current && !id)) {
+      const item = findItem(text, shop)
+      if (!item) {
+        askedWhich.current = true
+        return th.act2.soldOut.which
+      }
+      askedWhich.current = false
+      void start(script('soldOut'), { item: item.name, itemId: item.id })
+      return true
+    }
+    if (!id) return false
+    askedWhich.current = false
+    void start(script(id))
+    return true
+  }
+
+  const voice = useVoiceInput(interpret, { autoListen: !running })
+  useEffect(() => {
+    resume.current = voice.onSpoken
+  })
+
+  // The merchant's confirm tap went through: say so, and drop any older notice.
+  const { setNotice } = voice
+  const announce = (said: string) => {
+    setNotice(null)
+    setLine(said)
+  }
+
+  // Pressing the mic while the AI is working means the owner wants to say something: stop and listen.
+  useEffect(() => {
+    if (voice.mic === 'listening' && run.current) stopRun()
+  }, [voice.mic, stopRun])
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const tag = (event.target as HTMLElement).tagName
+      if (event.key.toLowerCase() === 's' && !event.ctrlKey && !event.metaKey && tag !== 'INPUT' && tag !== 'TEXTAREA') skip()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [skip])
+
+  useEffect(
+    () => () => {
+      run.current?.abort()
+    },
+    [],
+  )
+
+  const Panel = PANELS[nav.screen]
   return (
-    <OnboardingShell title={th.act2Placeholder.title}>
-      <p className="text-ink-muted">{th.act2Placeholder.body}</p>
-    </OnboardingShell>
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <Panel nav={nav} highlight={highlight} change={change} ask={voice.hear} pick={pick} announce={announce} home={goHome} />
+      {running && (
+        <div className="flex items-center gap-3 px-4 pt-2">
+          <p aria-live="polite" className="flex-1 font-bold text-action">
+            {th.act2.banner(WHERE[nav.screen])}
+          </p>
+          <Button variant="secondary" aria-label={th.act2.skipHelp} icon={<SkipForward className="size-5" aria-hidden />} onClick={skip}>
+            {th.act2.skip}
+          </Button>
+        </div>
+      )}
+      <div className="px-4 pt-2 pb-2">
+        <AiHelperBar text={line} notice={voice.notice} mic={voice.mic} onAvatar={voice.toggleMic} onSpoken={() => (lineDone.current ? lineDone.current() : resume.current())} />
+      </div>
+      <NavCursor target={cursor.target} taps={cursor.taps} />
+    </div>
   )
 }

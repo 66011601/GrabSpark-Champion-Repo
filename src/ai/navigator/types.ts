@@ -1,0 +1,68 @@
+export type NavScreen = 'HOME' | 'INSIGHTS' | 'BOOST' | 'MENU' | 'FEEDBACK'
+export type InsightsTab = 'overview' | 'sales' | 'trend'
+
+/** A promotion the AI prepared. It stays a draft until the merchant taps the confirm bar. */
+export interface PromoDraft {
+  kind: 'promo'
+  name: string
+  itemIds: string[]
+  normalPrice: number
+  bundlePrice: number
+  window: [string, string]
+  days: number
+  dailyCap: number
+}
+
+/** "Sold out until …": the time stays null until the merchant answers the question. */
+export interface SoldOutDraft {
+  kind: 'soldOut'
+  itemId: string
+  backAt: string | null
+}
+
+export type Draft = PromoDraft | SoldOutDraft
+
+/** Everything the mock app shows. Scripts change it through `set`; they never write anywhere else. */
+export interface NavState {
+  screen: NavScreen
+  tab: InsightsTab
+  period: 7 | 30
+  compare: boolean
+  rain: boolean
+  promo: PromoDraft | null
+  soldOut: SoldOutDraft | null
+  negativeOnly: boolean
+  lesson: boolean
+  done: 'promo' | 'soldOut' | null
+}
+
+export const INITIAL_NAV: NavState = {
+  screen: 'HOME',
+  tab: 'overview',
+  period: 30,
+  compare: false,
+  rain: false,
+  promo: null,
+  soldOut: null,
+  negativeOnly: false,
+  lesson: false,
+  done: null,
+}
+
+export type ScriptId = 'sales' | 'forecast' | 'promo' | 'soldOut' | 'feedback'
+
+export interface ScriptStep {
+  screen: NavScreen
+  target?: string // data-nav id the cursor moves to and taps
+  highlight?: string // data-nav id outlined, not tapped
+  set?: Partial<NavState> // what the tap changes
+  say: string // one short line, spoken and shown in the helper bar
+}
+
+export interface Script {
+  id: ScriptId
+  phrases: string[] // whole sentences, matched with matchCommand
+  keywords: string[][] // a group matches when all its words are in the sentence
+  not?: string[] // any of these rules the script out
+  steps: ScriptStep[]
+}

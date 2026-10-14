@@ -149,3 +149,28 @@ export interface MenuScan {
 }
 
 export type ScanResult = IdCardScan | BankBookScan | MenuScan
+
+/** Act 2's simulated Day-30 shop (src/data/merchant.json). All of it is sample data. */
+export interface ShopItem {
+  id: string
+  name: string
+  aliases: string[] // what owners call it: "หมูกรอบ"
+  type: string // "main" | "drink"
+  priceTHB: number
+  costTHB: number
+  sold28d: number
+}
+
+export interface Merchant {
+  storeName: string
+  hours: OpeningHours
+  commissionRate: number
+  maxDailyPromoSpendTHB: number
+  menu: ShopItem[]
+  activePromotions: { itemIds: string[]; window: [string, string] }[]
+  sales: { days: string[]; thisWeekTHB: number[]; lastWeekTHB: number[] }
+  baselineOrdersByHour: Record<string, number>
+  rainLiftPct: [number, number]
+  bundleLiftPct: [number, number] // assumption for the demo: how much a bundle lifts orders in its window
+  reviews: { stars: number; text: string; topic?: string }[]
+}
