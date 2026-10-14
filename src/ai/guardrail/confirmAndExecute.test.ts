@@ -20,12 +20,12 @@ describe('confirmDraft', () => {
   })
 
   it('never sends a draft that fails a check', async () => {
-    await expect(confirmDraft({ kind: 'soldOut', itemId: 'M04', backAt: null }, shop)).rejects.toBeInstanceOf(ActionBlockedError)
+    await expect(confirmDraft({ kind: 'soldOut', itemId: 'M04', until: null }, shop)).rejects.toBeInstanceOf(ActionBlockedError)
   })
 
   it('reports a failed API call', async () => {
     demoFlags.simulateApiFailure = true
-    const sent = confirmDraft({ kind: 'soldOut', itemId: 'M04', backAt: 'วันนี้ 14:00' }, shop)
+    const sent = confirmDraft({ kind: 'soldOut', itemId: 'M04', until: 'today' }, shop)
     const caught = sent.catch((error: Error) => error.name)
     await vi.advanceTimersByTimeAsync(1000)
     expect(await caught).toBe('ApiUnavailableError')

@@ -33,10 +33,16 @@ describe('promoChecks', () => {
 })
 
 describe('soldOutChecks', () => {
-  it('needs a known item and a reopening time inside opening hours', () => {
-    expect(failed(soldOutChecks({ kind: 'soldOut', itemId: 'M04', backAt: 'วันนี้ 14:00' }, shop))).toEqual([])
-    expect(failed(soldOutChecks({ kind: 'soldOut', itemId: 'M04', backAt: null }, shop))).toEqual(['BACK_TIME_VALID'])
-    expect(failed(soldOutChecks({ kind: 'soldOut', itemId: 'M04', backAt: 'วันนี้ 22:00' }, shop))).toEqual(['BACK_TIME_VALID'])
-    expect(failed(soldOutChecks({ kind: 'soldOut', itemId: 'X99', backAt: 'พรุ่งนี้ 10:00' }, shop))).toEqual(['ITEM_EXISTS'])
+  it('passes a known dish switched off for today or until further notice', () => {
+    expect(failed(soldOutChecks({ kind: 'soldOut', itemId: 'M04', until: 'today' }, shop))).toEqual([])
+    expect(failed(soldOutChecks({ kind: 'soldOut', itemId: 'M04', until: 'indefinite' }, shop))).toEqual([])
+  })
+
+  it('waits until the owner chooses how long', () => {
+    expect(failed(soldOutChecks({ kind: 'soldOut', itemId: 'M04', until: null }, shop))).toEqual(['UNTIL_CHOSEN'])
+  })
+
+  it('blocks a dish the shop does not have', () => {
+    expect(failed(soldOutChecks({ kind: 'soldOut', itemId: 'X99', until: 'today' }, shop))).toEqual(['ITEM_EXISTS'])
   })
 })

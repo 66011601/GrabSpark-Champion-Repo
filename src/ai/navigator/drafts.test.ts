@@ -27,11 +27,14 @@ describe('drafts', () => {
     expect(findItem('ของหมดแล้ว', shop)).toBeNull()
   })
 
+  // GrabMerchant's own choice when a dish is switched off: 'วันนี้' (back tomorrow by itself) or 'ไม่มีกำหนด'.
   it.each([
-    ['บ่ายสอง', 'two'],
-    ['บ่ายห้าค่ะ', 'five'],
-    ['พรุ่งนี้เช้า', 'tomorrow'],
-  ])('hears "%s" as a time', (said, id) => {
+    ['วันนี้', 'today'],
+    ['แค่วันนี้ค่ะ', 'today'],
+    ['ไม่มีกำหนด', 'indefinite'],
+    ['ยังไม่รู้', 'indefinite'],
+    ['ปิดไว้ก่อน', 'indefinite'],
+  ])('hears "%s" as how long the dish stays off', (said, id) => {
     expect(matchCommand(said, BACK_TIMES)).toBe(id)
   })
 })

@@ -13,11 +13,14 @@ export interface PromoDraft {
   dailyCap: number
 }
 
-/** "Sold out until …": the time stays null until the merchant answers the question. */
+/** GrabMerchant's two choices when a dish is switched off. Null until the merchant answers. */
+export type SoldOutUntil = 'today' | 'indefinite'
+
+/** A dish switched off: 'today' comes back by itself tomorrow, 'indefinite' waits for the merchant. */
 export interface SoldOutDraft {
   kind: 'soldOut'
   itemId: string
-  backAt: string | null
+  until: SoldOutUntil | null
 }
 
 export type Draft = PromoDraft | SoldOutDraft

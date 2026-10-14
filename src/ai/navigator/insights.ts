@@ -23,3 +23,17 @@ export function complaintTopics(shop: Merchant): { topic: string; count: number 
   for (const review of shop.reviews) if (review.stars <= 3 && review.topic) counts.set(review.topic, (counts.get(review.topic) ?? 0) + 1)
   return [...counts].map(([topic, count]) => ({ topic, count })).sort((a, b) => b.count - a.count)
 }
+
+/** The star rating Grab shows: an average to one decimal, rounded down. */
+export function ratingSummary(shop: Merchant): { average: number; count: number } {
+  const count = shop.reviews.length
+  return { average: Math.floor((sum(shop.reviews.map((review) => review.stars)) / count) * 10) / 10, count }
+}
+
+/** "ประสิทธิภาพรายการเมนู": each dish's share of 28-day sales, best first. */
+export function menuShare(shop: Merchant): { id: string; name: string; sold: number; pct: number }[] {
+  const total = sum(shop.menu.map((item) => item.sold28d))
+  return shop.menu
+    .map((item) => ({ id: item.id, name: item.name, sold: item.sold28d, pct: Math.round((item.sold28d / total) * 100) }))
+    .sort((a, b) => b.sold - a.sold)
+}

@@ -5,7 +5,7 @@ import { BACK_TIMES, findItem } from '@/ai/navigator/drafts.ts'
 import { asksToConfirm, CONTROLS, matchIntent } from '@/ai/navigator/matchIntent.ts'
 import { runScript, type RunnerIO, type Slots } from '@/ai/navigator/runner.ts'
 import { SCRIPTS } from '@/ai/navigator/scripts.ts'
-import { INITIAL_NAV, type NavScreen, type NavState, type Script, type ScriptId } from '@/ai/navigator/types.ts'
+import { INITIAL_NAV, type NavScreen, type NavState, type Script, type ScriptId, type SoldOutUntil } from '@/ai/navigator/types.ts'
 import { useVoiceInput, type Interpret } from '@/components/assistant/useVoiceInput.ts'
 import { AiHelperBar } from '@/components/grab/AiHelperBar.tsx'
 import { NavCursor } from '@/components/navigator/NavCursor.tsx'
@@ -40,6 +40,7 @@ export function DashboardScreen() {
   const [highlight, setHighlight] = useState<string | null>(null)
   const [cursor, setCursor] = useState<{ target: string | null; taps: number }>({ target: null, taps: 0 })
   const [running, setRunning] = useState(false)
+  const [heading, setHeading] = useState<NavScreen>('HOME') // where the current run ends up, for the banner
   const run = useRef<AbortController | null>(null)
   const fast = useRef(false)
   const wake = useRef<(() => void) | null>(null) // ends the wait in progress
@@ -114,6 +115,7 @@ export function DashboardScreen() {
       run.current = mine
       fast.current = false
       setNav(INITIAL_NAV) // every run starts from the home screen
+      setHeading(chosen.steps[chosen.steps.length - 1].screen)
       setRunning(true)
       const finished = await runScript(chosen, io, mine.signal, slots)
       if (run.current !== mine) return // a newer run took over
@@ -140,9 +142,9 @@ export function DashboardScreen() {
     setLine(th.act2.helper)
   }, [stopRun])
 
-  const pick = (backAt: string) => {
-    setNav((state) => (state.soldOut ? { ...state, soldOut: { ...state.soldOut, backAt } } : state))
-    setLine(th.act2.soldOut.picked(backAt))
+  const pick = (until: SoldOutUntil) => {
+    setNav((state) => (state.soldOut ? { ...state, soldOut: { ...state.soldOut, until } } : state))
+    setLine(th.act2.soldOut.picked(BACK_TIMES.find((time) => time.id === until)?.label ?? ''))
   }
 
   const interpret: Interpret = (text) => {
@@ -156,9 +158,9 @@ export function DashboardScreen() {
       goHome()
       return true
     }
-    const time = nav.soldOut && !nav.soldOut.backAt ? matchCommand(text, BACK_TIMES) : null
-    if (time) {
-      pick(BACK_TIMES.find((entry) => entry.id === time)?.backAt ?? '')
+    const until = nav.soldOut && !nav.soldOut.until && nav.done !== 'soldOut' ? matchCommand(text, BACK_TIMES) : null
+    if (until) {
+      pick(until)
       return true
     }
     const id = matchIntent(text, SCRIPTS)
@@ -218,7 +220,7 @@ export function DashboardScreen() {
       {running && (
         <div className="flex items-center gap-3 px-4 pt-2">
           <p aria-live="polite" className="flex-1 font-bold text-action">
-            {th.act2.banner(WHERE[nav.screen])}
+            {th.act2.banner(WHERE[heading])}
           </p>
           <Button variant="secondary" aria-label={th.act2.skipHelp} icon={<SkipForward className="size-5" aria-hidden />} onClick={skip}>
             {th.act2.skip}

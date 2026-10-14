@@ -28,7 +28,7 @@ export function ConfirmBar({ draft, label, highlight, onDone }: { draft: Draft; 
   }
 
   return (
-    <div data-nav="confirm" className={`sticky bottom-0 -mx-4 -mb-4 flex flex-col gap-2 border-t border-line bg-surface p-4 ${mark(highlight, 'confirm')}`}>
+    <div data-nav="confirm" className={`sticky bottom-0 mt-3 flex flex-col gap-2 border-t border-line bg-surface px-4 pt-3 pb-3 ${mark(highlight, 'confirm')}`}>
       <p className="text-center text-ink-muted">{th.act2.confirm.note}</p>
       {(state === 'failed' || state === 'blocked') && (
         <p role="alert" className="rounded-xl bg-warn-bg p-3 text-warn-ink">

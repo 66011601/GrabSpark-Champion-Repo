@@ -40,7 +40,7 @@
 
 Each task: write the failing test, make it pass, run `npm test`, `npm run lint`, `npm run build`, commit.
 
-- [x] **T1. Shop data and guardrail maths.** `merchant.json`, `promoMath` (profit per bundle ฿29.3 vs ฿24.3; 7-day impact ฿615–1,025), `checks` (MARGIN_FLOOR, BUDGET_CAP, NO_OVERLAP, SCHEDULE_VALID, REVERSIBLE; ITEM_EXISTS, BACK_TIME_VALID).
+- [x] **T1. Shop data and guardrail maths.** `merchant.json`, `promoMath` (profit per bundle ฿29.3 vs ฿24.3; 7-day impact ฿615–1,025), `checks` (MARGIN_FLOOR, BUDGET_CAP, NO_OVERLAP, SCHEDULE_VALID, REVERSIBLE; ITEM_EXISTS, UNTIL_CHOSEN).
 - [x] **T2. Figures and drafts.** `insights` (sales vs last week, rain range 51–58, complaint topics), `drafts` (rain bundle, `findItem`, `BACK_TIMES`).
 - [x] **T3. Scripts and matcher.** At least five phrasings per script, including split words and misheard spellings ("ฟิตแบ็ค"). Confirm words ("ยืนยัน", "ตกลง", "เปิดใช้งาน") start nothing.
 - [x] **T4. Runner.** Steps advance go → say; cancelling stops it even mid-line; `{item}` / `{itemId}` are filled in; no script step confirms.
@@ -48,4 +48,5 @@ Each task: write the failing test, make it pass, run `npm test`, `npm run lint`,
 - [x] **T6. Voice provider.** `VoiceProvider` over `textToSpeech.ts`; used for the lesson's read-aloud.
 - [x] **T7. Mock app screens.** Host with cursor, skip (button and `S` key), banner; five screens; confirm bar; "หยุดโปรนี้".
 - [x] **T8. Presenter tools.** DemoPanel jump and five buttons; example chips on the phone; README section.
+- [x] **T8b. GrabMerchant look.** White headers, 4-column icon grid, underlined tabs, menu switches with "วันนี้" / "ไม่มีกำหนด", star rating and menu share (`ratingSummary`, `menuShare`, tested first).
 - [ ] **T9. Real microphone and voice check.** Not done: needs Chrome or Edge with a mic, and the voice decision from the spec's open questions.

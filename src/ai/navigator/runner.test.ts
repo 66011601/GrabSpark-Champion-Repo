@@ -64,7 +64,7 @@ describe('fillSlots', () => {
     expect(steps[1].highlight).toBe('item-M04')
     expect(steps[1].say).toContain('ข้าวหมูกรอบ')
     expect(steps[2].target).toBe('soldout-M04')
-    expect(steps[2].set?.soldOut).toEqual({ kind: 'soldOut', itemId: 'M04', backAt: null })
+    expect(steps[2].set?.soldOut).toEqual({ kind: 'soldOut', itemId: 'M04', until: null })
   })
 
   it('leaves a script without placeholders as it was', () => {

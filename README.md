@@ -34,7 +34,7 @@ npm test        # unit + architecture tests
   1. "ขอดูยอดขายหน่อย": ข้อมูลเชิงลึก → ยอดขาย → 7 วัน → compare with last week → best item.
   2. "พรุ่งนี้ฝนตก ออเดอร์จะเป็นไง": แนวโน้ม → rain on → a range (51–58 orders) and a prep suggestion; a button offers the promotion.
   3. "ทำโปรวันฝนตกให้หน่อย": เพิ่มยอดขาย → a pre-filled bundle, each row says "AI เลือกเพราะ…", the safety list, an estimate range. It **stops at ยืนยันและเปิดใช้งาน**.
-  4. "หมูกรอบหมดแล้ว": เมนู → the dish is marked and the AI asks when it comes back (chips or say "บ่ายสอง"). **ยืนยันตั้งเป็นหมด** is yours to tap.
+  4. "หมูกรอบหมดแล้ว": เมนู → the AI slides the dish's switch off and asks how long, as GrabMerchant does: "วันนี้" or "ไม่มีกำหนด" (tap or say it). **ยืนยันปิดการขาย** is yours to tap.
   5. "ลูกค้าบ่นอะไรบ้าง": ฟีดแบก → unhappy reviews, a summary, a 2-minute lesson (**อ่านให้ฟัง**).
 - **Trust rule to show the judges:** say "ยืนยัน" on the promotion: the AI answers that only you can press the button. Only a tap opens the promotion (then **หยุดโปรนี้** is one tap).
 - Forecast and impact are ranges labelled ประมาณการ. The rain and bundle lifts are demo assumptions, not Grab data. Speech works in Chrome and Edge; without a Thai voice each line stays on screen long enough to read.

@@ -37,7 +37,7 @@ Controls any time: **ข้าม** button or the `S` key skips the animation (t
 | 1 sales | "ขอดูยอดขายหน่อย" | home → ข้อมูลเชิงลึก | tap sales tab, set 7 days, compare with last week, highlight the best item, one sentence | Forecast |
 | 2 forecast | "พรุ่งนี้ฝนตก ออเดอร์จะเป็นไง" | home → ข้อมูลเชิงลึก | open trend tab, show the forecast **range**, show a prep suggestion | Forecast → Action |
 | 3 promo | "ทำโปรวันฝนตกให้หน่อย" | home → เพิ่มยอดขาย | open a promotion with every field pre-filled and a reason, run the safety checks, **stop at the confirm bar** | Action |
-| 4 soldOut | "หมูกรอบหมดแล้ว" | home → เมนู | find the item, mark it sold out (draft), ask "เปิดขายอีกทีกี่โมง" with chips, then the confirm bar | Action |
+| 4 soldOut | "หมูกรอบหมดแล้ว" | home → เมนู | find the item, slide its switch off (draft), ask how long: "วันนี้" or "ไม่มีกำหนด" (GrabMerchant's own two choices), then the confirm bar | Action |
 | 5 feedback | "ลูกค้าบ่นอะไรบ้าง" | home → ฟีดแบก | summarise the negative reviews, offer one 2-minute lesson (text, read aloud on tap) | Learn |
 
 Build order if time runs short: 1 → 3 → 4 → 2 → 5.
@@ -69,7 +69,7 @@ interface ScriptStep {
 
 - **The AI only moves the cursor and prepares drafts.** A draft is plain state (`promo`, `soldOut`). Only `src/ai/guardrail/confirmAndExecute.ts` may import the write API, and only `ConfirmBar.tsx` may import `confirmAndExecute`. `architecture.test.ts` enforces both.
 - **Voice never confirms.** No script phrase, control phrase or chip answer matches ยืนยัน, ส่ง or ติ๊ก. A test asserts it.
-- **Deterministic checks decide.** Promotion: MARGIN_FLOOR, BUDGET_CAP, NO_OVERLAP, SCHEDULE_VALID, REVERSIBLE (§6.5). Sold-out: ITEM_EXISTS, BACK_TIME_VALID. A failed check turns amber and disables the confirm button.
+- **Deterministic checks decide.** Promotion: MARGIN_FLOOR, BUDGET_CAP, NO_OVERLAP, SCHEDULE_VALID, REVERSIBLE (§6.5). Sold-out: ITEM_EXISTS, UNTIL_CHOSEN. A failed check turns amber and disables the confirm button.
 - **Honest numbers.** Everything simulated is labelled "ตัวอย่าง". Forecast and impact are ranges labelled "ประมาณการ". No Grab internal figure is invented. The rain effect (+10% to +25% orders) is **[Assumption]** for the demo only.
 - **Promotion math** is §6.6 unchanged: bundle ฿109 (normal ฿124), 30% commission, ฿29.3 profit per bundle vs ฿24.3 for the dish alone, 20 bundles × ฿15 = ฿300/day within the ฿500 limit. The rain promotion reuses the same bundle and the 14:00–17:00 window.
 
@@ -77,15 +77,19 @@ interface ScriptStep {
 
 All inside `src/screens/act2-grow/1-dashboard/`, driven by one host (`DashboardScreen.tsx`) that owns `NavState`:
 
-- `HomeGrid`: the 13 real menu items (คำสั่งซื้อ, เมนู, ร้าน, เพิ่มยอดขาย, พนักงาน, แกร็บช้อป, ผู้ช่วย AI, ข้อมูลเชิงลึก, ฟีดแบก, แคชเชียร์, ส่งด่วน, Smart Link, ความช่วยเหลือ). Only five are wired; the rest are inert.
-- `Insights`: tabs (ภาพรวม, ยอดขาย, แนวโน้ม), period switch, last-week comparison, trend chart with the forecast range.
+- `HomeGrid`: white store header, a 7-day sales card, the 13 real menu items in GrabMerchant's 4-column icon grid (คำสั่งซื้อ, เมนู, ร้าน, เพิ่มยอดขาย, พนักงาน, แกร็บช้อป, ผู้ช่วย AI, ข้อมูลเชิงลึก, ฟีดแบก, แคชเชียร์, ส่งด่วน, Smart Link, ความช่วยเหลือ). Only five are wired; the rest are inert.
+- `Insights`: underlined tabs (ภาพรวม, ยอดขาย, แนวโน้ม), period switch, last-week comparison switch, "ประสิทธิภาพรายการเมนู" (share of sales per dish), trend chart with the rain switch and forecast range.
 - `Boost`: the promotion form with "AI เลือกเพราะ…" rows and the safety list.
-- `ItemMenu`: item list with sold-out state and the "เปิดขายอีกทีกี่โมง" chips.
-- `Feedback`: complaint summary and the lesson sheet.
+- `ItemMenu`: a green switch per dish, as in GrabMerchant; switching off opens a sheet with "วันนี้" (back by itself tomorrow) or "ไม่มีกำหนด", and the confirm bar.
+- `Feedback`: tabs "รีวิว" and "รายงานจากลูกค้า", the star average, an "ทั้งหมด / 1-3 ดาว" filter, the complaint summary and the lesson sheet.
 - `ConfirmBar`: the only place a write starts.
 - `NavCursor`: the visible finger and tap ripple; it measures `[data-nav]` elements.
 
 Tokens follow §8: body ≥ 18px, tap targets ≥ 56px, action green `#007A3D`, the companion speaks as หนู…ค่ะ.
+
+## 7a. Looking like GrabMerchant
+
+The screens follow GrabMerchant's own conventions, taken from Grab's merchant guides on merchant.grab.com ("วิธีการใช้แอป GrabMerchant เบื้องต้น", "เปิด/ปิดสถานะของเมนูอาหาร", "ข้อมูลเชิงลึก", "ฟีดแบก"): white title bars with a back arrow (as in Act 1's `StepShell`), green icons on pale-green tiles, underlined green tabs, white cards on a light grey page, one full-width green button at the bottom, and the menu's on/off switch with "วันนี้" / "ไม่มีกำหนด". No Grab logo files or screenshots are used.
 
 ## 8. Voice
 

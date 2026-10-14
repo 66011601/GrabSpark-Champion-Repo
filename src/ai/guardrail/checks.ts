@@ -23,12 +23,11 @@ export function promoChecks(draft: PromoDraft, shop: Merchant): GuardrailCheck[]
   ]
 }
 
-/** "วันนี้ 14:00" / "พรุ่งนี้ 10:00": the reopening time must fall inside opening hours. */
+/** The dish must be on the menu, and the merchant must have chosen how long it stays off. */
 export function soldOutChecks(draft: SoldOutDraft, shop: Merchant): GuardrailCheck[] {
-  const time = /^(?:วันนี้|พรุ่งนี้) (\d\d:\d\d)$/.exec(draft.backAt ?? '')?.[1]
   return [
     result('ITEM_EXISTS', shop.menu.some((item) => item.id === draft.itemId), c.itemOk, c.itemFail),
-    result('BACK_TIME_VALID', time !== undefined && time >= shop.hours.open && time < shop.hours.close, c.backOk, c.backFail),
+    result('UNTIL_CHOSEN', draft.until !== null, c.untilOk, c.untilMissing),
   ]
 }
 

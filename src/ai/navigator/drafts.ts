@@ -1,7 +1,7 @@
 import { stripParticles } from '@/ai/onboarding/parsers/particles.ts'
 import { th } from '@/copy/th.ts'
 import type { Merchant, ShopItem } from '@/types/domain.ts'
-import type { PromoDraft } from './types.ts'
+import type { PromoDraft, SoldOutUntil } from './types.ts'
 
 const squash = (text: string) => stripParticles(text).toLowerCase().replace(/\s+/g, '')
 
@@ -22,9 +22,8 @@ export function findItem(text: string, shop: Merchant): ShopItem | null {
   return shop.menu.find((item) => [item.name, ...item.aliases].some((name) => said.includes(squash(name)))) ?? null
 }
 
-/** When a sold-out dish comes back. The chips and the spoken answers share these. */
-export const BACK_TIMES = [
-  { id: 'two', label: th.act2.soldOut.times.two, backAt: 'วันนี้ 14:00', phrases: ['บ่ายสอง', 'สิบสี่นาฬิกา', 'บ่ายสองโมง', '14:00'] },
-  { id: 'five', label: th.act2.soldOut.times.five, backAt: 'วันนี้ 17:00', phrases: ['บ่ายห้า', 'ห้าโมงเย็น', 'ห้าโมง', '17:00'] },
-  { id: 'tomorrow', label: th.act2.soldOut.times.tomorrow, backAt: 'พรุ่งนี้ 10:00', phrases: ['พรุ่งนี้', 'พรุ่งนี้เช้า', 'วันพรุ่งนี้', 'ไว้พรุ่งนี้'] },
+/** How long a switched-off dish stays off, as GrabMerchant asks it. The chips and the spoken answers share these. */
+export const BACK_TIMES: { id: SoldOutUntil; label: string; hint: string; phrases: string[] }[] = [
+  { id: 'today', label: th.act2.soldOut.times.today, hint: th.act2.soldOut.hints.today, phrases: ['วันนี้', 'แค่วันนี้', 'ปิดวันนี้', 'เฉพาะวันนี้'] },
+  { id: 'indefinite', label: th.act2.soldOut.times.indefinite, hint: th.act2.soldOut.hints.indefinite, phrases: ['ไม่มีกำหนด', 'ยังไม่รู้', 'ไม่รู้', 'ปิดไว้ก่อน', 'จนกว่าจะบอก'] },
 ]
