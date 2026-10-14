@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import script from '@/data/onboarding-script.json'
 import { getLandmarks } from '@/services/merchantApi.ts'
 import { DERIVED_CONFIDENCE } from './addressFields.ts'
-import { businessUpdates, STEP3_TALK } from './businessTalk.ts'
+import { businessUpdates, SPOKEN_ADDRESS_CONFIDENCE, STEP3_TALK } from './businessTalk.ts'
 import { applyUpdates, createEmptyProfile } from './profile.ts'
 
 const landmarks = getLandmarks()
@@ -18,8 +18,8 @@ describe('businessUpdates', () => {
     expect(updates.storeName?.value).toBe('ครัวป้าแดง')
     expect(updates.category?.value).toBe('อาหารไทย')
     expect(updates.location?.value.text).toBe('ลาดพร้าว 71 ตรงข้ามเซเว่น')
-    expect(updates.building).toEqual({ value: 'ลาดพร้าว 71 ตรงข้ามเซเว่น', confidence: DERIVED_CONFIDENCE, heardFrom: line1 })
-    expect(updates.address?.value).toBe('ลาดพร้าว 71 ตรงข้ามเซเว่น')
+    expect(updates.building).toEqual({ value: 'ซอยลาดพร้าว 71 ถนนลาดพร้าว', confidence: DERIVED_CONFIDENCE, heardFrom: line1 })
+    expect(updates.address?.value).toBe('ซอยลาดพร้าว 71 ถนนลาดพร้าว แขวงลาดพร้าว เขตลาดพร้าว กรุงเทพมหานคร 10230')
   })
 
   it('never fills hours or menu on this step', () => {
@@ -46,5 +46,20 @@ describe('businessUpdates', () => {
   it('uses a Google Maps match instead of the sample table when one is given', () => {
     const place = { value: { text: 'ตลาดโชคชัย 4', lat: 13.8, lng: 100.6 }, confidence: 0.9 }
     expect(businessUpdates('อยู่ตลาดโชคชัยสี่', { landmarks, profile: createEmptyProfile(), place }).location).toEqual({ ...place, heardFrom: 'อยู่ตลาดโชคชัยสี่' })
+  })
+
+  it('fills the address box from a spoken full address', () => {
+    const said = 'อยู่สิบสองทับสาม หมู่สี่ ถนนมิตรภาพ ตำบลในเมือง อำเภอเมือง ขอนแก่น'
+    const updates = businessUpdates(said, { landmarks, profile: createEmptyProfile() })
+    expect(updates.address).toEqual({ value: '12/3 หมู่ 4 ถนนมิตรภาพ ต.ในเมือง อ.เมืองขอนแก่น จ.ขอนแก่น', confidence: SPOKEN_ADDRESS_CONFIDENCE, heardFrom: said })
+    expect(updates.building?.value).toBe('ถนนมิตรภาพ')
+  })
+
+  it('keeps the spoken address even when the map found the pin', () => {
+    const said = 'สิบสองทับสาม ตำบลในเมือง อำเภอเมือง ขอนแก่น'
+    const place = { value: { text: 'ในเมือง', address: 'ต.ในเมือง อ.เมืองขอนแก่น จ.ขอนแก่น 40000', lat: 16.43, lng: 102.83 }, confidence: 0.7 }
+    const updates = businessUpdates(said, { landmarks, profile: createEmptyProfile(), place })
+    expect(updates.location?.value.lat).toBe(16.43)
+    expect(updates.address?.value).toBe('12/3 ต.ในเมือง อ.เมืองขอนแก่น จ.ขอนแก่น')
   })
 })

@@ -90,3 +90,12 @@
     }
   }
 }
+
+/* Leaflet's zoom buttons are 30px; fingers need 48px. Plain CSS (not in a layer) with a selector more specific than
+   leaflet.css's own, which is loaded later with the map and would otherwise win. */
+.leaflet-container .leaflet-bar.leaflet-control-zoom a {
+  width: 48px;
+  height: 48px;
+  line-height: 48px;
+  font-size: 28px;
+}

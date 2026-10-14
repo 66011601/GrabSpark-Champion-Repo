@@ -13,9 +13,20 @@ describe('parseLocation', () => {
   it('finds the demo shop and keeps the landmark phrase', () => {
     const result = parseLocation('ร้านชื่อครัวป้าแดงค่ะ ขายน้ำพริกปลาทู อาหารไทยบ้านๆ อยู่ลาดพร้าวซอยเจ็ดสิบเอ็ด ตรงข้ามเซเว่น', landmarks)
     expect(result).toEqual({
-      value: { text: 'ลาดพร้าว 71 ตรงข้ามเซเว่น', lat: 13.8016, lng: 100.6033 },
+      value: {
+        text: 'ลาดพร้าว 71 ตรงข้ามเซเว่น',
+        address: 'ซอยลาดพร้าว 71 ถนนลาดพร้าว แขวงลาดพร้าว เขตลาดพร้าว กรุงเทพมหานคร 10230',
+        parts: landmarks[0].parts,
+        lat: 13.8016,
+        lng: 100.6033,
+      },
       confidence: LOCATION_CONFIDENCE,
     })
+  })
+
+  it('finds sample places outside Bangkok', () => {
+    expect(parseLocation('ร้านอยู่ในตลาดวโรรสค่ะ', landmarks)?.value.parts?.province).toBe('เชียงใหม่')
+    expect(parseLocation('อยู่ข้างตลาดกิมหยง', landmarks)?.value.parts?.postcode).toBe('90110')
   })
 
   it('works with digits and no landmark phrase', () => {
