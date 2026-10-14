@@ -257,6 +257,8 @@ Money is computed in integer satang (฿1 = 100 satang) to avoid floating-point 
 
 ### 7.1a Register phase (before Act 1)
 
+> **Superseded (2026-10-14):** the Act 1 screens are now GrabMerchant's real seven steps — see `2026-10-14-grab-style-signup-design.md`.
+
 Added from the team's wireframes. `R1 Welcome ──► R2 Account ──► R3 Store basics ──► A1`. R2 now also asks how to fill in the shop (พูด / ถ่ายรูป / พิมพ์), and every path scans the ID card and bank book before A2 — see `2026-10-14-act1-photo-scan-design.md` §2. A returning merchant (เข้าสู่ระบบ) goes `R1 ──► R2 ──► A1`.
 
 - **Companion dock** (`components/assistant/CompanionDock.tsx`): on every screen the companion's face sits in the bottom-right corner with its speech bubble; the screen's main button is to its left. On R3 and A1 the face is the talk button (it replaces the old centre `MicButton`).
