@@ -126,7 +126,19 @@ export function S7Confirm() {
       {(['terms', 'accurate'] as const).map((consent) => (
         <label key={consent} className="flex min-h-12 cursor-pointer items-start gap-3 text-base">
           <input type="checkbox" checked={consents[consent]} onChange={(event) => tick(consent)(event.target.checked)} className="mt-1 size-6 shrink-0 accent-action" />
-          <span className={consent === 'terms' ? 'text-action underline-offset-2' : ''}>{th.s7[consent]}</span>
+          <span>
+            {consent === 'terms'
+              ? th.s7.termsParts.map((part) =>
+                  part.link ? (
+                    <span key={part.text} className="text-action underline underline-offset-2">
+                      {part.text}
+                    </span>
+                  ) : (
+                    part.text
+                  ),
+                )
+              : th.s7.accurate}
+          </span>
         </label>
       ))}
     </StepShell>

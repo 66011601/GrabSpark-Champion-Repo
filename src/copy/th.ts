@@ -184,7 +184,15 @@ export const th = {
     edit: 'แก้ไข',
     listen: 'ฟังสรุป',
     rows: { 3: 'ข้อมูลธุรกิจ', 4: 'ข้อมูลร้าน', 5: 'ข้อมูลของคุณ', 6: 'บัญชีรับเงิน' },
-    terms: 'ข้าพเจ้ายอมรับข้อตกลงการใช้งาน Grab ข้อกำหนดและเงื่อนไขร้านค้า และประกาศความเป็นส่วนตัว',
+    // The underlined phrases are mock links with no destination.
+    termsParts: [
+      { text: 'ข้าพเจ้ายอมรับ', link: false },
+      { text: 'ข้อตกลงการใช้งาน Grab', link: true },
+      { text: ' ', link: false },
+      { text: 'ข้อกำหนดและเงื่อนไขร้านค้า', link: true },
+      { text: ' และ', link: false },
+      { text: 'ประกาศความเป็นส่วนตัว', link: true },
+    ],
     accurate: 'ข้าพเจ้ายืนยันว่าข้อมูลที่กรอกถูกต้องตามความเป็นจริง',
     submit: 'ส่งใบสมัคร',
     submitting: 'กำลังส่งใบสมัคร…',
