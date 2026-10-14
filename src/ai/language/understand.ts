@@ -1,6 +1,6 @@
 import { stripParticles } from '@/ai/onboarding/parsers/particles.ts'
 import { CENTRAL_WORDS, DIALECT, type DialectWord, type Region } from './dialect.ts'
-import { RUDE } from './rude.ts'
+import { NOT_RUDE, RUDE } from './rude.ts'
 import { phraseEnd, splitWords, type Piece } from './words.ts'
 
 /** One heard sentence, ready for the screens. */
@@ -18,9 +18,63 @@ const length = (phrase: string) => phrase.replace(/\s+/g, '').length
 const RUDE_WORDS = [...RUDE].sort((a, b) => length(b) - length(a))
 const DIALECT_WORDS = [...DIALECT].sort((a, b) => length(b.word) - length(a.word))
 const KEPT_WORDS = [...CENTRAL_WORDS].sort((a, b) => length(b) - length(a))
+// Words the breaker may glue to the next one: rude words, and dialect verbs, question words and pronouns of three or
+// more letters. Particles and two-letter words (บ่, แล) start too many central words (บ่น, แล้ว) to be split off.
+const GLUE_KINDS: DialectWord['kind'][] = ['verb', 'question', 'pronoun']
+const KNOWN_WORDS = [
+  ...RUDE_WORDS,
+  ...DIALECT.filter((entry) => GLUE_KINDS.includes(entry.kind) && length(entry.word) >= 3).map((entry) => entry.word),
+].sort((a, b) => length(b) - length(a))
+// A Thai word starts with a consonant or a leading vowel, never with a tone mark or a following vowel.
+const WORD_START = /^[ก-ฮเแโใไ]/
+// Words that start with a rude or dialect word and are neither (กูเกิล, ศาลเจ้า): nothing is matched where they start.
+const SAFE_WORDS = [...NOT_RUDE, ...CENTRAL_WORDS]
 // Closing particles the word breaker may glue to the word before them, because it does not know the dialect word
 // ("…ต้นตาลพุ้นเด้อ" comes out as "พุ้นเด้อ"). Two-letter ones (ก่) are left out: แก่ ends with the same letters.
 const GLUED_PARTICLES = DIALECT.filter((entry) => entry.kind === 'particle' && length(entry.word) >= 3).map((entry) => entry.word)
+
+const said = (pieces: Piece[], from: number, end: number) => pieces.slice(from, end).map((piece) => piece.text).join('')
+
+/** The text of the phrase that starts at piece `from`: its word pieces up to the next gap. */
+function phraseFrom(pieces: Piece[], from: number): { text: string; end: number } {
+  let end = from
+  while (end < pieces.length && pieces[end].word) end += 1
+  return { text: said(pieces, from, end), end }
+}
+
+const startsSafeWord = (pieces: Piece[], from: number) => SAFE_WORDS.some((word) => phraseFrom(pieces, from).text.startsWith(word))
+
+/**
+ * The word breaker does not know rude or dialect words and may glue their last letter to the next word:
+ * "กูบอก" comes out as "กูบ|อก", "แม่งบอก" as "แม่|งบ|อก" and "ผ่อประวัติ" as "ผ่|อปร|ะ|วัติ".
+ * A known word that ends inside a piece is split off, and the rest of the phrase broken again, when the breaker
+ * clearly did not know it (rules below). A real word that only starts with the same letters (หีบห่อ, สัดส่วน,
+ * กู้เงิน, ผ่อน, ข้อยกเว้น) is left alone.
+ */
+function unglueKnownWords(input: Piece[]): Piece[] {
+  let pieces = input
+  for (let index = 0; index < pieces.length; index += 1) {
+    if (!pieces[index].word || startsSafeWord(pieces, index)) continue
+    const phrase = phraseFrom(pieces, index)
+    for (const known of KNOWN_WORDS) {
+      if (!phrase.text.startsWith(known)) continue
+      let reach = 0
+      for (let at = index; reach < known.length; at += 1) reach += pieces[at].text.length
+      if (reach === known.length) break // it ends where a piece ends: the ordinary match hears it
+      const rest = splitWords(phrase.text.slice(known.length))
+      const left = reach - known.length // letters of the last piece after the word
+      const first = rest[0].text.length
+      // A rude word is split off when the letters after it, broken again, run on into the next piece (กูบ|อก → กู|บอก);
+      // letters that are a whole word on their own stay (สัดส่วน). A dialect word is split off only when the breaker
+      // cut the word itself in two and its letters after it are a word (ผ่|อปร|ะ|วัติ → ผ่อ|ประวัติ); ผ่อน is one piece.
+      const glued = RUDE_WORDS.includes(known) ? first > left : pieces[index].text.length < known.length && first >= left
+      if (!WORD_START.test(rest[0].text) || !glued) continue
+      pieces = [...pieces.slice(0, index), { text: known, word: true }, ...rest, ...pieces.slice(phrase.end)]
+      break
+    }
+  }
+  return pieces
+}
 
 /** The last word of a phrase with a closing particle glued on is split in two, so the particle is heard. */
 function unglueParticles(pieces: Piece[]): Piece[] {
@@ -36,6 +90,12 @@ function unglueParticles(pieces: Piece[]): Piece[] {
   })
 }
 
+const piecesOf = (text: string) => unglueParticles(unglueKnownWords(splitWords(text)))
+
+/** The rude word starting at piece `index`, unless a safe word (กูเกิล) starts there. */
+const rudeAt = (pieces: Piece[], index: number) =>
+  pieces[index].word && !startsSafeWord(pieces, index) ? firstMatch(pieces, index, RUDE_WORDS, (word) => word) : null
+
 function firstMatch<T>(pieces: Piece[], from: number, list: T[], phrase: (item: T) => string): { item: T; end: number } | null {
   for (const item of list) {
     const end = phraseEnd(pieces, from, phrase(item))
@@ -44,14 +104,12 @@ function firstMatch<T>(pieces: Piece[], from: number, list: T[], phrase: (item: 
   return null
 }
 
-const said = (pieces: Piece[], from: number, end: number) => pieces.slice(from, end).map((piece) => piece.text).join('')
-
 /** The sentence with rude words shown as ***, nothing else changed: for the words appearing live while the merchant talks. */
 export function maskRude(text: string): string {
-  const pieces = splitWords(text)
+  const pieces = piecesOf(text)
   let shown = ''
   for (let index = 0; index < pieces.length; ) {
-    const rude = pieces[index].word ? firstMatch(pieces, index, RUDE_WORDS, (word) => word) : null
+    const rude = rudeAt(pieces, index)
     shown += rude ? MASK : pieces[index].text
     index = rude ? rude.end : index + 1
   }
@@ -60,7 +118,7 @@ export function maskRude(text: string): string {
 
 /** Rude words out, dialect function words into central Thai. Pure; the same sentence always gives the same result. */
 export function understandThai(input: string): Understood {
-  const pieces = unglueParticles(splitWords(input))
+  const pieces = piecesOf(input)
   const regionWords: Record<Region, number> = { isan: 0, north: 0, south: 0 }
   let shown = ''
   let text = ''
@@ -70,7 +128,7 @@ export function understandThai(input: string): Understood {
 
   for (let index = 0; index < pieces.length; ) {
     const piece = pieces[index]
-    const rudeMatch = piece.word ? firstMatch(pieces, index, RUDE_WORDS, (word) => word) : null
+    const rudeMatch = rudeAt(pieces, index)
     if (rudeMatch) {
       shown += MASK
       text += ' '

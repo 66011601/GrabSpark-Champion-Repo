@@ -33,6 +33,8 @@ export const DIALECT: DialectWord[] = [
   w('เบิ่ง', 'ดู', 'isan', 'verb'),
   w('เว้า', 'พูด', 'isan', 'verb'),
   w('เอิ้น', 'เรียก', 'isan', 'verb'),
+  w('จ่ม', 'บ่น', 'isan', 'verb'),
+  w('ฮอด', 'ถึง', 'isan', 'verb'),
   w('ยะ', 'ทำ', 'north', 'verb'),
   w('ผ่อ', 'ดู', 'north', 'verb'),
   w('ปิ๊ก', 'กลับ', 'north', 'verb'),
@@ -54,8 +56,9 @@ export const DIALECT: DialectWord[] = [
   w('ตางใด', 'ที่ไหน', 'north', 'question'),
   w('จะใด', 'อย่างไร', 'north', 'question'),
   w('พรือ', 'อย่างไร', 'south', 'question'),
-  w('ไหร', 'ไหน', 'south', 'question'),
+  w('ไหร', 'อะไร', 'south', 'question'),
   w('กี่ตัง', 'กี่บาท', 'south', 'question'),
+  w('กี่ตังค์', 'กี่บาท', 'shared', 'question'), // everyday money talk everywhere, so it never tells the region
   // time
   w('มื้อนี่', 'วันนี้', 'isan', 'time'),
   w('มื้อนี้', 'วันนี้', 'isan', 'time'),

@@ -9,3 +9,6 @@ export const RUDE: string[] = [
   'ส้นตีน', 'ดอกทอง', 'อีดอก', 'ห่าราก',
   'ไอ้เหี้ย', 'อีเหี้ย', 'ไอ้เชี่ย', 'ไอ้ควย', 'ไอ้สัตว์', 'ไอ้สัส', 'ไอ้ควาย', 'อีควาย', 'บักควาย', 'ไอ้ห่า', 'อีห่า', 'บักห่า', 'ไอ้เวร', 'อีเวร',
 ]
+
+/** Ordinary words that start with a rude word: the breaker splits กูเกิล as "กู|เกิล", which must not be masked. */
+export const NOT_RUDE: string[] = ['กูเกิล']

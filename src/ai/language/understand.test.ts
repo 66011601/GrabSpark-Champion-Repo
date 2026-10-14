@@ -57,6 +57,31 @@ describe('understandThai — dialect', () => {
     expect(named.shown).toBe('ร้านข้อยชื่อแซ่บนัวเด้อ')
   })
 
+  it('turns Isan จ่ม and ฮอด and Southern ไหร into central Thai', () => {
+    expect(understandThai('ลูกค้าจ่มหยังแหน่').text).toBe('ลูกค้าบ่นอะไรหน่อย')
+    expect(understandThai('สี่โมงแลงฮอดเที่ยงคืนเด้อ').text).toBe('สี่โมงเย็นถึงเที่ยงคืน')
+    expect(understandThai('ลูกค้าบ่นไหรบ้างหนิ').text).toBe('ลูกค้าบ่นอะไรบ้าง')
+    // the same letters inside central words stay as said
+    for (const said of ['เท่าไหร่คะ', 'ลูกค้าบ่นอะไรบ้างคะ']) expect(understandThai(said).text, said).toBe(said)
+  })
+
+  it('hears a dialect word the word breaker glued to the next word', () => {
+    // The breaker reads "ผ่อประวัติ" as "ผ่|อปร|ะ|วัติ".
+    expect(understandThai('ผ่อประวัติคำสั่งซื้อหื้อเจ้า').text).toBe('ดูประวัติคำสั่งซื้อให้')
+    expect(understandThai('ผ่อบัญชีพนักงานเจ้า').text).toBe('ดูบัญชีพนักงาน')
+    expect(understandThai('ลูกค้าบ่นไหรบ้างหนิ').text).toBe('ลูกค้าบ่นอะไรบ้าง') // ไห|รบ้าง
+    expect(understandThai('ปิ๊กบ้านก่อนเจ้า').text).toBe('กลับบ้านก่อน') // ปิ๊|กบ้าน
+    expect(understandThai('กิ๋นข้าวแล้ว').text).toBe('กินข้าวแล้ว') // กิ๋|นข้าว
+    // central words that start with the same letters stay as said
+    for (const said of ['ผ่อนจ่ายได้ไหม', 'ผ่อนรถอยู่', 'ข้อยกเว้น', 'แล้วก็มีลาบ']) expect(understandThai(said).text, said).toBe(said)
+  })
+
+  it('reads กี่ตังค์ whole, not as Southern กี่ตัง with ค์ left over', () => {
+    expect(understandThai('ข้าวยำกี่ตังค์').text).toBe('ข้าวยำกี่บาท')
+    expect(understandThai('ข้าวยำกี่ตังค์').regionWords).toEqual({ isan: 0, north: 0, south: 0 })
+    expect(understandThai('ข้าวยำกี่ตังหนิ').text).toBe('ข้าวยำกี่บาท')
+  })
+
   it('reads a lone Northern เจ้า as yes', () => {
     expect(understandThai('เจ้า').text).toBe('ใช่')
   })
@@ -87,6 +112,20 @@ describe('understandThai — rude words', () => {
       expect(heard.shown, said).toBe(said)
       expect(heard.text, said).toBe(said)
     }
+  })
+
+  it('masks a rude word the word breaker glued to the next word', () => {
+    // The breaker reads "กูบอก" as "กูบ|อก" and "แม่งบอก" as "แม่|งบ|อก".
+    expect(understandThai('กูบอกแล้วว่าห้าสิบบาท').shown).toBe('***บอกแล้วว่าห้าสิบบาท')
+    expect(understandThai('กูบอกแล้วว่าห้าสิบบาท').text).toBe('บอกแล้วว่าห้าสิบบาท')
+    expect(maskRude('แม่งบอกแล้ว')).toBe('***บอกแล้ว')
+    for (const said of ['หีบห่อเรียบร้อย', 'หีบใส่ของ', 'สัดส่วนกำไร', 'เหี้ยมโหดจริง', 'แม่มดใจดี', 'ร้านแม่มณีค่ะ', 'แม่มนัสขายลาบ', 'กู้เงินมาเปิดร้าน', 'กู้ยืมเงิน']) {
+      expect(understandThai(said).shown, said).toBe(said)
+    }
+  })
+
+  it('never masks กูเกิล', () => {
+    for (const said of ['กูเกิลแมปหาร้านเจอไหมคะ', 'ใช้กูเกิลหา']) expect(understandThai(said).shown, said).toBe(said)
   })
 
   it('masks insult forms of food words', () => {

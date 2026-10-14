@@ -63,6 +63,8 @@ function wordAt(text: string, index: number): NumberWord | null {
 
 /** Reads a run of number words ("แปด", "สิบ", "เก้า") as a number, or null if the run is not valid Thai. */
 function wordsToNumber(words: NumberWord[]): number | null {
+  // Spoken "ร้อยนึง", "พันนึง" is one hundred, one thousand (a hundred and one is "ร้อยเอ็ด").
+  if (words.length === 2 && words[0].isMultiplier && words[0].value >= 100 && words[1].word === 'นึง') return words[0].value
   let total = 0
   let pending: number | null = null
   let lastMultiplier = Infinity

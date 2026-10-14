@@ -73,6 +73,12 @@ describe('numbersToDigits', () => {
     expect(numbersToDigits('ทุ่มนึง')).toBe('ทุ่ม1')
   })
 
+  it('reads spoken "ร้อยนึง" and "พันนึง" as one hundred and one thousand', () => {
+    expect(numbersToDigits('ไก่ย่างร้อยนึง')).toBe('ไก่ย่าง100')
+    expect(numbersToDigits('พันนึง')).toBe('1000')
+    expect(numbersToDigits('ร้อยเอ็ด')).toBe('101')
+  })
+
   it('leaves number words inside ordinary compounds alone', () => {
     expect(numbersToDigits('ตรงข้ามห้างโลตัส')).toBe('ตรงข้ามห้างโลตัส')
     expect(numbersToDigits('ศูนย์อาหาร')).toBe('ศูนย์อาหาร')
