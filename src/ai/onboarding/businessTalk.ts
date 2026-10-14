@@ -1,0 +1,39 @@
+import type { GeoPoint, Landmark, OnboardingProfile, ProfileFieldKey, ProfileUpdates } from '@/types/domain.ts'
+import { addressFromLocation } from './addressFields.ts'
+import { extractProfile } from './extractProfile.ts'
+import { BUILDING_CONFIDENCE, parseBuilding } from './parsers/building.ts'
+import { stripParticles } from './parsers/particles.ts'
+import { onlyEmptyFields } from './profile.ts'
+
+/** The 3/7 fields the companion asks about by voice, in order; the address is drafted from the location. */
+export const STEP3_TALK: ProfileFieldKey[] = ['storeName', 'location', 'category', 'building']
+
+export interface BusinessTalkContext {
+  expecting?: ProfileFieldKey // the field the companion just asked about
+  landmarks: Landmark[]
+  profile: OnboardingProfile // what is already filled, so drafts never replace it
+  place?: { value: GeoPoint; confidence: number } | null // a Google Maps match for the words, when there is one
+}
+
+/** What one sentence on 3/7 fills. Hours, menu and phone are left for later steps even if they were said. */
+export function businessUpdates(text: string, ctx: BusinessTalkContext): ProfileUpdates {
+  const heard = extractProfile(text, { expecting: ctx.expecting, landmarks: ctx.landmarks })
+  const updates: ProfileUpdates = {}
+  if (heard.storeName) updates.storeName = heard.storeName
+  if (heard.category) updates.category = heard.category
+  const location = ctx.place ? { ...ctx.place, heardFrom: text } : heard.location
+  if (location) updates.location = location
+
+  const named = parseBuilding(text)
+  if (named) updates.building = { ...named, heardFrom: text }
+  else if (ctx.expecting === 'building' && stripParticles(text)) {
+    updates.building = { value: stripParticles(text), confidence: BUILDING_CONFIDENCE, heardFrom: text }
+  }
+
+  if (location) {
+    const drafted = onlyEmptyFields(ctx.profile, addressFromLocation(location.value, text))
+    if (drafted.building && !updates.building) updates.building = drafted.building
+    if (drafted.address) updates.address = drafted.address
+  }
+  return updates
+}

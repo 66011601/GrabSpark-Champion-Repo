@@ -17,6 +17,14 @@ export const th = {
     businessType: 'ประเภทธุรกิจ',
     contactEmail: 'อีเมลเจ้าของธุรกิจ',
   },
+  // Where a value came from when it was not heard or photographed. Shown as "ที่มา: …" under a field.
+  sources: {
+    account: 'จากบัญชีที่สมัคร',
+    map: 'จากแผนที่',
+    typed: 'พิมพ์เอง',
+    suggested: 'หนูแนะนำ',
+    sms: 'จาก SMS',
+  },
   common: {
     back: 'ย้อนกลับ',
     next: 'ต่อไป',
