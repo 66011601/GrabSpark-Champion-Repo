@@ -65,7 +65,7 @@ const PART_OF = new Map(LABELS)
 const LABEL = new RegExp(LABELS.map(([word]) => (word === 'หมู่' ? 'หมู่(?!บ้าน)' : word.replace(/\./g, '\\.'))).join('|'), 'g')
 
 // Where an address ends and the merchant moves on: a landmark, opening hours, dishes, a phone number.
-const STOP = /\s(?:ตรงข้าม|ข้างๆ|ข้าง|ใกล้|หน้า|ติดกับ|เปิด|ขาย|เมนู|เบอร์|โทร|ร้าน)/
+const STOP = /\s(?:ตรงข้าม|เยื้อง|ข้างๆ|ข้าง|ใกล้|หน้า|ติดกับ|ถัดจาก|แถว|ฝั่ง|เปิด|ขาย|เมนู|เบอร์|โทร|ร้าน)/
 
 // Postcodes are read digit by digit: "สี่ศูนย์ศูนย์ศูนย์ศูนย์".
 const DIGIT_WORDS: [string, string][] = [
@@ -118,7 +118,10 @@ export function parseThaiAddress(input: string): ThaiAddress | null {
       const number = toNumber(value)
       if (/^\d{5}$/.test(number)) parts.postcode = number
     } else if (part === 'soi' || part === 'road') {
-      parts[part] = nameWithNumber(value)
+      // A province said right after the street ("ถนนมิตรภาพ ขอนแก่น") is not part of its name.
+      const words = value.split(' ')
+      while (words.length > 1 && findProvince(words[words.length - 1])) spare.push(words.pop()!)
+      parts[part] = nameWithNumber(words.join(' '))
     } else if (part === 'province') {
       const province = findProvince(first)
       if (province) parts.province = province

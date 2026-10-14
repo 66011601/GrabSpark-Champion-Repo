@@ -62,6 +62,13 @@ describe('parseThaiAddress', () => {
     expect(parseThaiAddress('หมู่บ้านสุขใจ ต.ในเมือง อ.เมืองขอนแก่น')?.moo).toBeUndefined()
   })
 
+  it('keeps a following province or landmark out of the soi and road names', () => {
+    expect(parseThaiAddress('ถนนมิตรภาพ ขอนแก่น')).toEqual({ road: 'มิตรภาพ', province: 'ขอนแก่น' })
+    expect(parseThaiAddress('ซอยลาดพร้าว 71 กรุงเทพ')).toEqual({ soi: 'ลาดพร้าว 71', province: BANGKOK })
+    expect(parseThaiAddress('ถนนนิมมานเหมินท์ เชียงใหม่ 50200')).toEqual({ road: 'นิมมานเหมินท์', province: 'เชียงใหม่', postcode: '50200' })
+    expect(parseThaiAddress('ซอยลาดพร้าว 71 เยื้อง เซเว่น แขวงลาดพร้าว เขตลาดพร้าว')?.soi).toBe('ลาดพร้าว 71')
+  })
+
   it('returns null for talk that is not an address', () => {
     expect(parseThaiAddress('ร้านชื่อครัวป้าแดงค่ะ ขายน้ำพริกปลาทู อาหารไทยบ้านๆ อยู่ลาดพร้าวซอยเจ็ดสิบเอ็ด ตรงข้ามเซเว่น')).toBeNull()
     expect(parseThaiAddress('อยู่เชียงใหม่')).toBeNull()
