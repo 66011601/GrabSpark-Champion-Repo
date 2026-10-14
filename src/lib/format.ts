@@ -73,3 +73,14 @@ export const maskAccount = (account: string) => group(hideAllButLastFour(account
 
 /** What the companion may say aloud: "ลงท้ายด้วย 7890". */
 export const lastFour = (digits: string) => digits.slice(-4)
+
+const THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
+const BUDDHIST_ERA_OFFSET = 543
+
+/** "1970-01-01" → "1 มกราคม 2513": how Thai ID cards and forms write dates. */
+export function formatThaiDate(iso: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  if (!match) return iso
+  const [, year, month, day] = match
+  return `${Number(day)} ${THAI_MONTHS[Number(month) - 1]} ${Number(year) + BUDDHIST_ERA_OFFSET}`
+}

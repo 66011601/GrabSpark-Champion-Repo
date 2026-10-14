@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatAccount, formatDuration, formatHours, formatIdNumber, formatPhone, formatTHB, formatTime, lastFour, maskAccount, maskIdNumber } from './format.ts'
+import { formatAccount, formatDuration, formatThaiDate, formatHours, formatIdNumber, formatPhone, formatTHB, formatTime, lastFour, maskAccount, maskIdNumber } from './format.ts'
 
 describe('formatTHB', () => {
   it('adds the baht sign and a thousands separator', () => {
@@ -71,5 +71,17 @@ describe('ID and account numbers', () => {
 
   it('gives the last four digits for spoken lines', () => {
     expect(lastFour('1234567890')).toBe('7890')
+  })
+})
+
+describe('formatThaiDate', () => {
+  it('shows a CE date in the Thai long form with the Buddhist year', () => {
+    expect(formatThaiDate('1970-01-01')).toBe('1 มกราคม 2513')
+    expect(formatThaiDate('2031-12-31')).toBe('31 ธันวาคม 2574')
+  })
+
+  it('leaves anything that is not a date as it is', () => {
+    expect(formatThaiDate('')).toBe('')
+    expect(formatThaiDate('soon')).toBe('soon')
   })
 })

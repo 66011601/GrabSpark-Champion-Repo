@@ -1,18 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ALL_FIELDS,
   applyUpdates,
   confirmField,
-  countHeard,
   createEmptyProfile,
-  DOC_FIELDS,
-  isReadyForReview,
   missingDocs,
   needsCheck,
   onlyEmptyFields,
   reaskField,
   removeMenuItem,
-  REVIEW_FIELDS,
-  TALK_FIELDS,
+  SETUP_FIELDS,
+  SUBMIT_FIELDS,
 } from './profile.ts'
 
 const PIN = { text: 'ลาดพร้าว 71', lat: 13.8016, lng: 100.6033 }
@@ -20,7 +18,7 @@ const PIN = { text: 'ลาดพร้าว 71', lat: 13.8016, lng: 100.6033 }
 describe('createEmptyProfile', () => {
   it('starts every field empty and offers the account phone', () => {
     const profile = createEmptyProfile()
-    expect(REVIEW_FIELDS.every((key) => profile.fields[key].status === 'empty')).toBe(true)
+    expect(ALL_FIELDS.every((key) => profile.fields[key].status === 'empty')).toBe(true)
     expect(profile.fields.phone.suggestFromAccount).toBe(true)
   })
 })
@@ -110,56 +108,12 @@ describe('needsCheck', () => {
   })
 })
 
-describe('progress', () => {
-  it('counts heard fields and knows when review can start', () => {
-    let profile = createEmptyProfile()
-    expect(countHeard(profile)).toBe(0)
-    expect(isReadyForReview(profile)).toBe(false)
-    profile = applyUpdates(profile, {
-      storeName: { value: 'ครัวป้าแดง', confidence: 0.93, heardFrom: 'x' },
-      category: { value: 'อาหารไทย', confidence: 0.9, heardFrom: 'x' },
-      location: { value: PIN, confidence: 0.62, heardFrom: 'x' },
-      hours: { value: { open: '10:00', close: '20:00', closedDays: [] }, confidence: 0.95, heardFrom: 'x' },
-      menu: { value: [{ name: 'ชาไทยเย็น', priceTHB: 35 }], confidence: 0.9, heardFrom: 'x' },
-      phone: { value: '0812344217', confidence: 1, heardFrom: 'x' },
-    })
-    expect(countHeard(profile)).toBe(6)
-    expect(isReadyForReview(profile)).toBe(true)
-  })
-})
-
-const OWNER = { value: { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890121' }, confidence: 0.97, heardFrom: 'รูปบัตรประชาชน' }
+const OWNER = { value: { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890121', birthDate: '1970-01-01', idExpiry: '2031-01-01' }, confidence: 0.97, heardFrom: 'รูปบัตรประชาชน' }
 const PAYOUT = {
-  value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง แดง ใจดี' },
+  value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง แดง ใจดี', bookPhoto: 'sample' },
   confidence: 0.95,
   heardFrom: 'รูปสมุดบัญชี',
 }
-
-describe('field groups', () => {
-  it('talks about six fields and scans two', () => {
-    expect(TALK_FIELDS).toEqual(['storeName', 'category', 'location', 'hours', 'menu', 'phone'])
-    expect(DOC_FIELDS).toEqual(['owner', 'payout'])
-    expect(REVIEW_FIELDS).toEqual([...TALK_FIELDS, ...DOC_FIELDS])
-  })
-
-  it('applies scanned document values as drafts', () => {
-    const profile = applyUpdates(createEmptyProfile(), { owner: OWNER })
-    expect(profile.fields.owner).toEqual({ ...OWNER, status: 'heard' })
-  })
-
-  it('does not wait for documents before review is possible from A1', () => {
-    const talked = applyUpdates(createEmptyProfile(), {
-      storeName: { value: 'ครัวป้าแดง', confidence: 0.93, heardFrom: 'x' },
-      category: { value: 'อาหารไทย', confidence: 0.9, heardFrom: 'x' },
-      location: { value: PIN, confidence: 0.62, heardFrom: 'x' },
-      hours: { value: { open: '10:00', close: '20:00', closedDays: [] }, confidence: 0.95, heardFrom: 'x' },
-      menu: { value: [{ name: 'ชาไทยเย็น', priceTHB: 35 }], confidence: 0.9, heardFrom: 'x' },
-      phone: { value: '0812344217', confidence: 1, heardFrom: 'x' },
-    })
-    expect(isReadyForReview(talked)).toBe(true)
-    expect(countHeard(talked)).toBe(6)
-  })
-})
 
 describe('missingDocs', () => {
   it('asks for the ID card and the bank book until both are scanned', () => {
@@ -183,5 +137,23 @@ describe('onlyEmptyFields', () => {
       menu: { value: [{ name: 'ชาไทยเย็น', priceTHB: 35 }], confidence: 0.9, heardFrom: 'menu' },
     }
     expect(onlyEmptyFields(profile, incoming)).toEqual({ menu: incoming.menu })
+  })
+})
+
+describe('field groups', () => {
+  it('lists the sign-up fields in GrabMerchant order, then the shop set-up', () => {
+    expect(SUBMIT_FIELDS).toEqual(['storeName', 'building', 'location', 'address', 'category', 'businessType', 'phone', 'contactEmail', 'owner', 'payout'])
+    expect(SETUP_FIELDS).toEqual(['menu', 'hours'])
+    expect(ALL_FIELDS).toEqual([...SUBMIT_FIELDS, ...SETUP_FIELDS])
+  })
+
+  it('starts every new field empty', () => {
+    const { fields } = createEmptyProfile()
+    expect([fields.building.status, fields.address.status, fields.businessType.status, fields.contactEmail.status]).toEqual(['empty', 'empty', 'empty', 'empty'])
+  })
+
+  it('applies updates to the new fields', () => {
+    const profile = applyUpdates(createEmptyProfile(), { businessType: { value: 'personal', confidence: 1, heardFrom: 'x' } })
+    expect(profile.fields.businessType).toEqual({ value: 'personal', status: 'heard', confidence: 1, heardFrom: 'x' })
   })
 })

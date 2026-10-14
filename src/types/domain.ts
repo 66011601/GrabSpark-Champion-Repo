@@ -27,6 +27,9 @@ export interface MenuEntry {
   priceTHB: number
 }
 
+/** GrabMerchant 4/7 "ประเภทธุรกิจ". */
+export type BusinessType = 'personal' | 'company'
+
 /** How the merchant chose to fill in the shop on R2. */
 export type FillMethod = 'voice' | 'photo' | 'type'
 
@@ -37,23 +40,30 @@ export interface OwnerIdentity {
   title: string // นาย / นาง / นางสาว, as printed
   name: string // first and last name, without the title
   idNumber: string // 13 digits, no dashes
+  birthDate: string // ISO yyyy-mm-dd (CE); shown in the Buddhist calendar
+  idExpiry: string // ISO yyyy-mm-dd (CE)
 }
 
 export interface PayoutAccount {
   bankName: string
   accountNumber: string // digits only
   accountName: string // as printed in the bank book, title included
+  bookPhoto: string | null // 'sample' or a local object URL of the bank book photo; never uploaded
 }
 
 export interface ProfileFields {
   storeName: ProfileField<string>
-  category: ProfileField<string>
+  building: ProfileField<string> // ชื่ออาคาร/ถนน
   location: ProfileField<GeoPoint> & { needsPinCheck?: boolean }
-  hours: ProfileField<OpeningHours>
-  menu: ProfileField<MenuEntry[]>
+  address: ProfileField<string> // ที่อยู่ร้านค้า
+  category: ProfileField<string>
+  businessType: ProfileField<BusinessType>
   phone: ProfileField<string> & { suggestFromAccount?: boolean }
+  contactEmail: ProfileField<string>
   owner: ProfileField<OwnerIdentity>
   payout: ProfileField<PayoutAccount>
+  menu: ProfileField<MenuEntry[]>
+  hours: ProfileField<OpeningHours>
 }
 
 export type ProfileFieldKey = keyof ProfileFields
@@ -101,6 +111,7 @@ export interface Landmark {
 export interface Account {
   ownerName: string
   phone: string
+  email: string
   maskedPhone: string
   deviceLocation: GeoPoint
 }
@@ -111,6 +122,8 @@ export interface IdCardScan {
   title: string
   name: string
   idNumber: string
+  birthDate: string
+  idExpiry: string
   confidence: number
 }
 

@@ -6,11 +6,11 @@ export function scanToUpdates(scan: ScanResult): ProfileUpdates {
   const heardFrom = th.scan.source[scan.kind]
   switch (scan.kind) {
     case 'idCard':
-      return { owner: { value: { title: scan.title, name: scan.name, idNumber: scan.idNumber }, confidence: scan.confidence, heardFrom } }
+      return { owner: { value: { title: scan.title, name: scan.name, idNumber: scan.idNumber, birthDate: scan.birthDate, idExpiry: scan.idExpiry }, confidence: scan.confidence, heardFrom } }
     case 'bankBook':
       return {
         payout: {
-          value: { bankName: scan.bankName, accountNumber: scan.accountNumber, accountName: scan.accountName },
+          value: { bankName: scan.bankName, accountNumber: scan.accountNumber, accountName: scan.accountName, bookPhoto: 'sample' },
           confidence: scan.confidence,
           heardFrom,
         },

@@ -15,8 +15,8 @@ const VALID: ProfileUpdates = {
   hours: { value: { open: '10:00', close: '20:00', closedDays: [] }, confidence: 0.95, heardFrom: 'x' },
   menu: { value: [{ name: 'ชาไทยเย็น', priceTHB: 35 }], confidence: 0.9, heardFrom: 'x' },
   phone: { value: '0812344217', confidence: 1, heardFrom: 'x' },
-  owner: { value: { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890121' }, confidence: 0.97, heardFrom: 'x' },
-  payout: { value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง แดง ใจดี' }, confidence: 0.95, heardFrom: 'x' },
+  owner: { value: { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890121', birthDate: '1970-01-01', idExpiry: '2031-01-01' }, confidence: 0.97, heardFrom: 'x' },
+  payout: { value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง แดง ใจดี', bookPhoto: 'sample' }, confidence: 0.95, heardFrom: 'x' },
 }
 
 function confirmedProfile(overrides: ProfileUpdates = {}): OnboardingProfile {
@@ -62,21 +62,21 @@ describe('runSubmissionChecks', () => {
   })
 
   it('rejects an ID number whose checksum is wrong', () => {
-    const typo = confirmedProfile({ owner: { value: { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890122' }, confidence: 0.97, heardFrom: 'x' } })
+    const typo = confirmedProfile({ owner: { value: { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890122', birthDate: '1970-01-01', idExpiry: '2031-01-01' }, confidence: 0.97, heardFrom: 'x' } })
     expect(check(typo, 'ID_VALID')).toEqual({ id: 'ID_VALID', pass: false, message: 'เลขบัตรไม่ถูกต้อง ถ่ายใหม่อีกครั้งนะคะ' })
   })
 
   it('requires the bank account to be in the owner’s name', () => {
     const someoneElse = confirmedProfile({
-      payout: { value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาย สมชาย ขายดี' }, confidence: 0.95, heardFrom: 'x' },
+      payout: { value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาย สมชาย ขายดี', bookPhoto: 'sample' }, confidence: 0.95, heardFrom: 'x' },
     })
     expect(check(someoneElse, 'PAYOUT_NAME_MATCH')).toEqual({ id: 'PAYOUT_NAME_MATCH', pass: false, message: 'ชื่อบัญชีต้องตรงกับชื่อบนบัตรค่ะ' })
   })
 
   it('does not strip a title-like start of the given name on one side only', () => {
     const profile = confirmedProfile({
-      owner: { value: { title: 'นาง', name: 'นางนุช ใจดี', idNumber: '1234567890121' }, confidence: 0.97, heardFrom: 'x' },
-      payout: { value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง นางนุช ใจดี' }, confidence: 0.95, heardFrom: 'x' },
+      owner: { value: { title: 'นาง', name: 'นางนุช ใจดี', idNumber: '1234567890121', birthDate: '1970-01-01', idExpiry: '2031-01-01' }, confidence: 0.97, heardFrom: 'x' },
+      payout: { value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง นางนุช ใจดี', bookPhoto: 'sample' }, confidence: 0.95, heardFrom: 'x' },
     })
     expect(check(profile, 'PAYOUT_NAME_MATCH')?.pass).toBe(true)
   })

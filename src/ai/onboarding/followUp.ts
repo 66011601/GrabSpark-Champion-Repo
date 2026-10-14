@@ -1,11 +1,11 @@
 import { th } from '@/copy/th.ts'
 import type { Account, FollowUpChip, FollowUpQuestion, OnboardingProfile, ProfileFieldKey } from '@/types/domain.ts'
 import { CATEGORY_LABELS } from './parsers/category.ts'
-import { TALK_FIELDS } from './profile.ts'
 
 /** Document fields (owner, payout) are photographed, never asked about. */
 const QUESTIONS: Partial<Record<ProfileFieldKey, (account: Account) => FollowUpQuestion>> = {
   storeName: () => ({ field: 'storeName', text: th.followUp.storeName, chips: [] }),
+  building: () => ({ field: 'building', text: th.followUp.building, chips: [] }),
   category: () => ({
     field: 'category',
     text: th.followUp.category,
@@ -40,14 +40,14 @@ const QUESTIONS: Partial<Record<ProfileFieldKey, (account: Account) => FollowUpQ
 }
 
 /**
- * What the companion should ask next, or null when every field has been heard.
- * Only empty fields are asked about; low-confidence values are flagged in A2 instead of re-asked.
+ * What the companion should ask next about `fields`, or null when they are all filled.
+ * When none of them is filled yet, it opens with the free-talk prompt.
  */
-export function pickFollowUp(profile: OnboardingProfile, account: Account): FollowUpQuestion | null {
-  const { fields } = profile
-  if (TALK_FIELDS.every((key) => fields[key].status === 'empty')) {
+export function pickFollowUp(profile: OnboardingProfile, fields: ProfileFieldKey[], account: Account): FollowUpQuestion | null {
+  const { fields: values } = profile
+  if (fields.every((key) => values[key].status === 'empty')) {
     return { field: null, text: th.followUp.open, chips: [] }
   }
-  const next = TALK_FIELDS.find((key) => fields[key].status === 'empty')
+  const next = fields.find((key) => values[key].status === 'empty')
   return next ? (QUESTIONS[next]?.(account) ?? null) : null
 }
