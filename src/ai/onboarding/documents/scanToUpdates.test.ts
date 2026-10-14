@@ -6,14 +6,14 @@ import { scanToUpdates } from './scanToUpdates.ts'
 describe('scanToUpdates', () => {
   it('turns an ID card into the owner', () => {
     expect(scanToUpdates(sampleScan('idCard'))).toEqual({
-      owner: { value: { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890121' }, confidence: 0.97, heardFrom: 'รูปบัตรประชาชน' },
+      owner: { value: { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890121', birthDate: '1970-01-01', idExpiry: '2031-01-01' }, confidence: 0.97, heardFrom: 'รูปบัตรประชาชน' },
     })
   })
 
   it('turns a bank book into the payout account', () => {
     expect(scanToUpdates(sampleScan('bankBook'))).toEqual({
       payout: {
-        value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง แดง ใจดี' },
+        value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง แดง ใจดี', bookPhoto: 'sample' },
         confidence: 0.95,
         heardFrom: 'รูปสมุดบัญชี',
       },

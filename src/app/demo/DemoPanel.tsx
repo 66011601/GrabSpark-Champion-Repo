@@ -1,27 +1,30 @@
 import { useEffect, useState } from 'react'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
-import { createEmptyProfile } from '@/ai/onboarding/profile.ts'
-import { PHOTO_PATH, type Screen } from '@/app/journey/journeyMachine.ts'
-import type { DocKind } from '@/types/domain.ts'
+import type { Screen } from '@/app/journey/journeyMachine.ts'
 import { demoFlags } from '@/services/demoFlags.ts'
 import { demoBus } from './demoBus.ts'
-import { demoProfile, scriptLines } from './demoProfile.ts'
+import { scriptLines, step4DemoProfile, submittedDemoProfile } from './demoProfile.ts'
 
 // Presenter-only tooling (desktop, beside the phone). Press D to hide or show.
-const JUMPS: { label: string; screen: Screen; withProfile?: boolean; scan?: DocKind[] }[] = [
-  { label: 'R1 · หน้าแรก', screen: 'R1_WELCOME' },
-  { label: 'R2 · อีเมลและรหัสผ่าน', screen: 'R2_ACCOUNT' },
-  { label: 'R3 · ข้อมูลร้าน', screen: 'R3_STORE' },
-  { label: 'A1 · คุยเปิดร้าน', screen: 'A1_TALK' },
-  { label: 'S1 · ถ่ายรูปเอกสาร (ทางถ่ายรูป)', screen: 'S1_SCAN', scan: PHOTO_PATH },
-  { label: 'A2 · ตรวจทาน (ข้อมูลตัวอย่าง)', screen: 'A2_REVIEW', withProfile: true },
-  { label: 'A3 · ส่งแล้ว', screen: 'A3_SUBMITTED', withProfile: true },
+const JUMPS: { label: string; screen: Screen; sample?: 'step4' | 'submitted' }[] = [
+  { label: 'หน้าแรก GrabMerchant', screen: 'G0_WELCOME' },
+  { label: 'เข้าสู่ระบบ', screen: 'L1_LOGIN' },
+  { label: '1/7 เลือกบริการ', screen: 'S1_SERVICE' },
+  { label: '2/7 อีเมลและรหัสผ่าน', screen: 'S2_ACCOUNT' },
+  { label: '2/7 เบอร์โทรและ OTP', screen: 'S2_PHONE' },
+  { label: '3/7 ข้อมูลธุรกิจ', screen: 'S3_BUSINESS' },
+  { label: '4/7 ข้อมูลร้าน (ข้อมูลตัวอย่าง)', screen: 'S4_SHOP', sample: 'step4' },
+  { label: '5/7 ข้อมูลของคุณ', screen: 'S5_OWNER' },
+  { label: '6/7 ข้อมูลธนาคาร', screen: 'S6_BANK' },
+  { label: '7/7 คำยืนยัน (ข้อมูลตัวอย่าง)', screen: 'S7_CONFIRM', sample: 'submitted' },
+  { label: 'หน้าหลัก (รออนุมัติ)', screen: 'H1_HOME', sample: 'submitted' },
+  { label: 'เพิ่มเมนู', screen: 'H2_MENU' },
+  { label: 'เวลาเปิด-ปิด', screen: 'H3_HOURS' },
   { label: '30 วันต่อมา…', screen: 'TRANSITION' },
-  { label: 'G1 · หน้าร้าน', screen: 'G1_DASHBOARD' },
 ]
 
 // Screens where the companion is listening, so a line "spoken" from here is heard.
-const LISTENING_SCREENS: Screen[] = ['R1_WELCOME', 'R2_ACCOUNT', 'R3_STORE', 'A1_TALK', 'S1_SCAN', 'A2_REVIEW']
+const LISTENING_SCREENS: Screen[] = ['G0_WELCOME', 'S1_SERVICE', 'S3_BUSINESS', 'S4_SHOP', 'S5_OWNER', 'S6_BANK', 'S7_CONFIRM', 'H1_HOME', 'H2_MENU', 'H3_HOURS']
 
 export function DemoPanel() {
   const { state, dispatch } = useJourney()
@@ -53,15 +56,13 @@ export function DemoPanel() {
         <h3 className="font-bold">ไปที่หน้า</h3>
         {JUMPS.map((jump) => (
           <button
-            key={jump.screen}
+            key={jump.label}
             type="button"
             className="min-h-12 rounded-xl px-3 text-left ring-1 ring-line hover:bg-canvas"
             onClick={() => {
-              if (jump.withProfile) dispatch({ type: 'LOAD_PROFILE', profile: demoProfile() })
-              if (jump.scan) {
-                dispatch({ type: 'LOAD_PROFILE', profile: createEmptyProfile() })
-                dispatch({ type: 'START_SCAN', docs: jump.scan, returnTo: 'A1_TALK' })
-              } else dispatch({ type: 'GO', screen: jump.screen })
+              if (jump.sample === 'step4') dispatch({ type: 'LOAD_PROFILE', profile: step4DemoProfile(), phoneVerified: true })
+              if (jump.sample === 'submitted') dispatch({ type: 'LOAD_PROFILE', profile: submittedDemoProfile(), phoneVerified: true })
+              dispatch({ type: 'GO', screen: jump.screen })
             }}
           >
             {jump.label}
@@ -70,7 +71,7 @@ export function DemoPanel() {
       </section>
 
       <section className="flex flex-col gap-2">
-        <h3 className="font-bold">พูดแทนไมค์ (บทใช้ที่หน้า R3 หรือ A1)</h3>
+        <h3 className="font-bold">พูดแทนไมค์ (บรรทัด 1 ใช้ที่ 3/7 · บรรทัด 2 ที่เวลาเปิด-ปิด · บรรทัด 3 ที่เพิ่มเมนู)</h3>
         {scriptLines.map((line) => (
           <button
             key={line.id}
@@ -82,7 +83,6 @@ export function DemoPanel() {
             <span className="font-bold">บรรทัด {line.id}:</span> <span className="line-clamp-2 text-sm">{line.say}</span>
           </button>
         ))}
-        <p className="text-sm text-ink-muted">บรรทัด 4: กดชิป "ใช่" ในแอปเพื่อใช้เบอร์ที่ล็อกอิน</p>
         <form
           className="flex gap-2"
           onSubmit={(event) => {

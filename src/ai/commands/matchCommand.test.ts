@@ -34,6 +34,17 @@ describe('matchCommand', () => {
     expect(matchCommand('กลับค่ะ', STORE)).toBe('back')
   })
 
+  it('hears an English service name in any case', () => {
+    expect(matchCommand('GrabFood', [{ id: 'food', phrases: SAY.food }])).toBe('food')
+    expect(matchCommand('GrabMart', [{ id: 'mart', phrases: SAY.mart }])).toBe('mart')
+  })
+
+  it('hears ส่ง and ส่งใบสมัคร as the submit button', () => {
+    const submit = [{ id: 'submit', phrases: SAY.submit }]
+    expect(matchCommand('ส่ง', submit)).toBe('submit')
+    expect(matchCommand('ส่งใบสมัครค่ะ', submit)).toBe('submit')
+  })
+
   it('hears nothing in unrelated words', () => {
     expect(matchCommand('ครัวป้าแดง', STORE)).toBeNull()
     expect(matchCommand('', STORE)).toBeNull()

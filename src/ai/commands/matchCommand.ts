@@ -13,7 +13,7 @@ const EXTRA_CHARACTERS = 10
 // give or take these: "กดไปต่อเลยค่ะ" is "ไปต่อ".
 const FILLERS = /กด|ช่วย|ขอ|เลย|หน่อย|ด้วย|แล้ว|หน้า|นะ/g
 
-const squash = (text: string) => stripParticles(text).replace(/\s+/g, '')
+const squash = (text: string) => stripParticles(text).toLowerCase().replace(/\s+/g, '')
 
 /**
  * Which on-screen action the merchant asked for, or null when they said something else.

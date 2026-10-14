@@ -1,6 +1,7 @@
 {
   "ownerName": "แดง ใจดี",
   "phone": "0812344217",
+  "email": "padaeng@example.com",
   "maskedPhone": "08x-xxx-4217",
   "deviceLocation": { "text": "ลาดพร้าว 71", "lat": 13.8016, "lng": 100.6033 }
 }

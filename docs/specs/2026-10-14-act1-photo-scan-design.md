@@ -15,6 +15,8 @@ Decisions taken in chat:
 
 ## 2. Flow
 
+> **Superseded (2026-10-14):** the Act 1 screens are now GrabMerchant's real seven steps — see `2026-10-14-grab-style-signup-design.md`.
+
 ```
 R1 Welcome ─► R2 Account + method choice
                  ├─ พูด   (voice, default) ─► R3 Store ─► A1 Talk ─► S1 Scan [ID, bank book] ─┐
