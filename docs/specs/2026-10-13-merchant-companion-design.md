@@ -54,7 +54,7 @@ Sources: [Merchant Menu Assistant](https://www.grab.com/sg/inside-grab/stories/g
 - Presenter tools (DemoPanel) and demo-safe fallbacks.
 
 **Out of scope:**
-- ID card / bank book capture (shown only as a "next step" on A3).
+- ~~ID card / bank book capture~~ — now in scope as a simulated photo scan; see `2026-10-14-act1-photo-scan-design.md`.
 - Real Grab APIs, authentication, persistence beyond the browser session.
 - Real LLM calls (the adapter interface exists; see §12).
 - Languages other than Thai in the UI (see open questions).
@@ -257,7 +257,7 @@ Money is computed in integer satang (฿1 = 100 satang) to avoid floating-point 
 
 ### 7.1a Register phase (before Act 1)
 
-Added from the team's wireframes. `R1 Welcome ──► R2 Account ──► R3 Store basics ──► A1`. A returning merchant (เข้าสู่ระบบ) goes `R1 ──► R2 ──► A1`.
+Added from the team's wireframes. `R1 Welcome ──► R2 Account ──► R3 Store basics ──► A1`. R2 now also asks how to fill in the shop (พูด / ถ่ายรูป / พิมพ์), and every path scans the ID card and bank book before A2 — see `2026-10-14-act1-photo-scan-design.md` §2. A returning merchant (เข้าสู่ระบบ) goes `R1 ──► R2 ──► A1`.
 
 - **Companion dock** (`components/assistant/CompanionDock.tsx`): on every screen the companion's face sits in the bottom-right corner with its speech bubble; the screen's main button is to its left. On R3 and A1 the face is the talk button (it replaces the old centre `MicButton`).
 - **R1 · Welcome** (`screens/register/R1-welcome`): headline, three plain promises, ลงทะเบียน (left) and เข้าสู่ระบบ (right). Bubble: "เคยสมัครรึยังคะ?"
@@ -306,7 +306,7 @@ Added from the team's wireframes. `R1 Welcome ──► R2 Account ──► R3 
 
 **A3 · Submitted** (`A3-submitted/SubmittedScreen.tsx`)
 - `SuccessHero`: "ส่งข้อมูลร้านแล้วค่ะ 🎉" and the real time spent, measured from the first utterance to submit ("คุยกันแค่ 2 นาที 40 วินาที ก็เสร็จ"). No invented typing benchmark.
-- `NextStepsTimeline`: ถ่ายรูปบัตรประชาชนและสมุดบัญชี (หนูจะพาทำ) → Grab ตรวจสอบ → เปิดรับออเดอร์. Not interactive in the prototype.
+- `NextStepsTimeline`: Grab ตรวจสอบข้อมูล (1–3 วันทำการ) → เปิดรับออเดอร์ (documents are scanned before A2; photo-scan spec §3.4). Not interactive in the prototype.
 - `ActTransition`: "30 วันต่อมา…" card → G1.
 
 ### 7.3 Act 2 · Day 30
