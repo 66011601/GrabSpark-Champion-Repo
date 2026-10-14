@@ -67,6 +67,15 @@ export function applyUpdates(profile: OnboardingProfile, updates: ProfileUpdates
   return next
 }
 
+/** Keeps only the updates for fields that are still empty: a photo never replaces what the merchant already gave. */
+export function onlyEmptyFields(profile: OnboardingProfile, updates: ProfileUpdates): ProfileUpdates {
+  const kept: ProfileUpdates = {}
+  for (const key of REVIEW_FIELDS) {
+    if (updates[key] && profile.fields[key].status === 'empty') Object.assign(kept, { [key]: updates[key] })
+  }
+  return kept
+}
+
 export function confirmField(profile: OnboardingProfile, key: ProfileFieldKey): OnboardingProfile {
   if (profile.fields[key].status === 'empty') return profile
   const confirmed = patch(profile, key, { status: 'confirmed' })

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
+import { createEmptyProfile } from '@/ai/onboarding/profile.ts'
 import { PHOTO_PATH, type Screen } from '@/app/journey/journeyMachine.ts'
 import type { DocKind } from '@/types/domain.ts'
 import { demoFlags } from '@/services/demoFlags.ts'
@@ -57,8 +58,10 @@ export function DemoPanel() {
             className="min-h-12 rounded-xl px-3 text-left ring-1 ring-line hover:bg-canvas"
             onClick={() => {
               if (jump.withProfile) dispatch({ type: 'LOAD_PROFILE', profile: demoProfile() })
-              if (jump.scan) dispatch({ type: 'START_SCAN', docs: jump.scan, returnTo: 'A1_TALK' })
-              else dispatch({ type: 'GO', screen: jump.screen })
+              if (jump.scan) {
+                dispatch({ type: 'LOAD_PROFILE', profile: createEmptyProfile() })
+                dispatch({ type: 'START_SCAN', docs: jump.scan, returnTo: 'A1_TALK' })
+              } else dispatch({ type: 'GO', screen: jump.screen })
             }}
           >
             {jump.label}

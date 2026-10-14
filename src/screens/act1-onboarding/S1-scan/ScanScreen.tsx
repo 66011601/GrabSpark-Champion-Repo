@@ -86,10 +86,12 @@ export function ScanScreen() {
           void shoot()
           return true
         case 'retake':
+          if (phase === 'aim') return th.scan.shootFirst
           if (phase !== 'read') return false
           retake()
           return true
         case 'use':
+          if (phase === 'aim') return th.scan.shootFirst
           if (phase !== 'read') return false
           use()
           return true

@@ -73,6 +73,14 @@ describe('runSubmissionChecks', () => {
     expect(check(someoneElse, 'PAYOUT_NAME_MATCH')).toEqual({ id: 'PAYOUT_NAME_MATCH', pass: false, message: 'ชื่อบัญชีต้องตรงกับชื่อบนบัตรค่ะ' })
   })
 
+  it('does not strip a title-like start of the given name on one side only', () => {
+    const profile = confirmedProfile({
+      owner: { value: { title: 'นาง', name: 'นางนุช ใจดี', idNumber: '1234567890121' }, confidence: 0.97, heardFrom: 'x' },
+      payout: { value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง นางนุช ใจดี' }, confidence: 0.95, heardFrom: 'x' },
+    })
+    expect(check(profile, 'PAYOUT_NAME_MATCH')?.pass).toBe(true)
+  })
+
   it('fails both document checks when nothing was scanned', () => {
     const heard = applyUpdates(createEmptyProfile(), { ...VALID, owner: undefined, payout: undefined })
     expect(check(heard, 'ID_VALID')?.pass).toBe(false)

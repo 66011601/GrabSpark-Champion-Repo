@@ -155,6 +155,7 @@ payout: ProfileField<PayoutAccount>
 | Paper menu | header ครัวป้าแดง → storeName (0.9); category อาหารไทย guessed from dishes (0.75, amber); the five dishes from `onboarding-script.json`, all at 0.95 except น้ำพริกกะปิปลาทู ฿89 at 0.6 (smudged, amber) | per row |
 
 - A menu's confidence is the lowest of its rows. That is how one smudged price turns the whole menu card amber in A2.
+- A scan fills only fields that are still empty: a menu header never replaces a store name or category the merchant already gave, and never un-confirms a field.
 
 ### 4.5 New deterministic checks (`ai/onboarding/submit.ts`)
 

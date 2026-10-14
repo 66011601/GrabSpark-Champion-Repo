@@ -8,6 +8,7 @@ import {
   isReadyForReview,
   missingDocs,
   needsCheck,
+  onlyEmptyFields,
   reaskField,
   removeMenuItem,
   REVIEW_FIELDS,
@@ -166,5 +167,21 @@ describe('missingDocs', () => {
     expect(missingDocs(empty)).toEqual(['idCard', 'bankBook'])
     expect(missingDocs(applyUpdates(empty, { owner: OWNER }))).toEqual(['bankBook'])
     expect(missingDocs(applyUpdates(empty, { owner: OWNER, payout: PAYOUT }))).toEqual([])
+  })
+})
+
+describe('onlyEmptyFields', () => {
+  it('drops updates for heard and confirmed fields and keeps them for empty ones', () => {
+    const heard = applyUpdates(createEmptyProfile(), { storeName: { value: 'ร้านของฉัน', confidence: 0.9, heardFrom: 'x' } })
+    const profile = confirmField(
+      applyUpdates(heard, { category: { value: 'อาหารไทย', confidence: 0.9, heardFrom: 'x' } }),
+      'category',
+    )
+    const incoming = {
+      storeName: { value: 'ครัวป้าแดง', confidence: 0.93, heardFrom: 'menu' },
+      category: { value: 'ก๋วยเตี๋ยว', confidence: 0.9, heardFrom: 'menu' },
+      menu: { value: [{ name: 'ชาไทยเย็น', priceTHB: 35 }], confidence: 0.9, heardFrom: 'menu' },
+    }
+    expect(onlyEmptyFields(profile, incoming)).toEqual({ menu: incoming.menu })
   })
 })

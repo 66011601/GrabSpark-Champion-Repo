@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyUpdates, createEmptyProfile } from '@/ai/onboarding/profile.ts'
+import { applyUpdates, confirmField, createEmptyProfile } from '@/ai/onboarding/profile.ts'
 import { scanToUpdates } from '@/ai/onboarding/documents/scanToUpdates.ts'
 import { sampleScan } from '@/services/ocr/mockOcr.ts'
 import { initialJourney, journeyReducer } from './journeyMachine.ts'
@@ -164,6 +164,22 @@ describe('scanning', () => {
     expect(journeyReducer(photo, { type: 'SKIP_DOC', doc: 'menu' })).toBe(photo)
     const elsewhere = journeyReducer(photo, { type: 'GO', screen: 'A2_REVIEW' })
     expect(journeyReducer(elsewhere, { type: 'SCANNED', doc: 'idCard', updates: ID, at: 1 })).toBe(elsewhere)
+  })
+
+  it('fills only empty fields from a menu scan, leaving what the merchant already gave', () => {
+    const given = confirmField(
+      applyUpdates(createEmptyProfile(), {
+        storeName: { value: 'ร้านของฉัน', confidence: 0.9, heardFrom: 'x' },
+        category: { value: 'อาหารไทย', confidence: 0.9, heardFrom: 'x' },
+      }),
+      'category',
+    )
+    const loaded = journeyReducer(initialJourney(), { type: 'LOAD_PROFILE', profile: given })
+    const scanning = journeyReducer(loaded, { type: 'START_SCAN', docs: ['menu'], returnTo: 'A1_TALK' })
+    const done = journeyReducer(scanning, { type: 'SCANNED', doc: 'menu', updates: scanToUpdates(sampleScan('menu')), at: 1 })
+    expect(done.profile.fields.storeName).toMatchObject({ value: 'ร้านของฉัน', status: 'heard' })
+    expect(done.profile.fields.category).toMatchObject({ value: 'อาหารไทย', status: 'confirmed' })
+    expect(done.profile.fields.menu.status).toBe('heard')
   })
 
   it('goes straight on when there is nothing to scan', () => {

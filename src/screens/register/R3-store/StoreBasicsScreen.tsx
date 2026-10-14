@@ -181,7 +181,9 @@ export function StoreBasicsScreen() {
 
   const untouched = !asked && !storeName && !location
   const bubble = untouched
-    ? th.store.bubbleOpen
+    ? state.method === 'type'
+      ? th.store.bubbleOpenTyping
+      : th.store.bubbleOpen
     : missing === 'storeName'
       ? th.followUp.storeName
       : missing === 'location'

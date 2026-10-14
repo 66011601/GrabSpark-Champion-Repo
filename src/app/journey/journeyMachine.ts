@@ -1,4 +1,4 @@
-import { applyUpdates, confirmField, createEmptyProfile, DOC_FOR_FIELD, missingDocs, reaskField, removeMenuItem } from '@/ai/onboarding/profile.ts'
+import { applyUpdates, confirmField, createEmptyProfile, DOC_FOR_FIELD, missingDocs, onlyEmptyFields, reaskField, removeMenuItem } from '@/ai/onboarding/profile.ts'
 import type { DocKind, FillMethod, OnboardingProfile, ProfileFieldKey, ProfileUpdates } from '@/types/domain.ts'
 
 // Plan 2 adds G2_INTENT, G3_PREVIEW, G4_SUCCESS, G5_RECAP.
@@ -113,7 +113,7 @@ export function journeyReducer(state: JourneyState, event: JourneyEvent): Journe
       return startScan(state, event.docs, event.returnTo)
     case 'SCANNED':
       if (!isCurrentDoc(state, event.doc)) return state
-      return nextDoc({ ...state, profile: applyUpdates(state.profile, event.updates), startedAt: state.startedAt ?? event.at })
+      return nextDoc({ ...state, profile: applyUpdates(state.profile, onlyEmptyFields(state.profile, event.updates)), startedAt: state.startedAt ?? event.at })
     case 'SKIP_DOC':
       if (!isCurrentDoc(state, event.doc)) return state
       return nextDoc(state)

@@ -11,9 +11,9 @@ const IMPORTS_REACT = /from\s+['"]react/
 
 // Sending is a merchant's tap in A2, never a side effect of talking or scanning.
 const SUBMITTERS = ['/src/screens/act1-onboarding/A2-review/ReviewScreen.tsx']
-const IMPORTS_SUBMIT = /(?:from\s+|import\s*\(\s*)['"][^'"]*onboarding\/submit/
+const IMPORTS_SUBMIT = /(?:from\s+|import\s*\(\s*)['"][^'"]*(?:onboarding\/|\.\/)submit(?:\.ts)?['"]/
 
-const appFiles = Object.entries(sources).filter(([path]) => !path.endsWith('.test.ts'))
+const appFiles = Object.entries(sources).filter(([path]) => !/\.test\.tsx?$/.test(path))
 
 describe('architecture', () => {
   it('sees the source tree', () => {

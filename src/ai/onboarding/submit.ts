@@ -18,7 +18,7 @@ export function runSubmissionChecks(profile: OnboardingProfile): GuardrailCheck[
   const owner = fields.owner.value
   const payout = fields.payout.value
   const idOk = owner !== null && isValidThaiId(owner.idNumber)
-  const nameOk = owner !== null && payout !== null && namesMatch(owner.name, payout.accountName)
+  const nameOk = owner !== null && payout !== null && namesMatch(`${owner.title} ${owner.name}`, payout.accountName)
   return [
     { id: 'ALL_CONFIRMED', pass: unconfirmed === 0, message: unconfirmed === 0 ? th.checks.allConfirmed : th.checks.unconfirmed(unconfirmed) },
     { id: 'PIN_CONFIRMED', pass: pinOk, message: pinOk ? th.checks.pinOk : th.checks.pinMissing },
