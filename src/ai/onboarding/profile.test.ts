@@ -4,7 +4,6 @@ import {
   applyUpdates,
   confirmField,
   createEmptyProfile,
-  missingDocs,
   needsCheck,
   onlyEmptyFields,
   reaskField,
@@ -105,22 +104,6 @@ describe('needsCheck', () => {
 
   it('never flags confirmed fields', () => {
     expect(needsCheck({ status: 'confirmed', confidence: 0.62 })).toBe(false)
-  })
-})
-
-const OWNER = { value: { title: 'นาง', name: 'แดง ใจดี', idNumber: '1234567890121', birthDate: '1970-01-01', idExpiry: '2031-01-01' }, confidence: 0.97, heardFrom: 'รูปบัตรประชาชน' }
-const PAYOUT = {
-  value: { bankName: 'ธนาคารกสิกรไทย', accountNumber: '1234567890', accountName: 'นาง แดง ใจดี', bookPhoto: 'sample' },
-  confidence: 0.95,
-  heardFrom: 'รูปสมุดบัญชี',
-}
-
-describe('missingDocs', () => {
-  it('asks for the ID card and the bank book until both are scanned', () => {
-    const empty = createEmptyProfile()
-    expect(missingDocs(empty)).toEqual(['idCard', 'bankBook'])
-    expect(missingDocs(applyUpdates(empty, { owner: OWNER }))).toEqual(['bankBook'])
-    expect(missingDocs(applyUpdates(empty, { owner: OWNER, payout: PAYOUT }))).toEqual([])
   })
 })
 

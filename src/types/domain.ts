@@ -30,8 +30,14 @@ export interface MenuEntry {
 /** GrabMerchant 4/7 "ประเภทธุรกิจ". */
 export type BusinessType = 'personal' | 'company'
 
-/** How the merchant chose to fill in the shop on R2. */
-export type FillMethod = 'voice' | 'photo' | 'type'
+/** Home's "ตั้งค่าร้านให้เรียบร้อย" tasks. */
+export type SetupPart = 'menu' | 'hours'
+
+/** 7/7's two boxes; only the merchant's own tap ticks them. */
+export interface Consents {
+  terms: boolean
+  accurate: boolean
+}
 
 /** A document the scanner can read. */
 export type DocKind = 'idCard' | 'bankBook' | 'menu'

@@ -1,214 +1,132 @@
 import { describe, expect, it } from 'vitest'
 import { applyUpdates, confirmField, createEmptyProfile } from '@/ai/onboarding/profile.ts'
-import { scanToUpdates } from '@/ai/onboarding/documents/scanToUpdates.ts'
-import { sampleScan } from '@/services/ocr/mockOcr.ts'
-import { initialJourney, journeyReducer } from './journeyMachine.ts'
+import { demoProfile } from '@/app/demo/demoProfile.ts'
+import { initialJourney, journeyReducer, SIGNUP_ORDER, STEP_NUMBER, type JourneyState, type Screen } from './journeyMachine.ts'
 
-const NAME = { storeName: { value: 'ครัวป้าแดง', confidence: 0.93, heardFrom: 'x' } }
+const at = (state: JourneyState, screen: Screen): JourneyState => ({ ...state, screen })
+const run = (state: JourneyState, ...events: Parameters<typeof journeyReducer>[1][]) => events.reduce(journeyReducer, state)
 
-describe('journeyReducer', () => {
-  it('starts on the welcome screen with an empty profile', () => {
+describe('journey: start', () => {
+  it('opens on the GrabMerchant welcome with nothing filled', () => {
     const state = initialJourney()
-    expect(state.screen).toBe('R1_WELCOME')
-    expect(state.profile.fields.storeName.status).toBe('empty')
-    expect(state.startedAt).toBeNull()
+    expect(state).toMatchObject({ screen: 'G0_WELCOME', service: null, email: null, phoneVerified: false, submittedAt: null, runId: 0 })
+    expect(state.consents).toEqual({ terms: false, accurate: false })
+    expect(state.setupDone).toEqual({ menu: false, hours: false })
   })
 
-  it('sends a new merchant from the account page to the store basics', () => {
-    const chosen = journeyReducer(initialJourney(), { type: 'CHOOSE_AUTH', mode: 'register' })
-    expect(chosen.screen).toBe('R2_ACCOUNT')
-    const signedUp = journeyReducer(chosen, { type: 'AUTHENTICATED', email: 'padaeng@example.com' })
-    expect(signedUp.screen).toBe('R3_STORE')
-    expect(signedUp.email).toBe('padaeng@example.com')
+  it('numbers the steps like GrabMerchant', () => {
+    expect(SIGNUP_ORDER).toEqual(['S1_SERVICE', 'S2_ACCOUNT', 'S2_PHONE', 'S3_BUSINESS', 'S4_SHOP', 'S5_OWNER', 'S6_BANK', 'S7_CONFIRM'])
+    expect(SIGNUP_ORDER.map((screen) => STEP_NUMBER[screen])).toEqual([1, 2, 2, 3, 4, 5, 6, 7])
+  })
+})
+
+describe('journey: steps 1–2', () => {
+  it('needs a service before 1/7 moves on', () => {
+    const s1 = at(initialJourney(), 'S1_SERVICE')
+    expect(journeyReducer(s1, { type: 'NEXT' })).toBe(s1)
+    expect(run(s1, { type: 'CHOOSE_SERVICE', service: 'food' }, { type: 'NEXT' })).toMatchObject({ service: 'food', screen: 'S2_ACCOUNT' })
   })
 
-  it('sends a returning merchant from the account page straight to A1', () => {
-    const chosen = journeyReducer(initialJourney(), { type: 'CHOOSE_AUTH', mode: 'login' })
-    expect(journeyReducer(chosen, { type: 'AUTHENTICATED', email: 'padaeng@example.com' }).screen).toBe('A1_TALK')
+  it('keeps the email, offers it as the owner’s contact email and starts the clock', () => {
+    const next = journeyReducer(at(initialJourney(), 'S2_ACCOUNT'), { type: 'ACCOUNT_SET', email: 'padaeng@example.com', at: 1000 })
+    expect(next).toMatchObject({ screen: 'S2_PHONE', email: 'padaeng@example.com', startedAt: 1000 })
+    expect(next.profile.fields.contactEmail).toMatchObject({ value: 'padaeng@example.com', status: 'heard' })
   })
 
-  it('carries the store basics into A1', () => {
-    const next = journeyReducer(initialJourney(), { type: 'STORE_BASICS', updates: NAME, building: 'ตึกชินวัตร', at: 2000 })
-    expect(next.screen).toBe('A1_TALK')
-    expect(next.profile.fields.storeName.value).toBe('ครัวป้าแดง')
-    expect(next.building).toBe('ตึกชินวัตร')
-    expect(next.startedAt).toBe(2000)
+  it('verifies the phone and confirms it', () => {
+    const next = journeyReducer(at(initialJourney(), 'S2_PHONE'), { type: 'PHONE_VERIFIED', phone: '0812344217', heardFrom: 'x' })
+    expect(next).toMatchObject({ screen: 'S3_BUSINESS', phoneVerified: true })
+    expect(next.profile.fields.phone).toMatchObject({ value: '0812344217', status: 'confirmed' })
   })
 
-  it('moves between screens', () => {
-    expect(journeyReducer(initialJourney(), { type: 'GO', screen: 'A2_REVIEW' }).screen).toBe('A2_REVIEW')
+  it('ignores step events from the wrong screen', () => {
+    const elsewhere = at(initialJourney(), 'S5_OWNER')
+    expect(journeyReducer(elsewhere, { type: 'ACCOUNT_SET', email: 'a@b.co', at: 1 })).toBe(elsewhere)
+    expect(journeyReducer(elsewhere, { type: 'PHONE_VERIFIED', phone: '0812344217', heardFrom: 'x' })).toBe(elsewhere)
+    expect(journeyReducer(elsewhere, { type: 'CHOOSE_SERVICE', service: 'mart' })).toBe(elsewhere)
   })
 
-  it('applies what was heard and remembers when talking started', () => {
-    const first = journeyReducer(initialJourney(), { type: 'HEARD', updates: NAME, at: 1000 })
-    const second = journeyReducer(first, { type: 'HEARD', updates: {}, at: 5000 })
-    expect(second.profile.fields.storeName.value).toBe('ครัวป้าแดง')
-    expect(second.startedAt).toBe(1000)
+  it('lets a verified phone page move on when the merchant comes back to it', () => {
+    const verified = { ...at(initialJourney(), 'S2_PHONE'), phoneVerified: true }
+    expect(journeyReducer(verified, { type: 'NEXT' }).screen).toBe('S3_BUSINESS')
+    expect(journeyReducer(at(initialJourney(), 'S2_PHONE'), { type: 'NEXT' }).screen).toBe('S2_PHONE')
+  })
+})
+
+describe('journey: form steps', () => {
+  const filled = { ...at(initialJourney(), 'S3_BUSINESS'), profile: demoProfile() }
+
+  it('fills, clears and confirms fields', () => {
+    const typed = journeyReducer(filled, { type: 'FILL', updates: { storeName: { value: 'ร้านของฉัน', confidence: 1, heardFrom: 'พิมพ์เอง' } }, at: 5 })
+    expect(typed.profile.fields.storeName).toMatchObject({ value: 'ร้านของฉัน', status: 'heard' })
+    expect(typed.startedAt).toBe(5)
+    expect(journeyReducer(typed, { type: 'CLEAR_FIELD', field: 'storeName' }).profile.fields.storeName.status).toBe('empty')
+    expect(journeyReducer(typed, { type: 'CONFIRM_FIELD', field: 'storeName' }).profile.fields.storeName.status).toBe('confirmed')
   })
 
-  it('confirms a field', () => {
-    const heard = journeyReducer(initialJourney(), { type: 'HEARD', updates: NAME, at: 1 })
-    expect(journeyReducer(heard, { type: 'CONFIRM_FIELD', field: 'storeName' }).profile.fields.storeName.status).toBe('confirmed')
+  it('stays on a step that is not complete', () => {
+    expect(journeyReducer(filled, { type: 'NEXT' })).toBe(filled) // the pin is not confirmed yet
   })
 
-  it('re-asking a field clears it and returns to A1', () => {
-    const onReview = { ...journeyReducer(initialJourney(), { type: 'HEARD', updates: NAME, at: 1 }), screen: 'A2_REVIEW' as const }
-    const next = journeyReducer(onReview, { type: 'REASK_FIELD', field: 'storeName' })
-    expect(next.screen).toBe('A1_TALK')
-    expect(next.profile.fields.storeName.status).toBe('empty')
+  it('confirms the step and moves on when it is complete', () => {
+    const ready = { ...filled, profile: (['location', 'building', 'address', 'category'] as const).reduce((p, key) => confirmField(p, key), filled.profile) }
+    const next = journeyReducer(ready, { type: 'NEXT' })
+    expect(next.screen).toBe('S4_SHOP')
+    expect(next.profile.fields.storeName.status).toBe('confirmed')
+  })
+
+  it('goes back one step, then to the welcome from 1/7, and Home from H2/H3', () => {
+    expect(journeyReducer(filled, { type: 'BACK' }).screen).toBe('S2_PHONE')
+    expect(journeyReducer(at(initialJourney(), 'S1_SERVICE'), { type: 'BACK' }).screen).toBe('G0_WELCOME')
+    expect(journeyReducer(at(initialJourney(), 'L1_LOGIN'), { type: 'BACK' }).screen).toBe('G0_WELCOME')
+    expect(journeyReducer(at(initialJourney(), 'H3_HOURS'), { type: 'BACK' }).screen).toBe('H1_HOME')
   })
 
   it('removes a menu item', () => {
     const withMenu = journeyReducer(initialJourney(), {
-      type: 'HEARD',
-      updates: { menu: { value: [{ name: 'ก', priceTHB: 10 }, { name: 'ข', priceTHB: 20 }], confidence: 0.9, heardFrom: 'x' } },
+      type: 'FILL',
+      updates: { menu: { value: [{ name: 'ก', priceTHB: 10 }, { name: 'ข', priceTHB: 20 }], confidence: 1, heardFrom: 'x' } },
       at: 1,
     })
     expect(journeyReducer(withMenu, { type: 'REMOVE_MENU_ITEM', name: 'ก' }).profile.fields.menu.value).toEqual([{ name: 'ข', priceTHB: 20 }])
   })
-
-  it('records the submit time and shows A3', () => {
-    const reviewing = journeyReducer(journeyReducer(initialJourney(), { type: 'HEARD', updates: NAME, at: 1000 }), { type: 'GO', screen: 'A2_REVIEW' })
-    const next = journeyReducer(reviewing, { type: 'SUBMITTED', at: 9000, profile: reviewing.profile })
-    expect(next.screen).toBe('A3_SUBMITTED')
-    expect(next.submittedAt).toBe(9000)
-  })
-
-  it('ignores a stale submit after the profile changed', () => {
-    const reviewing = journeyReducer(journeyReducer(initialJourney(), { type: 'HEARD', updates: NAME, at: 1000 }), { type: 'GO', screen: 'A2_REVIEW' })
-    const submitted = reviewing.profile
-    const edited = journeyReducer(reviewing, { type: 'CONFIRM_FIELD', field: 'storeName' })
-    expect(journeyReducer(edited, { type: 'SUBMITTED', at: 9000, profile: submitted })).toBe(edited)
-  })
-
-  it('ignores a submit when no longer on A2', () => {
-    const talking = journeyReducer(initialJourney(), { type: 'GO', screen: 'A1_TALK' })
-    expect(journeyReducer(talking, { type: 'SUBMITTED', at: 9000, profile: talking.profile })).toBe(talking)
-  })
-
-  it('loads a prepared profile (presenter shortcut)', () => {
-    const profile = applyUpdates(createEmptyProfile(), NAME)
-    expect(journeyReducer(initialJourney(), { type: 'LOAD_PROFILE', profile }).profile).toBe(profile)
-  })
-
-  it('resets everything', () => {
-    const busy = journeyReducer(journeyReducer(initialJourney(), { type: 'HEARD', updates: NAME, at: 1 }), { type: 'GO', screen: 'TRANSITION' })
-    expect(journeyReducer(busy, { type: 'RESET' })).toEqual({ ...initialJourney(), runId: busy.runId + 1 })
-  })
-
-  it('starts a new run on reset', () => {
-    expect(journeyReducer(initialJourney(), { type: 'RESET' }).runId).toBe(1)
-  })
 })
 
-const ID = scanToUpdates(sampleScan('idCard'))
-const BANK = scanToUpdates(sampleScan('bankBook'))
+describe('journey: submit and set-up', () => {
+  const confirming = { ...at(initialJourney(), 'S7_CONFIRM'), startedAt: 1000 }
 
-const signUp = (method?: 'voice' | 'photo' | 'type') =>
-  journeyReducer(journeyReducer(initialJourney(), { type: 'CHOOSE_AUTH', mode: 'register' }), {
-    type: 'AUTHENTICATED',
-    email: 'padaeng@example.com',
-    method,
+  it('ticks consents only by event', () => {
+    const ticked = journeyReducer(confirming, { type: 'SET_CONSENT', consent: 'terms', value: true })
+    expect(ticked.consents).toEqual({ terms: true, accurate: false })
   })
 
-describe('fill-in method', () => {
-  it('starts as voice', () => {
-    expect(initialJourney().method).toBe('voice')
-    expect(initialJourney().scan).toBeNull()
+  it('goes Home after a submit of the profile on screen', () => {
+    const next = journeyReducer(confirming, { type: 'SUBMITTED', at: 9000, profile: confirming.profile })
+    expect(next).toMatchObject({ screen: 'H1_HOME', submittedAt: 9000 })
   })
 
-  it('sends voice and typing to the store basics', () => {
-    expect(signUp('voice').screen).toBe('R3_STORE')
-    expect(signUp('type')).toMatchObject({ screen: 'R3_STORE', method: 'type' })
-    expect(signUp().method).toBe('voice')
+  it('ignores a stale submit', () => {
+    const edited = journeyReducer(confirming, { type: 'FILL', updates: { storeName: { value: 'x', confidence: 1, heardFrom: 'x' } }, at: 2 })
+    expect(journeyReducer(edited, { type: 'SUBMITTED', at: 9, profile: confirming.profile })).toBe(edited)
+    const left = at(confirming, 'S6_BANK')
+    expect(journeyReducer(left, { type: 'SUBMITTED', at: 9, profile: left.profile })).toBe(left)
   })
 
-  it('sends photo to the scanner: ID card, bank book, then menu, then A1', () => {
-    expect(signUp('photo')).toMatchObject({
-      screen: 'S1_SCAN',
-      method: 'photo',
-      scan: { docs: ['idCard', 'bankBook', 'menu'], queue: ['idCard', 'bankBook', 'menu'], returnTo: 'A1_TALK' },
-    })
+  it('marks a set-up part done only from its own screen', () => {
+    const menu = at(initialJourney(), 'H2_MENU')
+    expect(journeyReducer(menu, { type: 'SETUP_SAVED', part: 'menu', profile: menu.profile })).toMatchObject({ screen: 'H1_HOME', setupDone: { menu: true, hours: false } })
+    expect(journeyReducer(menu, { type: 'SETUP_SAVED', part: 'hours', profile: menu.profile })).toBe(menu)
   })
 
-  it('ignores the method for a returning merchant', () => {
-    const chosen = journeyReducer(initialJourney(), { type: 'CHOOSE_AUTH', mode: 'login' })
-    expect(journeyReducer(chosen, { type: 'AUTHENTICATED', email: 'a@b.co', method: 'photo' })).toMatchObject({ screen: 'A1_TALK', scan: null })
-  })
-})
-
-describe('scanning', () => {
-  it('applies a scan, drops it from the queue and starts the clock', () => {
-    const next = journeyReducer(signUp('photo'), { type: 'SCANNED', doc: 'idCard', updates: ID, at: 3000 })
-    expect(next.scan?.queue).toEqual(['bankBook', 'menu'])
-    expect(next.profile.fields.owner.status).toBe('heard')
-    expect(next.startedAt).toBe(3000)
-    expect(next.screen).toBe('S1_SCAN')
+  it('logs a returning merchant straight in to Home', () => {
+    const profile = applyUpdates(createEmptyProfile(), { storeName: { value: 'ครัวป้าแดง', confidence: 1, heardFrom: 'x' } })
+    const next = journeyReducer(at(initialJourney(), 'L1_LOGIN'), { type: 'LOGGED_IN', email: 'padaeng@example.com', profile, at: 7 })
+    expect(next).toMatchObject({ screen: 'H1_HOME', email: 'padaeng@example.com', phoneVerified: true, submittedAt: 7 })
+    expect(next.profile).toBe(profile)
   })
 
-  it('goes on to where it was heading once the queue is empty', () => {
-    const plan = journeyReducer(initialJourney(), { type: 'START_SCAN', docs: ['menu'], returnTo: 'A1_TALK' })
-    const done = journeyReducer(plan, { type: 'SCANNED', doc: 'menu', updates: {}, at: 1 })
-    expect(done).toMatchObject({ screen: 'A1_TALK', scan: null })
-  })
-
-  it('skips a document without filling anything', () => {
-    const skipped = journeyReducer(signUp('photo'), { type: 'SKIP_DOC', doc: 'idCard' })
-    expect(skipped.scan?.queue).toEqual(['bankBook', 'menu'])
-    expect(skipped.profile.fields.owner.status).toBe('empty')
-  })
-
-  it('ignores a late result for a document that is no longer next', () => {
-    const photo = signUp('photo')
-    expect(journeyReducer(photo, { type: 'SCANNED', doc: 'bankBook', updates: BANK, at: 1 })).toBe(photo)
-    expect(journeyReducer(photo, { type: 'SKIP_DOC', doc: 'menu' })).toBe(photo)
-    const elsewhere = journeyReducer(photo, { type: 'GO', screen: 'A2_REVIEW' })
-    expect(journeyReducer(elsewhere, { type: 'SCANNED', doc: 'idCard', updates: ID, at: 1 })).toBe(elsewhere)
-  })
-
-  it('fills only empty fields from a menu scan, leaving what the merchant already gave', () => {
-    const given = confirmField(
-      applyUpdates(createEmptyProfile(), {
-        storeName: { value: 'ร้านของฉัน', confidence: 0.9, heardFrom: 'x' },
-        category: { value: 'อาหารไทย', confidence: 0.9, heardFrom: 'x' },
-      }),
-      'category',
-    )
-    const loaded = journeyReducer(initialJourney(), { type: 'LOAD_PROFILE', profile: given })
-    const scanning = journeyReducer(loaded, { type: 'START_SCAN', docs: ['menu'], returnTo: 'A1_TALK' })
-    const done = journeyReducer(scanning, { type: 'SCANNED', doc: 'menu', updates: scanToUpdates(sampleScan('menu')), at: 1 })
-    expect(done.profile.fields.storeName).toMatchObject({ value: 'ร้านของฉัน', status: 'heard' })
-    expect(done.profile.fields.category).toMatchObject({ value: 'อาหารไทย', status: 'confirmed' })
-    expect(done.profile.fields.menu.status).toBe('heard')
-  })
-
-  it('goes straight on when there is nothing to scan', () => {
-    expect(journeyReducer(initialJourney(), { type: 'START_SCAN', docs: [], returnTo: 'A2_REVIEW' })).toMatchObject({ screen: 'A2_REVIEW', scan: null })
-  })
-})
-
-describe('after talking', () => {
-  const onA1 = () => journeyReducer(initialJourney(), { type: 'GO', screen: 'A1_TALK' })
-
-  it('ignores TALK_DONE when not on A1', () => {
-    const reviewing = journeyReducer(initialJourney(), { type: 'GO', screen: 'A2_REVIEW' })
-    expect(journeyReducer(reviewing, { type: 'TALK_DONE' })).toBe(reviewing)
-  })
-
-  it('asks for the documents that are still missing', () => {
-    const talked = journeyReducer(onA1(), { type: 'TALK_DONE' })
-    expect(talked).toMatchObject({ screen: 'S1_SCAN', scan: { queue: ['idCard', 'bankBook'], returnTo: 'A2_REVIEW' } })
-  })
-
-  it('goes to review when the documents are already in', () => {
-    const scanned = journeyReducer(onA1(), { type: 'HEARD', updates: { ...ID, ...BANK }, at: 1 })
-    expect(journeyReducer(scanned, { type: 'TALK_DONE' }).screen).toBe('A2_REVIEW')
-  })
-
-  it('photographs a document again when it is edited in A2, then comes back', () => {
-    const reviewing = { ...journeyReducer(initialJourney(), { type: 'HEARD', updates: ID, at: 1 }), screen: 'A2_REVIEW' as const }
-    const rescan = journeyReducer(reviewing, { type: 'REASK_FIELD', field: 'owner' })
-    expect(rescan).toMatchObject({ screen: 'S1_SCAN', scan: { queue: ['idCard'], returnTo: 'A2_REVIEW' } })
-    expect(rescan.profile.fields.owner.status).toBe('empty')
+  it('resets everything and starts a new run', () => {
+    const busy = run(at(initialJourney(), 'S1_SERVICE'), { type: 'CHOOSE_SERVICE', service: 'food' }, { type: 'NEXT' })
+    expect(journeyReducer(busy, { type: 'RESET' })).toEqual({ ...initialJourney(), runId: 1 })
   })
 })

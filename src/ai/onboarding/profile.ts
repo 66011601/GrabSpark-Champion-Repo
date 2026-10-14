@@ -1,5 +1,4 @@
 import type {
-  DocKind,
   FieldStatus,
   MenuEntry,
   OnboardingProfile,
@@ -18,9 +17,6 @@ export const ALL_FIELDS: ProfileFieldKey[] = [...SUBMIT_FIELDS, ...SETUP_FIELDS]
 
 /** The old Act 1 review list; the guardrail still counts it until Task 5 rewrites submit.ts. */
 export const REVIEW_FIELDS: ProfileFieldKey[] = ['storeName', 'category', 'location', 'hours', 'menu', 'phone', 'owner', 'payout']
-
-/** Which document fills a document field (the old journey uses it until Task 4). */
-export const DOC_FOR_FIELD: Partial<Record<ProfileFieldKey, DocKind>> = { owner: 'idCard', payout: 'bankBook' }
 
 /** Heard values below this confidence are shown amber in A2. */
 export const CHECK_THRESHOLD = 0.8
@@ -99,12 +95,4 @@ export function removeMenuItem(profile: OnboardingProfile, name: string): Onboar
 
 export function needsCheck(field: { status: FieldStatus; confidence?: number }): boolean {
   return field.status === 'heard' && (field.confidence ?? 1) < CHECK_THRESHOLD
-}
-
-/** The documents still to photograph before review: the ID card while there is no owner, the bank book while there is no payout account. */
-export function missingDocs(profile: OnboardingProfile): DocKind[] {
-  const docs: DocKind[] = []
-  if (profile.fields.owner.status === 'empty') docs.push('idCard')
-  if (profile.fields.payout.status === 'empty') docs.push('bankBook')
-  return docs
 }
