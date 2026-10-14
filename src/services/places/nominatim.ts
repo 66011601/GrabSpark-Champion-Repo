@@ -22,18 +22,20 @@ export interface Nominatim {
   reverse: (lat: number, lng: number) => Promise<GeoPoint | null>
 }
 
-const NOT_PLACES = new Set(['country', 'country_code', 'ISO3166-2-lvl4', 'postcode', 'house_number', 'road'])
+// Only these keys hold administrative names; amenity, shop and building names must not be read as places.
+const ADMIN_KEYS = ['quarter', 'suburb', 'neighbourhood', 'city_district', 'district', 'borough', 'municipality', 'county', 'town', 'village', 'hamlet', 'city', 'state', 'province']
 
 /** Nominatim's Thai address → parts, by each value's own prefix (ตำบล…, อำเภอ…), since the keys differ from town to town. */
 export function toThaiParts(address: Record<string, string>): ThaiAddress {
-  const values = Object.entries(address)
-    .filter(([key]) => !NOT_PLACES.has(key))
-    .map(([, value]) => value)
+  const values = ADMIN_KEYS.map((key) => address[key]).filter((value): value is string => Boolean(value))
   const named = (prefix: RegExp) => values.find((value) => prefix.test(value))?.replace(prefix, '').trim()
-  const bangkok = values.some((value) => value.includes('กรุงเทพ'))
+  const bangkok = address['ISO3166-2-lvl4'] === 'TH-10' || [address.city, address.state, address.province].some((value) => value?.startsWith('กรุงเทพ'))
+  // A soi comes back as the road ("ซอยลาดพร้าว 71"); it is not a ถนน.
+  const soi = address.road?.startsWith('ซอย') ? address.road.replace(/^ซอย\s*/, '').trim() : undefined
   const parts: ThaiAddress = {
     houseNo: address.house_number,
-    road: address.road?.replace(/^ถนน\s*/, ''),
+    soi,
+    road: soi ? undefined : address.road?.replace(/^ถนน\s*/, ''),
     // A city may also have its own แขวง (เชียงใหม่'s แขวงนครพิงค์); outside Bangkok ตำบล is the sub-district.
     subdistrict: named(/^ตำบล/) ?? (bangkok ? named(/^แขวง/) : undefined),
     district: named(/^อำเภอ/) ?? (bangkok ? named(/^เขต/) : undefined),

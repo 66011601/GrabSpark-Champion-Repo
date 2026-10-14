@@ -41,6 +41,18 @@ describe('toThaiParts', () => {
   it('reads Bangkok’s แขวง and เขต', () => {
     expect(toThaiParts(LAT_PHRAO.address)).toEqual({ subdistrict: 'ลาดพร้าว', district: 'ลาดพร้าว', province: BANGKOK, postcode: '10230' })
   })
+
+  it('ignores a place name that mentions Bangkok, and reads admin names from admin keys only', () => {
+    expect(
+      toThaiParts({ amenity: 'ธนาคารกรุงเทพ', road: 'ถนนถลาง', city_district: 'ตำบลตลาดเหนือ', county: 'อำเภอเมืองภูเก็ต', province: 'จังหวัดภูเก็ต', postcode: '83000', 'ISO3166-2-lvl4': 'TH-83', country_code: 'th' }),
+    ).toEqual({ road: 'ถลาง', subdistrict: 'ตลาดเหนือ', district: 'เมืองภูเก็ต', province: 'ภูเก็ต', postcode: '83000' })
+  })
+
+  it('keeps a soi out of the road', () => {
+    expect(
+      toThaiParts({ road: 'ซอยลาดพร้าว 71', quarter: 'แขวงลาดพร้าว', suburb: 'เขตลาดพร้าว', city: 'กรุงเทพมหานคร', postcode: '10230', 'ISO3166-2-lvl4': 'TH-10', country_code: 'th' }),
+    ).toEqual({ soi: 'ลาดพร้าว 71', subdistrict: 'ลาดพร้าว', district: 'ลาดพร้าว', province: BANGKOK, postcode: '10230' })
+  })
 })
 
 describe('createNominatim', () => {
