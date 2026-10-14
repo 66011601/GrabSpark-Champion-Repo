@@ -46,6 +46,13 @@ export function S3Business() {
   const question = useMemo(() => pickFollowUp(state.profile, STEP3_TALK, account), [state.profile])
   const status = stepStatus(state.profile, 3)
 
+  // Close the talk sheet by itself once there is nothing left to ask (only on that change, so the merchant can reopen it).
+  const [hadQuestion, setHadQuestion] = useState(question !== null)
+  if (hadQuestion !== (question !== null)) {
+    setHadQuestion(question !== null)
+    if (question === null) setTalking(false)
+  }
+
   const fill = (updates: ProfileUpdates) => {
     if (Object.keys(updates).length > 0) dispatch({ type: 'FILL', updates, at: Date.now() })
   }
@@ -102,7 +109,7 @@ export function S3Business() {
     { autoListen: talking },
   )
 
-  const helper = question ? (question.field === null ? th.s3.helperStart : question.text) : status.valid ? th.s3.helperDone : problemText(status.issues[0])
+  const line = question ? (question.field === null ? th.s3.helperStart : question.text) : status.valid ? th.s3.helperDone : problemText(status.issues[0])
   const amber = (key: ProfileFieldKey) => (needsAmber(fields[key]) ? () => dispatch({ type: 'CONFIRM_FIELD', field: key }) : null)
 
   return (
@@ -114,7 +121,7 @@ export function S3Business() {
       footer={
         <>
           <AiHelperBar
-            text={helper}
+            text={line}
             notice={notice}
             mic={mic}
             onAvatar={toggleMic}
@@ -175,7 +182,7 @@ export function S3Business() {
       <TalkSheet
         open={talking}
         onClose={() => setTalking(false)}
-        question={question ? (question.field === null ? th.s3.helperStart : question.text) : th.s3.helperDone}
+        question={line}
         chips={(question?.chips ?? []).filter((chip) => chip.kind === 'say').map((chip) => ({ label: chip.label, onPress: () => hear(chip.label) }))}
         transcript={transcript}
         mic={mic}
