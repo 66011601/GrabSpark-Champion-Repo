@@ -618,6 +618,16 @@ export const th = {
     no: 'ไม่ใช่',
     askAddress: 'ที่อยู่ร้านค้าคืออะไรคะ? พิมพ์หรือพูดรหัสไปรษณีย์ก็ได้',
     openPage: (page: string) => `เปิดหน้า${page}`,
+    // D2: answers to questions about Grab. Prototype copy: the numbers and rules belong to Grab, so the lines point to
+    // where the merchant sees the real terms instead of quoting them. Check with the team before a real launch.
+    faq: {
+      'faq:fee': 'ค่าธรรมเนียมขึ้นกับแพ็กเกจและพื้นที่ค่ะ ตัวเลขจริงจะอยู่ในข้อตกลงให้ตรวจก่อนส่งใบสมัคร หนูไม่กดยอมรับแทนนะคะ',
+      'faq:approval': 'ส่งใบสมัครแล้ว ทีม Grab จะตรวจข้อมูลก่อนค่ะ ระหว่างรอ เพิ่มเมนูกับตั้งเวลาเปิด-ปิดไว้ได้เลย ผลจะแจ้งในแอปนะคะ',
+      'faq:payout': 'ยอดขายจะโอนเข้าบัญชีธนาคารที่กรอกไว้ในขั้น 6 ค่ะ รอบการโอนดูได้ในแอปเมื่อร้านเปิดแล้วนะคะ',
+      'faq:documents': 'ส่วนใหญ่ใช้บัตรประชาชน หน้าสมุดบัญชีธนาคาร และรูปร้านหรือรูปเมนูค่ะ ถ้าเป็นนิติบุคคลใช้หนังสือรับรองบริษัทด้วยนะคะ',
+      'faq:privacy': 'หนูแค่ช่วยร่างข้อมูลให้ค่ะ ทุกช่องแก้ได้ และไม่มีอะไรถูกส่งจนกว่าคุณจะตรวจแล้วกดส่งเองนะคะ',
+      'faq:delivery': 'ไม่ต้องไปส่งเองค่ะ ไรเดอร์ Grab จะมารับอาหารที่ร้านแล้วไปส่งให้ลูกค้านะคะ',
+    } as Record<string, string>,
     names: {
       register: 'ลงทะเบียน',
       login: 'เข้าสู่ระบบ',
@@ -653,6 +663,12 @@ export const th = {
       'control:back': 'ย้อนกลับ',
       'control:stop': 'หยุด',
       'act2:confirm': 'ยืนยัน',
+      'faq:fee': 'ถามเรื่องค่าธรรมเนียม',
+      'faq:approval': 'ถามว่าอนุมัติเมื่อไหร่',
+      'faq:payout': 'ถามเรื่องเงินเข้าร้าน',
+      'faq:documents': 'ถามเรื่องเอกสาร',
+      'faq:privacy': 'ถามเรื่องความปลอดภัยของข้อมูล',
+      'faq:delivery': 'ถามเรื่องคนส่งอาหาร',
     } as Record<string, string>,
   },
 }

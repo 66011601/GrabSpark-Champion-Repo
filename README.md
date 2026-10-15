@@ -22,16 +22,17 @@ npm test        # unit + architecture tests
 - **3/7:** tap 🎤 and play "บรรทัด 1" from the panel (or speak it). Name, street, pin, address and food type fill in; tap **หมุดถูกแล้ว** and ✓ any amber box → **ต่อไป**.
 - **Shop location, other ways (3/7):** tap **ใช้ตำแหน่งตอนนี้** (tick "ตำแหน่งจำลอง" in the panel on a laptop), **ปักหมุดบนแผนที่** (move the map under the pin), paste a Google Maps / LINE location link, or type a postcode such as `40000` and pick the ตำบล. Saying "ใช้ตำแหน่งนี้" or "ปักหมุด" works too, and so does a full spoken address.
 - **Dialects and rude words:** the companion understands Isan, Northern (คำเมือง) and Southern function words and answers in central Thai, with one greeting in the merchant's style. Try in the panel's "พูดเอง" box on 3/7: `ข้อยขายส้มตำเด้อ`, `ร้านอยู่กาดหลวงเจ้า`; on Home → menu: `ข้าวเหนียวมะม่วงซาวห้าบาทเด้อ`; in Act 2: `เบิ่งยอดขายแหน่`. Rude words show as *** and never reach a field (`แม่งเอ๊ย ต่อไปเลย`). The sentence bank in `src/ai/language/corpus/` lists every sentence that is tested.
-- **Understanding new sentences:** the screen's own rules go first; when they do not understand, a matcher learned from about 3,800 sentences (central, Isan, Northern, Southern; `src/ai/understanding/bank/`) acts when it is sure, asks back ("หมายถึง…ใช่ไหมคะ?") when it is unsure, and offers two buttons when it is lost. It never fills a value and never sends or ticks for you. Measured on held-out sentences it never trained on, each sentence counted once (`bank/metrics.test.ts`):
+- **Understanding new sentences:** the screen's own rules go first; when they do not understand, a matcher learned from about 4,000 sentences (central, Isan, Northern, Southern; `src/ai/understanding/bank/`) acts when it is sure, asks back ("หมายถึง…ใช่ไหมคะ?") when it is unsure, and offers two buttons when it is lost. It never fills a value and never sends or ticks for you. Measured on held-out sentences it never trained on, each sentence counted once (`bank/metrics.test.ts`):
 
   | Region | Right (acted or asked about the right thing) | Asked back | Wrong without asking |
   |---|---|---|---|
-  | Central | 87.2% | 57.1% | 0.1% |
-  | Isan | 87.1% | 57.2% | 0.6% |
-  | Northern | 86.4% | 59.7% | 0.1% |
-  | Southern | 87.9% | 57.7% | 0.0% |
+  | Central | 85.3% | 56.0% | 0.1% |
+  | Isan | 87.2% | 58.6% | 0.0% |
+  | Northern | 87.2% | 55.6% | 0.1% |
+  | Southern | 86.8% | 56.1% | 0.0% |
 
-  More than half of new sentences get an ask-back: the matcher would rather check than guess. Act 2 on its own is 85.7% right.
+  More than half of new sentences get an ask-back: the matcher would rather check than guess. Act 2 on its own is 85.5% right.
+- **Questions about Grab (FAQ):** on any screen the merchant can ask about fees, approval time, payouts, documents, data safety or delivery riders, in any of the four regions' speech. The matcher picks the topic and the companion answers with a fixed line (`th.understanding.faq`); the answer never fills a field or moves a screen. These lines are prototype copy that points to where the real terms are shown, to be checked with the team before launch.
 
   Try these in "พูดเอง" (none of them is in the bank): on Home, `จะตั้งเวลาเปิดร้านค่ะ` (sure: opens the hours); on 3/7, `ร้านข้อยอยู่ใกล้วัดเด้อ` (asks "หมายถึงบอกที่ตั้งร้านใช่ไหมคะ?", answer `แม่น`); in Act 2, `มีคนติร้านเราไหม` (asks about reviews; answer `ไม่ใช่` for the next buttons).
 

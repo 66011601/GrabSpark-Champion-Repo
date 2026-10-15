@@ -19,7 +19,7 @@ describe('labels', () => {
   })
 
   it('replays every Act 2 label through Act 2’s rules', () => {
-    for (const label of SCREEN_LABELS.ACT2.filter((entry) => entry !== 'act2:confirm')) {
+    for (const label of SCREEN_LABELS.ACT2.filter((entry) => entry !== 'act2:confirm' && !entry.startsWith('faq:'))) {
       expect(act2Route(understandThai(canonicalPhrase(label)!).text), label).toBe(label)
     }
   })
