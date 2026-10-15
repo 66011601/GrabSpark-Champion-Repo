@@ -42,8 +42,8 @@ export function Spotlight({ text, notice, choices = [], speaking, onTalk, onClos
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={th.companion.spotlight.label} className="absolute inset-0 z-50 overflow-hidden">
       <button type="button" tabIndex={-1} aria-hidden onClick={onClose} className="absolute inset-0 animate-dim cursor-default bg-ink/75" />
-      <div className="pointer-events-none absolute right-0 bottom-20 left-4 flex items-end justify-end">
-        <div className="pointer-events-auto relative mb-36 -mr-6 max-w-64 animate-rise rounded-3xl bg-action p-4 text-white shadow-2xl [animation-delay:0.6s] motion-reduce:animate-none">
+      <div className="pointer-events-none absolute inset-x-4 bottom-20 flex flex-col items-end">
+        <div className="pointer-events-auto relative max-h-[55%] w-full animate-rise overflow-y-auto rounded-3xl bg-action p-4 text-white shadow-2xl [animation-delay:0.6s] motion-reduce:animate-none">
           <p className="text-sm font-bold text-white/85">{th.grab.aiHelper}</p>
           {notice && <p className="mt-1 rounded-xl bg-warn-bg px-2 py-1 text-base text-warn-ink">{notice}</p>}
           <p className="mt-1 text-lg leading-snug">{text}</p>
@@ -65,9 +65,9 @@ export function Spotlight({ text, notice, choices = [], speaking, onTalk, onClos
           <button ref={button} type="button" onClick={onClose} className="mt-2 min-h-14 w-full cursor-pointer rounded-2xl bg-surface text-lg font-bold text-action active:bg-ok-bg">
             {th.companion.spotlight.gotIt}
           </button>
-          <span className="absolute -right-2 bottom-8 size-5 rotate-45 rounded-sm bg-action" aria-hidden />
-        </div>
-        <CompanionFigure speaking={speaking} className="h-56 w-60 shrink-0 translate-x-6" />
+          </div>
+        <span className="relative -mt-2.5 mr-24 size-5 rotate-45 rounded-sm bg-action" aria-hidden />
+        <CompanionFigure speaking={speaking} className="-mt-4 h-52 w-56 shrink-0 translate-x-4" />
       </div>
     </div>,
     phone,
