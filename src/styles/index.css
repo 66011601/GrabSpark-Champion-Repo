@@ -28,12 +28,18 @@
   --text-money--line-height: 1.2;
 
   --animate-pop: pop 0.4s ease-out both;
+  --animate-dim: dim 0.3s ease-out both;
   --animate-rise: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-listen: listen 1.4s ease-out infinite;
   --animate-speak: speak 0.9s ease-in-out infinite alternate;
   --animate-scan: scan 1.2s ease-in-out both;
 
   /* A soft glow behind the companion while it talks. */
+  @keyframes dim {
+    from {
+      opacity: 0;
+    }
+  }
   @keyframes speak {
     0% { transform: scale(1.04); opacity: 0.25; }
     100% { transform: scale(1.2); opacity: 0.6; }

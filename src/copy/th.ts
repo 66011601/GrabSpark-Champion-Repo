@@ -2,6 +2,7 @@
 export const th = {
   companion: {
     name: 'ผู้ช่วยร้าน',
+    spotlight: { label: 'คำแนะนำจากผู้ช่วย', gotIt: 'เข้าใจแล้ว' },
   },
   // Dialects and rude words (spec 2026-10-14-thai-language-design).
   language: {
