@@ -10,8 +10,8 @@ export interface VoiceCommand<Id> {
 const LONG_PHRASE = 6
 const EXTRA_CHARACTERS = 10
 // A short phrase ("กลับ", "ได้") is part of too many other words, so it must be all that was said,
-// give or take these: "กดไปต่อเลยค่ะ" is "ไปต่อ".
-const FILLERS = /กด|ช่วย|ขอ|เลย|หน่อย|ด้วย|แล้ว|หน้า|นะ/g
+// give or take these: "กดไปต่อเลยค่ะ" is "ไปต่อ", and "กลับไปก่อน" ("back for now") is "กลับ".
+const FILLERS = /กด|ช่วย|ขอ|เลย|หน่อย|ด้วย|แล้ว|หน้า|ไปก่อน|นะ/g
 
 const squash = (text: string) => stripParticles(text).toLowerCase().replace(/\s+/g, '')
 

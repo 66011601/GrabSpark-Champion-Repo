@@ -5,7 +5,7 @@
 
 ## Prototype: Grab Merchant Companion
 
-Design: [docs/specs/2026-10-13-merchant-companion-design.md](docs/specs/2026-10-13-merchant-companion-design.md), [docs/specs/2026-10-14-grab-style-signup-design.md](docs/specs/2026-10-14-grab-style-signup-design.md), [docs/specs/2026-10-14-location-input-design.md](docs/specs/2026-10-14-location-input-design.md)
+Design: [docs/specs/2026-10-13-merchant-companion-design.md](docs/specs/2026-10-13-merchant-companion-design.md), [docs/specs/2026-10-14-grab-style-signup-design.md](docs/specs/2026-10-14-grab-style-signup-design.md), [docs/specs/2026-10-14-location-input-design.md](docs/specs/2026-10-14-location-input-design.md), [docs/specs/2026-10-14-thai-language-design.md](docs/specs/2026-10-14-thai-language-design.md)
 
 ```bash
 npm install
@@ -20,6 +20,7 @@ npm test        # unit + architecture tests
 - **Register:** หน้าแรก → **ลงทะเบียน** → 1/7 GrabFood → 2/7 type any email and password → phone: tap "ใช้เบอร์ … ในเครื่องนี้" → **ส่งรหัส OTP** (the companion fills 123456 from the mock SMS) → **ต่อไป**.
 - **3/7:** tap 🎤 and play "บรรทัด 1" from the panel (or speak it). Name, street, pin, address and food type fill in; tap **หมุดถูกแล้ว** and ✓ any amber box → **ต่อไป**.
 - **Shop location, other ways (3/7):** tap **ใช้ตำแหน่งตอนนี้** (tick "ตำแหน่งจำลอง" in the panel on a laptop), **ปักหมุดบนแผนที่** (move the map under the pin), paste a Google Maps / LINE location link, or type a postcode such as `40000` and pick the ตำบล. Saying "ใช้ตำแหน่งนี้" or "ปักหมุด" works too, and so does a full spoken address.
+- **Dialects and rude words:** the companion understands Isan, Northern (คำเมือง) and Southern function words and answers in central Thai, with one greeting in the merchant's style. Try in the panel's "พูดเอง" box on 3/7: `ข้อยขายส้มตำเด้อ`, `ร้านอยู่กาดหลวงเจ้า`; on Home → menu: `ข้าวเหนียวมะม่วงซาวห้าบาทเด้อ`; in Act 2: `เบิ่งยอดขายแหน่`. Rude words show as *** and never reach a field (`แม่งเอ๊ย ต่อไปเลย`). The sentence bank in `src/ai/language/corpus/` lists every sentence that is tested.
 - **4/7:** tap "ใช้ธุรกิจส่วนตัว" → **ต่อไป**. **5/7:** tap 📷 → **ถ่ายรูป** → **ใช้รูปนี้** → **ต่อไป**. **6/7:** same with the bank book (the photo is attached) → **ต่อไป**.
 - **7/7:** read the summary (**ฟังสรุป** reads it aloud, numbers by their last 4 digits), tick both boxes yourself → **ส่งใบสมัคร**. Voice cannot tick or send.
 - **Home:** "อยู่ระหว่างตรวจสอบ" → **เพิ่มเมนู** (📷 paper menu: one price comes back amber, ✓ it; or play "บรรทัด 3") → **บันทึกเมนู** → **ตั้งเวลาเปิด-ปิด** (play "บรรทัด 2" or tap a chip) → **บันทึก** → **ดูต่อ: 30 วันต่อมา**.

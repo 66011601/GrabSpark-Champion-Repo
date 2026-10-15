@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cutAtEndWord } from '@/ai/commands/endWord.ts'
+import { greetingFor, holdGreeting, takeGreeting } from '@/ai/language/greeting.ts'
+import { noteRegion } from '@/ai/language/region.ts'
+import { maskRude, understandThai } from '@/ai/language/understand.ts'
 import { demoBus } from '@/app/demo/demoBus.ts'
 import { th } from '@/copy/th.ts'
 import { earcon } from '@/services/speech/earcon.ts'
@@ -8,12 +11,12 @@ import { startListening, type ListenSession } from '@/services/speech/speechToTe
 import { isSpeaking, stopSpeaking } from '@/services/speech/textToSpeech.ts'
 import type { MicState } from './companionState.ts'
 import { createTurnGuard } from './turnGuard.ts'
+import { noticeFor, replyTo, type Reply } from './turnReply.ts'
 
 const THINKING_MS = 500
 const RESUME_MS = 800
 
-/** true = understood, false = not understood, or the companion's own reply to say instead. */
-export type Reply = boolean | string
+export type { Reply }
 
 // The merchant's last turn was spoken, so the companion listens again once it has answered.
 // Shared by every screen: a conversation carries on across them.
@@ -63,22 +66,26 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false } = {})
     }
   }, [])
 
-  // Every input path (mic, scripted demo line, chip, keyboard) ends here.
+  // Every input path (mic, scripted demo line, chip, keyboard) ends here. The language layer comes first:
+  // rude words out, dialect into central Thai, so every screen reads the same plain sentence.
   const hear = useCallback(
     (words: string) => {
       if (!guard.current.mounted()) return
       // A scripted or typed line may close with "จ้า" too, just like a spoken one.
-      const text = cutAtEndWord(words).text || words
+      const said = cutAtEndWord(words).text || words
+      const heard = understandThai(said)
+      holdGreeting(greetingFor(noteRegion(heard.regionWords)))
       const isCurrent = guard.current.begin()
-      setTranscript({ text, final: true })
+      setTranscript({ text: heard.shown, final: true })
       setMic('processing')
       window.clearTimeout(thinking.current)
       thinking.current = window.setTimeout(async () => {
         if (!isCurrent()) return
         // Interpreting may take a moment (looking a place up on the map); a newer turn wins.
-        const reply = await Promise.resolve(latestInterpret.current(text, isCurrent)).catch(() => false as const)
+        const reply = await replyTo(heard, (text) => latestInterpret.current(text, isCurrent))
         if (!isCurrent()) return
-        setNotice(reply === true ? null : reply === false ? th.onboarding.notUnderstood : reply)
+        // The greeting is taken only here, where a notice is surely shown; a turn that left the screen keeps it waiting.
+        setNotice(noticeFor(reply, takeGreeting()))
         setMic('idle')
         // When the answer changed nothing the companion has nothing to say, so it just listens again.
         resuming.current = window.setTimeout(() => {
@@ -99,7 +106,7 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false } = {})
       setMic('listening')
       earcon('listen')
       session.current = startListening({
-        onInterim: (text) => setTranscript({ text, final: false }),
+        onInterim: (text) => setTranscript({ text: maskRude(text), final: false }),
         onFinal: (text) => {
           handsFree = true
           earcon('heard')
@@ -152,7 +159,7 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false } = {})
         setNotice(null)
         setMic('listening')
         cancelScript.current?.()
-        cancelScript.current = playScripted(text, (partial) => setTranscript({ text: partial, final: false }), hear)
+        cancelScript.current = playScripted(text, (partial) => setTranscript({ text: maskRude(partial), final: false }), hear)
       }),
     [hear, setMic],
   )
