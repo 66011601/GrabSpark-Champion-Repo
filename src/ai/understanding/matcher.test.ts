@@ -43,7 +43,22 @@ describe('classify', () => {
   })
 
   it('says none with score 0 for text with nothing in common', () => {
-    expect(classify(index, prepare('qqqq'))).toMatchObject({ label: 'none', score: 0 })
+    expect(classify(index, prepare('qqqq'))).toMatchObject({ label: 'none', score: 0, ranked: [] })
+  })
+
+  // "ไม่ใช่" and the lost state offer the next best labels, so ranked must go past the 5 voters (spec D1 §2).
+  it('ranks every label: the voters by vote, then the rest by their closest sentence', () => {
+    const many = buildIndex([
+      ...examples,
+      ...['ยอดขายรวม', 'ขอดูยอดขายเดือนนี้', 'ยอดขายเมื่อวาน', 'ยอดขายทั้งหมด'].map((say) => ({ text: learnable(say), label: 'intent:sales' })),
+      { text: learnable('ยอดเยี่ยมมาก'), label: 'intent:promo' },
+      { text: learnable('ปิดร้านก่อน'), label: 'control:stop' },
+    ])
+    const match = classify(many, prepare('ยอดขาย'))
+    // All five nearest are sales sentences: the other labels are ranked, but they do not vote, so the margin stays 1.
+    expect(match).toMatchObject({ label: 'intent:sales', margin: 1 })
+    // ยอดเยี่ยมมาก shares ยอด, so promo leads the labels that share nothing (kept in index order).
+    expect(match.ranked).toEqual(['intent:sales', 'intent:promo', 'intent:feedback', 'none', 'control:stop'])
   })
 })
 

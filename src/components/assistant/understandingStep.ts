@@ -32,8 +32,15 @@ const ANSWERS = [
   { id: 'no' as const, phrases: ['ไม่ใช่', 'ไม่', 'ไม่เอา', 'ผิด', 'ไม่ถูก', 'ไม่ใช่อันนี้'] },
 ]
 
+// A polite particle or a grunt said on its own ("ค่ะ", "ครับ", "อือ ค่ะ") is how many merchants say yes. It is checked
+// before matchCommand, which strips particles first and would leave nothing to match.
+const ACKNOWLEDGED = /^(?:เจ้าค่ะ|ค่ะ|คะ|ครับ|คับ|จ้า|จ้ะ|ฮะ|อื้อ|อือ|เออ)+$/
+
 /** The merchant's answer to "หมายถึง … ใช่ไหมคะ", or null when they said something else. */
-export const answerOf = (understood: string): 'yes' | 'no' | null => matchCommand(understood, ANSWERS)
+export function answerOf(understood: string): 'yes' | 'no' | null {
+  if (ACKNOWLEDGED.test(understood.replace(/\s+/g, ''))) return 'yes'
+  return matchCommand(understood, ANSWERS)
+}
 
 /** A question the companion asked and is waiting on: the guess, and the next best labels to offer if it was wrong. */
 export interface Pending {
@@ -53,6 +60,7 @@ const plain = (reply: Reply): Turn => ({ reply, pending: null, offers: [] })
 /** The merchant answered the waiting question, by voice or by a tap. */
 export async function answerPending(pending: Pending, answer: 'yes' | 'no', perform: (label: string) => Promise<Reply>): Promise<Turn> {
   if (answer === 'yes') return plain(await perform(pending.label))
+  if (pending.rest.length === 0) return plain(th.understanding.declinedRetry)
   return { reply: th.understanding.declined, pending: null, offers: pending.rest }
 }
 
