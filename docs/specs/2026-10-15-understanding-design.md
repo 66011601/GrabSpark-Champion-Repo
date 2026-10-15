@@ -41,8 +41,8 @@ Every bank sentence has `{ say, region: 'central' | 'isan' | 'north' | 'south', 
 
 | Kind | Examples | Where |
 |---|---|---|
-| Screen command | `register`, `login`, `food`, `mart`, `next`, `back`, `yes`, `personal`, `company`, `shoot`, `here`, `pin`, `listenSummary` | the `SAY` keys each screen uses |
-| Blocked command | `submit`, `consentTick`, `typeInstead`, `act2:confirm` | learned so they are not mistaken for others, but never acted on: the reply is the tap-only line |
+| Screen command | `register`, `login`, `food`, `mart`, `next`, `back`, `yes`, `personal`, `company`, `shoot`, `here`, `pin`, `typeInstead`, `listenSummary` | the `SAY` keys each screen uses |
+| Blocked command | `submit`, `consentTick`, `act2:confirm` | learned so they are not mistaken for others, but never acted on: the reply is the tap-only line |
 | Field topic | `topic:storeName`, `topic:location`, `topic:category`, `topic:building`, `topic:address`, `topic:menu`, `topic:hours` | 3/7, menu, hours |
 | Home task | `task:menu`, `task:hours` | H1 Home |
 | Act 2 | `intent:sales/forecast/promo/soldOut/feedback`, `control:home/back/stop`, `open:<GridId>`, `button:<id>` | G1 dashboard |
@@ -98,7 +98,7 @@ Every bank sentence has `{ say, region: 'central' | 'isan' | 'north' | 'south', 
 
 ## 7. Safety
 
-- **Blocked labels are never acted on:** `submit`, `consentTick`, `typeInstead` and `act2:confirm`. If one is predicted with any confidence, the reply is the existing tap-only line. A test asserts this for every screen.
+- **Blocked labels are never acted on:** `submit`, `consentTick` and `act2:confirm`. If one is predicted with any confidence, the reply is the existing tap-only line. A test asserts this for every screen.
 - **Topics never fill a field.**
 - **Architecture:** `src/ai/understanding/**` imports no React and no write API (the existing rules), and the bank is data only.
 
