@@ -5,7 +5,7 @@ import { noteRegion } from '@/ai/language/region.ts'
 import { maskRude, understandThai } from '@/ai/language/understand.ts'
 import type { ScreenId } from '@/ai/understanding/bank/types.ts'
 import { labelName } from '@/ai/understanding/labelNames.ts'
-import { blockedReply, canonicalPhrase, topicQuestion } from '@/ai/understanding/labels.ts'
+import { blockedReply, canonicalPhrase, faqAnswer, topicQuestion } from '@/ai/understanding/labels.ts'
 import { matchOn } from '@/ai/understanding/load.ts'
 import { demoBus } from '@/app/demo/demoBus.ts'
 import { th } from '@/copy/th.ts'
@@ -94,6 +94,9 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
     try {
       const blocked = blockedReply(label)
       if (blocked) return blocked
+      // A question about Grab gets its answer on any screen, before a screen's own act sees the label.
+      const answer = faqAnswer(label)
+      if (answer) return answer
       const own = latestOptions.current?.act
       if (own) return await own(label)
       const question = topicQuestion(label)

@@ -7,6 +7,9 @@ import { SCRIPTS } from '@/ai/navigator/scripts.ts'
 import { th } from '@/copy/th.ts'
 import type { ScreenId } from './bank/types.ts'
 
+/** D2: questions about Grab itself, answered with a fixed line on every screen (th.understanding.faq). */
+export const FAQ_LABELS = ['faq:fee', 'faq:approval', 'faq:payout', 'faq:documents', 'faq:privacy', 'faq:delivery']
+
 const TOPICS_S3 = ['topic:storeName', 'topic:location', 'topic:category', 'topic:building', 'topic:address']
 const ACT2_LABELS = [
   ...SCRIPTS.map((script) => `intent:${script.id}`),
@@ -16,8 +19,7 @@ const ACT2_LABELS = [
   'act2:confirm',
 ]
 
-/** What each screen's matcher may answer (besides "none"): its own voice commands, field topics, Act 2 routes. */
-export const SCREEN_LABELS: Record<ScreenId, string[]> = {
+const OWN_LABELS: Record<ScreenId, string[]> = {
   G0: [...SCREEN_COMMANDS.G0],
   S1: [...SCREEN_COMMANDS.S1],
   S2_ACCOUNT: [...SCREEN_COMMANDS.S2_ACCOUNT],
@@ -32,6 +34,11 @@ export const SCREEN_LABELS: Record<ScreenId, string[]> = {
   H3: [...SCREEN_COMMANDS.H3, 'topic:hours'],
   ACT2: ACT2_LABELS,
 }
+
+/** What each screen's matcher may answer (besides "none"): its own voice commands, field topics, Act 2 routes, and the FAQ. */
+export const SCREEN_LABELS = Object.fromEntries(
+  Object.entries(OWN_LABELS).map(([screen, labels]) => [screen, [...labels, ...FAQ_LABELS]]),
+) as Record<ScreenId, string[]>
 
 /** Learned so they are not mistaken for other labels, but only the merchant's own tap may do them. */
 export const BLOCKED: ReadonlySet<string> = new Set(['submit', 'consentTick', 'act2:confirm'])
@@ -68,3 +75,8 @@ export function blockedReply(label: string): string | null {
   if (!BLOCKED.has(label)) return null
   return label === 'act2:confirm' ? th.act2.confirm.byTap : th.s7.mustTap
 }
+
+const FAQ_ANSWERS: Record<string, string> = th.understanding.faq
+
+/** The fixed answer to a FAQ label, or null when the label is not a question about Grab. */
+export const faqAnswer = (label: string): string | null => FAQ_ANSWERS[label] ?? null

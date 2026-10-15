@@ -1,6 +1,7 @@
 import { prepare } from '../features.ts'
 import { SCREEN_LABELS } from '../labels.ts'
 import { ACT2_BANK } from './act2.ts'
+import { FAQ_BANK } from './faq.ts'
 import { FROM_CORPUS } from './fromCorpus.ts'
 import { HOME_BANK } from './home.ts'
 import { NONE_BANK } from './none.ts'
@@ -10,7 +11,7 @@ import type { BankEntry, ScreenId } from './types.ts'
 import LEARNED from './learned.json'
 
 /** Every sentence the matcher learns from or is tested on: hand-written first, then the slot templates (training only). */
-export const BANK: BankEntry[] = [...FROM_CORPUS, ...SIGNUP_BANK, ...HOME_BANK, ...ACT2_BANK, ...NONE_BANK, ...TEMPLATE_BANK]
+export const BANK: BankEntry[] = [...FROM_CORPUS, ...SIGNUP_BANK, ...HOME_BANK, ...ACT2_BANK, ...FAQ_BANK, ...NONE_BANK, ...TEMPLATE_BANK]
 
 // FNV-1a: a stable hash, so the same sentence is always in the same half.
 function hash(text: string): number {
