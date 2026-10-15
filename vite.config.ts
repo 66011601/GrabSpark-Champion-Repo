@@ -11,6 +11,9 @@ const PAGES_BASE = '/GrabSpark-Champion-Repo/'
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? PAGES_BASE : '/',
   plugins: [react(), tailwindcss()],
+  // The lazy sentence bank (src/ai/understanding/bank) is data in Thai, three bytes a letter: about 550 kB raw but about
+  // 105 kB gzipped, under spec D1's 150 kB. It loads only with the first sentence the rules do not understand.
+  build: { chunkSizeWarningLimit: 700 },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

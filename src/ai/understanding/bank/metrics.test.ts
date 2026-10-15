@@ -4,11 +4,11 @@ import { decide, type Step } from '@/components/assistant/understandingStep.ts'
 import { SCREEN_LABELS } from '../labels.ts'
 import { buildIndex, classify } from '../matcher.ts'
 import { heldOutFor, learned, trainingFor } from './index.ts'
-import type { ScreenId } from './types.ts'
+import type { BankEntry, ScreenId } from './types.ts'
 
 // Spec D1 §8: what the companion would do with every held-out sentence, on every screen that allows its label, with
-// that screen's training index. A sentence allowed on many screens ("next", "none") is counted once per screen,
-// because the merchant may say it on any of them.
+// that screen's training index. Each sentence counts ONCE: a sentence allowed on several screens ("next", "none")
+// scores the average of its outcomes there, so the many screens of a few easy labels cannot lift a region.
 
 type Outcome = 'right' | 'wrongWithoutAsking' | 'askedWrong' | 'lost'
 
@@ -31,44 +31,62 @@ function outcomeOf(label: string, step: Step): Outcome {
 
 interface Row {
   screen: ScreenId
-  region: Said
   outcome: Outcome
   asked: boolean
 }
 
-const rows: Row[] = (Object.keys(SCREEN_LABELS) as ScreenId[]).flatMap((screen) => {
+const OUTCOMES: Outcome[] = ['right', 'wrongWithoutAsking', 'askedWrong', 'lost']
+const rowsOf = new Map<BankEntry, Row[]>()
+for (const screen of Object.keys(SCREEN_LABELS) as ScreenId[]) {
   const index = buildIndex(trainingFor(screen).map((entry) => ({ text: learned(entry), label: entry.label })))
-  return heldOutFor(screen).map((entry) => {
+  for (const entry of heldOutFor(screen)) {
     const step = decide(classify(index, learned(entry)))
-    return { screen, region: entry.region, outcome: outcomeOf(entry.label, step), asked: step.kind === 'ask' }
-  })
-})
+    rowsOf.set(entry, [...(rowsOf.get(entry) ?? []), { screen, outcome: outcomeOf(entry.label, step), asked: step.kind === 'ask' }])
+  }
+}
 
-const percent = (part: number, whole: number) => Math.round((1000 * part) / whole) / 10
-
-function summary(group: Row[]) {
-  const count = (outcome: Outcome) => group.filter((row) => row.outcome === outcome).length
+/** One sentence's share of each outcome and of asking, averaged over the screens it was tried on. */
+function shares(rows: Row[]): Record<Outcome | 'asked', number> {
+  const share = (hit: (row: Row) => boolean) => rows.filter(hit).length / rows.length
   return {
-    sentences: group.length,
-    'right %': percent(count('right'), group.length),
-    'ask %': percent(group.filter((row) => row.asked).length, group.length),
-    'wrong without asking %': percent(count('wrongWithoutAsking'), group.length),
-    'asked wrong %': percent(count('askedWrong'), group.length),
-    'lost %': percent(count('lost'), group.length),
+    ...(Object.fromEntries(OUTCOMES.map((outcome) => [outcome, share((row) => row.outcome === outcome)])) as Record<Outcome, number>),
+    asked: share((row) => row.asked),
+  }
+}
+
+const percent = (value: number) => Math.round(1000 * value) / 10
+
+function table(groups: Row[][]) {
+  const total = (key: Outcome | 'asked') => groups.reduce((sum, rows) => sum + shares(rows)[key], 0) / groups.length
+  return {
+    sentences: groups.length,
+    'right %': percent(total('right')),
+    'ask %': percent(total('asked')),
+    'wrong without asking %': percent(total('wrongWithoutAsking')),
+    'asked wrong %': percent(total('askedWrong')),
+    'lost %': percent(total('lost')),
   }
 }
 
 const REGIONS: Said[] = ['central', 'isan', 'north', 'south']
+const sentences = [...rowsOf.entries()]
+const inRegion = (region: Said, only: (entry: BankEntry) => boolean = () => true) =>
+  sentences.filter(([entry]) => entry.region === region && only(entry)).map(([, rows]) => rows)
 
-describe('held-out accuracy (spec D1 §8)', () => {
+describe('held-out accuracy (spec D1 §8), each sentence counted once', () => {
   it('is right at least 85% of the time in every region, and wrong without asking at most 2% overall', () => {
-    const byRegion = Object.fromEntries(REGIONS.map((region) => [region, summary(rows.filter((row) => row.region === region))]))
-    const byScreen = Object.fromEntries(Object.keys(SCREEN_LABELS).map((screen) => [screen, summary(rows.filter((row) => row.screen === screen))]))
-    console.table({ ...byRegion, all: summary(rows) })
+    const byRegion = Object.fromEntries(REGIONS.map((region) => [region, table(inRegion(region))]))
+    const all = table(sentences.map(([, rows]) => rows))
+    const screenOnly = (entry: BankEntry) => entry.screens !== 'any'
+    const specific = Object.fromEntries(REGIONS.map((region) => [region, table(inRegion(region, screenOnly))]))
+    const byScreen = Object.fromEntries(
+      Object.keys(SCREEN_LABELS).map((screen) => [screen, table(sentences.flatMap(([, rows]) => rows.filter((row) => row.screen === screen)).map((row) => [row]))]),
+    )
+    console.table({ ...byRegion, all })
+    console.table(specific) // labels of one screen only: no next, back or none
     console.table(byScreen)
 
-    const wrong = rows.filter((row) => row.outcome === 'wrongWithoutAsking').length
-    expect(wrong / rows.length).toBeLessThanOrEqual(0.02)
+    expect(all['wrong without asking %']).toBeLessThanOrEqual(2)
     for (const region of REGIONS) expect(byRegion[region]['right %'], region).toBeGreaterThanOrEqual(85)
   })
 })

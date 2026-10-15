@@ -116,6 +116,8 @@ const rudeAt = (pieces: Piece[], index: number) =>
 
 // firstMatch runs through several word lists at every piece of every sentence, and a phrase can only match where the
 // piece starts with its first letter, so each list is grouped by first letter once (list order kept inside a group).
+// Keyed by the list itself: every list passed here is a module constant, always with the same phrase function, and
+// none is changed after load, so a grouping made once stays right.
 const byFirstLetter = new WeakMap<object, Map<string, unknown[]>>()
 
 function startingWith<T>(list: T[], phrase: (item: T) => string, letter: string): T[] {
