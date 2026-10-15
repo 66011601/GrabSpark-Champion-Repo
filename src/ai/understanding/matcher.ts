@@ -27,7 +27,7 @@ export interface Match {
   label: string
   score: number
   margin: number // the best label's share of the vote minus the runner-up's (0–1)
-  ranked: string[] // labels by vote, best first
+  ranked: string[] // every label of the index: the voters by vote, then the rest by their closest sentence; best first
 }
 
 /** sure: act now; unsure: ask back; lost: offer buttons. */
@@ -100,20 +100,33 @@ export function classify(index: MatchIndex, understood: string, k = K): Match {
     for (let at = 0; at < vector.ids.length; at += 1) dot += vector.weights[at] * query[vector.ids[at]]
     return dot / (norm * vector.norm)
   }
-  const nearest = index.vectors
-    .map((vector) => ({ label: vector.label, similarity: similarity(vector) }))
+  const all = index.vectors.map((vector) => ({ label: vector.label, similarity: similarity(vector) }))
+  const nearest = all
     .filter((near) => near.similarity > 0)
     .sort((a, b) => b.similarity - a.similarity)
     .slice(0, k)
+  // Nothing in common with any training sentence: there is no "best" label to offer either.
   if (nearest.length === 0) return { label: 'none', score: 0, margin: 0, ranked: [] }
   const votes = new Map<string, number>()
   for (const near of nearest) votes.set(near.label, (votes.get(near.label) ?? 0) + near.similarity)
-  const ranked = [...votes.entries()].sort((a, b) => b[1] - a[1]).map(([label]) => label)
+  const voted = [...votes.entries()].sort((a, b) => b[1] - a[1]).map(([label]) => label)
   const total = [...votes.values()].reduce((sum, vote) => sum + vote, 0)
-  const best = ranked[0]
-  const second = ranked[1] ? votes.get(ranked[1])! : 0
+  const best = voted[0]
+  const second = voted[1] ? votes.get(voted[1])! : 0
   const score = Math.max(...nearest.filter((near) => near.label === best).map((near) => near.similarity))
-  return { label: best, score, margin: (votes.get(best)! - second) / total, ranked }
+  return { label: best, score, margin: (votes.get(best)! - second) / total, ranked: [...voted, ...othersByCloseness(all, votes)] }
+}
+
+/**
+ * The labels outside the vote, by their closest training sentence. The 5 nearest often all share one label, and
+ * "ไม่ใช่" (or the lost state) must still offer the next best labels as buttons (spec D1 §2).
+ */
+function othersByCloseness(all: { label: string; similarity: number }[], votes: Map<string, number>): string[] {
+  const closest = new Map<string, number>()
+  for (const { label, similarity } of all) {
+    if (!votes.has(label) && similarity >= (closest.get(label) ?? 0)) closest.set(label, similarity)
+  }
+  return [...closest.entries()].sort((a, b) => b[1] - a[1]).map(([label]) => label)
 }
 
 /** sure: act; unsure: ask back; lost: offer buttons. "none" is always lost. */

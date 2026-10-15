@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button.tsx'
 import { Chip } from '@/components/ui/Chip.tsx'
 import { th } from '@/copy/th.ts'
 import { CompanionAvatar } from './CompanionAvatar.tsx'
-import type { CompanionState } from './companionState.ts'
+import type { Choice, CompanionState } from './companionState.ts'
 import { TranscriptBubble } from './TranscriptBubble.tsx'
 import { TypeInstead } from './TypeInstead.tsx'
 
@@ -13,7 +13,8 @@ interface TalkSheetProps {
   open: boolean
   onClose: () => void
   question: string // what the companion is asking now (the helper bar says it aloud)
-  chips?: { label: string; onPress: () => void }[]
+  notice?: string | null // something the companion says first (not understood, an ask-back): shown above the question, never instead of it
+  chips?: Choice[]
   transcript: { text: string; final: boolean } | null
   mic: CompanionState
   onMic: () => void
@@ -21,7 +22,7 @@ interface TalkSheetProps {
 }
 
 /** Talk to the companion about this step; what it understands fills the form behind the sheet. */
-export function TalkSheet({ open, onClose, question, chips = [], transcript, mic, onMic, onType }: TalkSheetProps) {
+export function TalkSheet({ open, onClose, question, notice, chips = [], transcript, mic, onMic, onType }: TalkSheetProps) {
   const [typing, setTyping] = useState(false)
   return (
     <BottomSheet open={open} title={th.sheet.talkTitle} onClose={onClose}>
@@ -29,6 +30,11 @@ export function TalkSheet({ open, onClose, question, chips = [], transcript, mic
         <div className="flex items-start gap-3">
           <CompanionAvatar state={mic} onPress={onMic} />
           <div className="min-w-0 flex-1 rounded-3xl rounded-tl-md bg-ok-bg px-4 py-3">
+            {notice && (
+              <p role="status" className="mb-1 text-base text-warn-ink">
+                {notice}
+              </p>
+            )}
             <p className="text-lg">{question}</p>
             <p className="mt-1 text-sm font-medium text-action">{th.sheet.tapToTalk}</p>
           </div>
@@ -37,7 +43,7 @@ export function TalkSheet({ open, onClose, question, chips = [], transcript, mic
         {chips.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {chips.map((chip) => (
-              <Chip key={chip.label} onClick={chip.onPress}>
+              <Chip key={chip.id} onClick={chip.onPress}>
                 {chip.label}
               </Chip>
             ))}

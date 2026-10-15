@@ -33,6 +33,23 @@ describe('matchOn', () => {
     for (const screen of ['ACT2', 'S3'] as const) expect(await coldBuild(screen), screen).toBeLessThan(100)
   })
 
+  it('tries the bank again after a failed load, instead of failing forever', async () => {
+    vi.resetModules()
+    let offline = true
+    vi.doMock('./bank/index.ts', async (importOriginal) => {
+      if (offline) throw new Error('offline')
+      return importOriginal()
+    })
+    try {
+      const fresh = await import('./load.ts')
+      await expect(fresh.matchOn('S3', 'ร้านชื่ออะไร')).rejects.toThrow()
+      offline = false
+      expect((await fresh.matchOn('ACT2', understandThai('อยากรู้ว่าวันนี้ขายได้เท่าไหร่').text)).label).toBe('intent:sales')
+    } finally {
+      vi.doUnmock('./bank/index.ts')
+    }
+  })
+
   it('reuses a built index', async () => {
     await matchOn('S3', 'ร้านชื่ออะไร')
     const started = performance.now()

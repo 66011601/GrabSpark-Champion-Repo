@@ -71,6 +71,15 @@ describe('architecture', () => {
     expect(offenders).toEqual([])
   })
 
+  // Spec D1: nothing that works today changes. The sheet always shows its field's question; the companion's notice
+  // (not understood, an ask-back, a map message) goes in the sheet's own notice line above it.
+  it('never replaces the talk sheet question with a notice', () => {
+    const sheets = appFiles.filter(([, source]) => source.includes('<TalkSheet'))
+    expect(sheets.length).toBeGreaterThanOrEqual(3)
+    const offenders = sheets.filter(([, source]) => /question=\{[^}]*[nN]otice/.test(source)).map(([path]) => path)
+    expect(offenders).toEqual([])
+  })
+
   it('reaches files in public/ through the base path', () => {
     const offenders = appFiles.filter(([, source]) => ROOT_PUBLIC_PATH.test(source)).map(([path]) => path)
     expect(offenders).toEqual([])

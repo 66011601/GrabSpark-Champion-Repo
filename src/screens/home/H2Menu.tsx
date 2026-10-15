@@ -151,7 +151,7 @@ export function H2Menu() {
           setScanning(false)
         }}
       />
-      <TalkSheet open={talking} onClose={() => setTalking(false)} question={notice ?? th.h2.talkQuestion} chips={choices} transcript={transcript} mic={mic} onMic={toggleMic} onType={hear} />
+      <TalkSheet open={talking} onClose={() => setTalking(false)} notice={notice} question={th.h2.talkQuestion} chips={choices} transcript={transcript} mic={mic} onMic={toggleMic} onType={hear} />
     </StepShell>
   )
 }

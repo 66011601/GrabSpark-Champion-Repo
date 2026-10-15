@@ -14,6 +14,7 @@ import { playScripted } from '@/services/speech/scripted.ts'
 import { startListening, type ListenSession } from '@/services/speech/speechToText.ts'
 import { isSpeaking, stopSpeaking } from '@/services/speech/textToSpeech.ts'
 import type { Choice, MicState } from './companionState.ts'
+import { createSessionGate, runTap } from './tapTurn.ts'
 import { createTurnGuard } from './turnGuard.ts'
 import { noticeFor, type Reply } from './turnReply.ts'
 import { answerPending, takeTurn, type Pending, type Turn } from './understandingStep.ts'
@@ -53,6 +54,7 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
   const pending = useRef<Pending | null>(null)
   const micNow = useRef<MicState>('idle')
   const session = useRef<ListenSession | null>(null)
+  const listens = useRef(createSessionGate())
   const guard = useRef(createTurnGuard())
   const thinking = useRef<number | undefined>(undefined)
   const resuming = useRef<number | undefined>(undefined)
@@ -110,27 +112,50 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
     setChoices(
       turn.pending
         ? [
-            { label: th.understanding.yes, onPress: () => taps.current.answer('yes') },
-            { label: th.understanding.no, onPress: () => taps.current.answer('no') },
+            { id: 'answer:yes', label: th.understanding.yes, onPress: () => taps.current.answer('yes') },
+            { id: 'answer:no', label: th.understanding.no, onPress: () => taps.current.answer('no') },
           ]
-        : turn.offers.map((label) => ({ label: labelName(label), onPress: () => taps.current.run(label) })),
+        : turn.offers.map((label) => ({ id: label, label: labelName(label), onPress: () => taps.current.run(label) })),
     )
     setNotice(noticeFor(turn.reply, takeGreeting()))
   }, [])
 
-  // A tap on a button is a turn of its own: it wins over anything still in flight.
+  // When the answer changed nothing the companion has nothing to say, so it just listens again.
+  const resumeSoon = useCallback(() => {
+    window.clearTimeout(resuming.current)
+    resuming.current = window.setTimeout(() => {
+      if (!isSpeaking()) resume.current()
+    }, RESUME_MS)
+  }, [])
+
+  // A tap on a button is a turn of its own: it wins over anything still in flight (see runTap).
   const tap = useCallback(
-    async (work: (isCurrent: () => boolean) => Promise<Turn>) => {
-      if (!guard.current.mounted()) return
-      window.clearTimeout(resuming.current)
-      stopSpeaking()
-      const isCurrent = guard.current.begin()
-      pending.current = null
-      setChoices([])
-      const turn = await work(isCurrent)
-      if (isCurrent()) show(turn)
-    },
-    [show],
+    (work: (isCurrent: () => boolean) => Promise<Turn>) =>
+      runTap(
+        {
+          guard: guard.current,
+          mic: () => micNow.current,
+          cancelPending: () => {
+            window.clearTimeout(thinking.current)
+            window.clearTimeout(resuming.current)
+            stopSpeaking()
+          },
+          closeMic: () => {
+            listens.current.close()
+            session.current?.stop()
+            cancelScript.current?.()
+          },
+          setMic,
+          clearChoices: () => {
+            pending.current = null
+            setChoices([])
+          },
+          show,
+          resumeSoon,
+        },
+        work,
+      ),
+    [resumeSoon, setMic, show],
   )
 
   useEffect(() => {
@@ -172,13 +197,10 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
         if (!isCurrent()) return
         show(turn)
         setMic('idle')
-        // When the answer changed nothing the companion has nothing to say, so it just listens again.
-        resuming.current = window.setTimeout(() => {
-          if (!isSpeaking()) resume.current()
-        }, RESUME_MS)
+        resumeSoon()
       }, THINKING_MS)
     },
-    [perform, setMic, show],
+    [perform, resumeSoon, setMic, show],
   )
 
   // `auto`: the companion opened the mic itself, so silence is not worth a complaint.
@@ -191,14 +213,20 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
       setTranscript(null)
       setMic('listening')
       earcon('listen')
+      // A session a tap closed may still report as the recogniser shuts down; only the live one is heard.
+      const live = listens.current.open()
       session.current = startListening({
-        onInterim: (text) => setTranscript({ text: maskRude(text), final: false }),
+        onInterim: (text) => {
+          if (live()) setTranscript({ text: maskRude(text), final: false })
+        },
         onFinal: (text) => {
+          if (!live()) return
           handsFree = true
           earcon('heard')
           hear(text)
         },
         onError: (kind) => {
+          if (!live()) return
           handsFree = false
           if (kind === 'no-speech') {
             setMic('idle')
@@ -209,7 +237,7 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
           setNotice(kind === 'unsupported' ? th.mic.unsupported : th.mic.error)
         },
         onEnd: () => {
-          if (micNow.current === 'listening') setMic('idle')
+          if (live() && micNow.current === 'listening') setMic('idle')
         },
       })
     },

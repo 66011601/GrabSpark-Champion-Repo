@@ -612,6 +612,8 @@ export const th = {
     ask: (what: string) => `หมายถึง${what}ใช่ไหมคะ?`,
     unsure: 'หนูยังไม่แน่ใจค่ะ เลือกจากปุ่มนี้ หรือพูดใหม่อีกทีนะคะ',
     declined: 'ขอโทษค่ะ งั้นเลือกจากปุ่มนี้ หรือพูดใหม่อีกทีนะคะ',
+    // "ไม่ใช่" when there is no other label to offer: no buttons, so the line must not point at any.
+    declinedRetry: 'ขอโทษค่ะ ลองพูดใหม่อีกทีนะคะ',
     yes: 'ใช่',
     no: 'ไม่ใช่',
     askAddress: 'ที่อยู่ร้านค้าคืออะไรคะ? พิมพ์หรือพูดรหัสไปรษณีย์ก็ได้',

@@ -23,6 +23,11 @@ describe('decide', () => {
     expect(decide(match('pin', SURE_SCORE - 0.01, 0.1, ['pin', 'here', 'none', 'back']))).toEqual({ kind: 'ask', label: 'pin', rest: ['here', 'back'] })
   })
 
+  it('keeps two labels for "ไม่ใช่" even when every voter agreed (ranked holds every label)', () => {
+    expect(decide(match('pin', SURE_SCORE - 0.01, 1, ['pin', 'none', 'here', 'back', 'next']))).toEqual({ kind: 'ask', label: 'pin', rest: ['here', 'back'] })
+    expect(decide(match('register', SURE_SCORE - 0.01, 1, ['register', 'login', 'none']))).toEqual({ kind: 'ask', label: 'register', rest: ['login'] })
+  })
+
   it('offers the two best real labels when lost', () => {
     expect(decide(match('none', 0.9, 0.9, ['none', 'here', 'pin']))).toEqual({ kind: 'lost', options: ['here', 'pin'] })
     expect(decide({ label: 'none', score: 0, margin: 0, ranked: [] })).toEqual({ kind: 'lost', options: [] })
@@ -38,6 +43,13 @@ describe('answerOf', () => {
     for (const said of ['ใช่', 'ใช่ค่ะ', 'ได้', 'โอเค', 'ถูกแล้ว']) expect(answerOf(said), said).toBe('yes')
     for (const said of ['ไม่ใช่', 'ไม่', 'ไม่ใช่ค่ะ', 'ผิด']) expect(answerOf(said), said).toBe('no')
     expect(answerOf('ขอดูยอดขาย')).toBeNull()
+  })
+
+  it('hears a polite particle or a grunt said on its own as yes', () => {
+    for (const said of ['ค่ะ', 'ครับ', 'เจ้าค่ะ', 'อือ ค่ะ', 'จ้า', 'คับ', 'ฮะ', 'อื้อ', 'เออ', 'ค่ะ ค่ะ', 'จ้ะจ้ะ']) expect(answerOf(said), said).toBe('yes')
+    expect(answerOf('ไม่ใช่ค่ะ')).toBe('no')
+    expect(answerOf('ค่ะ ร้านชื่อป้าแดง')).toBeNull()
+    expect(answerOf('')).toBeNull()
   })
 })
 
@@ -68,6 +80,12 @@ describe('answerPending', () => {
       offers: ['here', 'back'],
     })
     expect(perform).not.toHaveBeenCalled()
+  })
+
+  it('only apologises on no when there is nothing else to offer: no line pointing at missing buttons', async () => {
+    const perform = vi.fn()
+    expect(await answerPending({ label: 'pin', rest: [] }, 'no', perform)).toEqual({ reply: th.understanding.declinedRetry, pending: null, offers: [] })
+    expect(th.understanding.declinedRetry).not.toContain('ปุ่ม')
   })
 })
 
@@ -145,6 +163,11 @@ describe('takeTurn', () => {
       const p = parts({ pending: waiting, heard: heard('ใช่') })
       expect(await takeTurn(p)).toEqual({ reply: 'did pin', pending: null, offers: [] })
       expect(p.rules).not.toHaveBeenCalled()
+    })
+
+    it('performs the label on a lone polite particle', async () => {
+      const p = parts({ pending: waiting, heard: heard('ค่ะ') })
+      expect(await takeTurn(p)).toEqual({ reply: 'did pin', pending: null, offers: [] })
     })
 
     it('declines on no and offers the rest', async () => {
