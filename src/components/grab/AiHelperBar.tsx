@@ -1,7 +1,7 @@
 import { Camera, Mic } from 'lucide-react'
 import { useSyncExternalStore } from 'react'
 import { CompanionAvatar } from '@/components/assistant/CompanionAvatar.tsx'
-import type { CompanionState } from '@/components/assistant/companionState.ts'
+import type { Choice, CompanionState } from '@/components/assistant/companionState.ts'
 import { useSpokenLine } from '@/components/assistant/useSpokenLine.ts'
 import { VoiceToggle } from '@/components/assistant/VoiceToggle.tsx'
 import { th } from '@/copy/th.ts'
@@ -14,10 +14,11 @@ interface AiHelperBarProps {
   onAvatar?: () => void // the face is the talk button
   action?: { kind: 'mic' | 'camera'; label: string; onPress: () => void } | null
   onSpoken?: () => void
+  choices?: Choice[] // yes / no, or the best guesses, while the companion waits for the merchant to pick
 }
 
 /** The slim "ผู้ช่วย AI" bar above the screen's green button. */
-export function AiHelperBar({ text, notice, mic, onAvatar, action, onSpoken }: AiHelperBarProps) {
+export function AiHelperBar({ text, notice, mic, onAvatar, action, onSpoken, choices }: AiHelperBarProps) {
   const speaking = useSyncExternalStore(subscribeVoice, isSpeakingNow)
   useSpokenLine(notice ? `${notice} ${text}` : text, { listening: mic === 'listening', onSpoken })
   const Icon = action?.kind === 'camera' ? Camera : Mic
@@ -34,6 +35,20 @@ export function AiHelperBar({ text, notice, mic, onAvatar, action, onSpoken }: A
         <p key={text} aria-live="polite" className="animate-rise text-base leading-snug">
           {text}
         </p>
+        {choices && choices.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {choices.map((choice) => (
+              <button
+                key={choice.label}
+                type="button"
+                onClick={choice.onPress}
+                className="min-h-12 cursor-pointer rounded-full bg-surface px-4 text-base font-medium text-action ring-1 ring-action active:bg-ok-bg"
+              >
+                {choice.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <VoiceToggle />
       {action && (
