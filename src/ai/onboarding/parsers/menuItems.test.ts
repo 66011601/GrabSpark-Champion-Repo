@@ -13,6 +13,15 @@ describe('parseMenuItems', () => {
     ])
   })
 
+  it('leaves the unit a price is counted in out of the dish name', () => {
+    expect(parseMenuItems('ก๋วยเตี๋ยวเรือชามละ 50 บาท')).toEqual([{ name: 'ก๋วยเตี๋ยวเรือ', priceTHB: 50 }])
+    expect(parseMenuItems('ชาเย็นแก้วละยี่สิบห้า ข้าวเหนียวมะม่วง ราคาจานละ 60')).toEqual([
+      { name: 'ชาเย็น', priceTHB: 25 },
+      { name: 'ข้าวเหนียวมะม่วง', priceTHB: 60 },
+    ])
+    expect(parseMenuItems('หมูปิ้งไม้ละ 10 บาท')).toEqual([{ name: 'หมูปิ้ง', priceTHB: 10 }])
+  })
+
   it('reads digit prices', () => {
     expect(parseMenuItems('ข้าวมันไก่ 50 ต้มเลือดหมู 40 บาท')).toEqual([
       { name: 'ข้าวมันไก่', priceTHB: 50 },

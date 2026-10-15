@@ -31,4 +31,10 @@ describe('parseStoreNameAnswer', () => {
   it('returns null for silence', () => {
     expect(parseStoreNameAnswer('  ')).toBeNull()
   })
+
+  it('does not take a question about the name for the name', () => {
+    for (const said of ['ชื่อร้านต้องตั้งยังไงคะ', 'ชื่อร้านใส่อะไรดี', 'ร้านชื่ออะไรดีนะ']) expect(parseStoreName(said), said).toBeNull()
+    expect(parseStoreNameAnswer('ชื่อร้านนี่ต้องตั้งอย่างไร')).toBeNull()
+    expect(parseStoreNameAnswer('ครัวป้าแดง ขายส้มตำ')?.value).toBe('ครัวป้าแดง')
+  })
 })

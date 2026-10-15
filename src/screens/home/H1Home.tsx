@@ -1,4 +1,5 @@
 import { Bell, CheckCircle2, ChevronRight, Circle, ClipboardList, Clock, Home, ReceiptText, User, UtensilsCrossed } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
 import { useVoiceInput } from '@/components/assistant/useVoiceInput.ts'
 import { AiHelperBar } from '@/components/grab/AiHelperBar.tsx'
@@ -8,15 +9,34 @@ import { formatDuration } from '@/lib/format.ts'
 
 const NAV_ICONS = [Home, ReceiptText, UtensilsCrossed, User]
 
+// Set when the merchant leaves Home for a task: coming back, the companion says what is left instead of its welcome.
+let leftHome = false
+
 /** Home after submitting: waiting for approval, and the two set-up tasks. */
 export function H1Home() {
   const { state, dispatch } = useJourney()
   const { startedAt, submittedAt, setupDone } = state
   const allDone = setupDone.menu && setupDone.hours
+  const [returning] = useState(() => leftHome)
+  useEffect(
+    () => () => {
+      leftHome = true
+    },
+    [],
+  )
+  const helper = allDone
+    ? th.h1.helperDone
+    : setupDone.menu
+      ? th.h1.helperMenuDone
+      : setupDone.hours
+        ? th.h1.helperHoursDone
+        : returning
+          ? th.h1.helperBack
+          : th.h1.helper
   // A returning merchant who logs in has startedAt equal to submittedAt: there is no sign-up time to show.
   const elapsed = startedAt !== null && submittedAt !== null && submittedAt - startedAt > 0 ? formatDuration(submittedAt - startedAt) : null
   // Nothing here is understood by rules; the matcher's guess is acted on by opening the task it names.
-  const { mic, notice, choices, toggleMic, onSpoken } = useVoiceInput(() => false, {
+  const { mic, notice, choices, toggleMic } = useVoiceInput(() => false, {
     understanding: {
       screen: 'H1',
       act: (label) => {
@@ -71,7 +91,7 @@ export function H1Home() {
         )}
       </main>
       <div className="px-4 pt-2">
-        <AiHelperBar text={allDone ? th.h1.helperDone : th.h1.helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} choices={choices} />
+        <AiHelperBar text={helper} notice={notice} mic={mic} onAvatar={toggleMic} choices={choices} />
       </div>
       <nav className="mt-2 grid grid-cols-4 border-t border-line bg-surface" aria-hidden>
         {th.h1.nav.map((label, index) => {

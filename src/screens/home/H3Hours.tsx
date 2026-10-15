@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { SAY } from '@/ai/commands/phrases.ts'
-import { extractProfile } from '@/ai/onboarding/extractProfile.ts'
+import { extractProfile, HOURS_CONFIDENCE } from '@/ai/onboarding/extractProfile.ts'
+import { parseDays } from '@/ai/onboarding/parsers/thaiTime.ts'
 import { SubmissionBlockedError, saveSetup } from '@/ai/onboarding/submit.ts'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
 import { withChoices } from '@/components/assistant/companionState.ts'
@@ -44,18 +45,26 @@ export function H3Hours() {
   const set = (change: Partial<OpeningHours>) =>
     dispatch({ type: 'FILL', updates: { hours: { value: { ...hours, ...change }, confidence: 1, heardFrom: TYPED } }, at: Date.now() })
 
-  const { mic, transcript, notice, choices, toggleMic, hear, onSpoken } = useVoiceInput(
+  const { mic, transcript, notice, choices, toggleMic, hear } = useVoiceInput(
     (text) => {
       if (matchCommand(text, COMMANDS) === 'back') {
         dispatch({ type: 'BACK' })
         return true
       }
       const updates = extractProfile(text, { expecting: 'hours', landmarks })
-      if (!updates.hours) return false
-      dispatch({ type: 'FILL', updates: { hours: updates.hours }, at: Date.now() })
+      if (!updates.hours) {
+        // Only the days: "เปิดจันทร์ถึงศุกร์ ที่เหลือหยุด" ticks Saturday and Sunday and keeps the times already set.
+        const closedDays = parseDays(text)
+        if (!closedDays) return false
+        dispatch({ type: 'FILL', updates: { hours: { value: { ...hours, closedDays }, confidence: HOURS_CONFIDENCE, heardFrom: text } }, at: Date.now() })
+        return th.h3.closedHeard(closedDays.map((day) => th.h3.dayNames[day]).join(' '))
+      }
+      // Times said on their own keep the days off already set ("…ที่เหลือหยุด", then "แปดโมงถึงห้าโมงเย็น").
+      const said = parseDays(text) === null ? { ...updates.hours, value: { ...updates.hours.value, closedDays: hours.closedDays } } : updates.hours
+      dispatch({ type: 'FILL', updates: { hours: said }, at: Date.now() })
       return true
     },
-    { autoListen: talking, understanding: { screen: 'H3' } },
+    { understanding: { screen: 'H3' } },
   )
 
   const save = async () => {
@@ -82,7 +91,7 @@ export function H3Hours() {
       onBack={() => dispatch({ type: 'BACK' })}
       footer={
         <>
-          <AiHelperBar text={problem ?? th.h3.helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} choices={choices} action={{ kind: 'mic', label: th.h3.talk, onPress: () => setTalking(true) }} />
+          <AiHelperBar text={problem ?? th.h3.helper} notice={notice} mic={mic} onAvatar={toggleMic} choices={choices} action={{ kind: 'mic', label: th.h3.talk, onPress: () => setTalking(true) }} />
           <Button fullWidth disabled={!hours.open || !hours.close} loading={saving} onClick={save}>
             {saving ? th.h3.saving : th.h3.save}
           </Button>

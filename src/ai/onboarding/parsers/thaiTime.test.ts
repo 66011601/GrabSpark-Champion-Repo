@@ -38,6 +38,22 @@ describe('parseThaiTime', () => {
 })
 
 describe('parseClosedDays', () => {
+  it('works out the closed days from the days the shop opens', () => {
+    expect(parseClosedDays('ป้าน่าจะเปิดจันทร์ถึงศุกร์และที่เหลือหยุด')).toEqual(['sat', 'sun'])
+    expect(parseClosedDays('เปิดแค่วันเสาร์อาทิตย์')).toEqual(['mon', 'tue', 'wed', 'thu', 'fri'])
+    expect(parseClosedDays('เปิดวันธรรมดา')).toEqual(['sat', 'sun'])
+    expect(parseClosedDays('ขายวันธรรมดา นอกนั้นไม่เปิด')).toEqual(['sat', 'sun'])
+    expect(parseClosedDays('เปิดพุธถึงอาทิตย์')).toEqual(['mon', 'tue'])
+    expect(parseClosedDays('เปิดศุกร์ถึงจันทร์')).toEqual(['tue', 'wed', 'thu'])
+  })
+
+  it('hears days the shop does not open', () => {
+    expect(parseClosedDays('วันเสาร์อาทิตย์ไม่เปิด')).toEqual(['sat', 'sun'])
+    expect(parseClosedDays('ไม่ได้เปิดวันพุธ')).toEqual(['wed'])
+    expect(parseClosedDays('สุดสัปดาห์หยุด')).toEqual(['sat', 'sun'])
+  })
+
+
   it('reads days after "หยุด"', () => {
     expect(parseClosedDays('หยุดวันเสาร์กับวันอาทิตย์')).toEqual(['sat', 'sun'])
   })
@@ -67,7 +83,7 @@ describe('parseClosedDays', () => {
 
   it('does not read the end of an open range as closed', () => {
     expect(parseClosedDays('เปิดจันทร์ถึงเสาร์หยุดวันอาทิตย์')).toEqual(['sun'])
-    expect(parseClosedDays('เปิดจันทร์ถึงเสาร์ ปิดสองทุ่ม')).toEqual([])
+    expect(parseClosedDays('เปิดจันทร์ถึงเสาร์ ปิดสองทุ่ม')).toEqual(['sun']) // open Monday to Saturday: Sunday is closed
   })
 
   it('reads a day said before the closed verb with a space', () => {

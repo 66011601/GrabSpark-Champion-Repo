@@ -3,11 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType }
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { backScript, matchButton, pressScript } from '@/ai/navigator/buttons.ts'
 import { BACK_TIMES, findItem } from '@/ai/navigator/drafts.ts'
+import { asksWhatToDo, GUIDE_TOPICS } from '@/ai/navigator/guide.ts'
 import { asksToConfirm, CONTROLS, matchIntent } from '@/ai/navigator/matchIntent.ts'
 import { matchOpen, openScript } from '@/ai/navigator/openPage.ts'
-import { runScript, type RunnerIO, type Slots } from '@/ai/navigator/runner.ts'
+import { runScript, stepsFromHere, type RunnerIO, type Slots } from '@/ai/navigator/runner.ts'
 import { SCRIPTS } from '@/ai/navigator/scripts.ts'
-import { INITIAL_NAV, type NavScreen, type NavState, type Script, type ScriptId, type SoldOutUntil } from '@/ai/navigator/types.ts'
+import { freshNav, INITIAL_NAV, type NavScreen, type NavState, type Script, type ScriptId, type SoldOutUntil } from '@/ai/navigator/types.ts'
 import { useVoiceInput, type Interpret } from '@/components/assistant/useVoiceInput.ts'
 import { AiHelperBar } from '@/components/grab/AiHelperBar.tsx'
 import { NavCursor } from '@/components/navigator/NavCursor.tsx'
@@ -50,7 +51,11 @@ export function DashboardScreen() {
   const lineDone = useRef<(() => void) | null>(null) // the helper bar finished saying the line
   const skipLine = useRef<(() => void) | null>(null)
   const askedWhich = useRef(false) // "เมนูไหนหมดคะ" is waiting for a dish name
-  const resume = useRef<() => void>(() => {})
+  const [guide, setGuide] = useState<string | null>(null) // the tour: 'topics', or the id of the topic being told
+  const navNow = useRef(nav)
+  useEffect(() => {
+    navNow.current = nav
+  })
 
   const change = useCallback((patch: Partial<NavState>) => setNav((state) => ({ ...state, ...patch })), [])
 
@@ -117,15 +122,18 @@ export function DashboardScreen() {
       const mine = new AbortController()
       run.current = mine
       fast.current = false
-      if (!fromHere) setNav(INITIAL_NAV) // a script starts from the home screen; a button press from where the owner is
+      // A script starts from the home screen, unless the owner is already on the page it leads to; a button press
+      // always starts from where the owner is.
+      const steps = fromHere ? chosen.steps : stepsFromHere(chosen.steps, navNow.current)
+      if (!fromHere && steps === chosen.steps) setNav(freshNav)
+      setGuide(null)
       setHeading(chosen.title ?? WHERE[chosen.steps[chosen.steps.length - 1].screen])
       setRunning(true)
-      const finished = await runScript(chosen, io, mine.signal, slots)
+      await runScript({ ...chosen, steps }, io, mine.signal, slots)
       if (run.current !== mine) return // a newer run took over
       run.current = null
       setRunning(false)
       setCursor((now) => ({ ...now, target: null }))
-      if (finished) resume.current() // the companion listens again, as in Act 1
     },
     [io],
   )
@@ -140,7 +148,7 @@ export function DashboardScreen() {
 
   const goHome = useCallback(() => {
     stopRun()
-    setNav(INITIAL_NAV)
+    setNav(freshNav)
     setHighlight(null)
     setLine(th.act2.helper)
   }, [stopRun])
@@ -152,6 +160,12 @@ export function DashboardScreen() {
 
   const interpret: Interpret = (text) => {
     if (asksToConfirm(text)) return th.act2.confirm.byTap // only a tap on the confirm bar does that
+    if (asksWhatToDo(text)) {
+      setGuide('topics')
+      setLine(th.act2.guide.ask)
+      return true
+    }
+    setGuide(null)
     const control = matchCommand(text, CONTROLS)
     if (control === 'stop') {
       stopRun()
@@ -202,10 +216,7 @@ export function DashboardScreen() {
     return true
   }
 
-  const voice = useVoiceInput(interpret, { autoListen: !running, understanding: { screen: 'ACT2' } })
-  useEffect(() => {
-    resume.current = voice.onSpoken
-  })
+  const voice = useVoiceInput(interpret, { understanding: { screen: 'ACT2' } })
 
   // The merchant's confirm tap went through: say so, and drop any older notice.
   const { setNotice } = voice
@@ -235,6 +246,32 @@ export function DashboardScreen() {
     [],
   )
 
+  // The tour's buttons: first its topics, then one or two things to try for the topic picked.
+  const told = GUIDE_TOPICS.find((topic) => topic.id === guide)
+  const guideChoices =
+    guide === 'topics'
+      ? GUIDE_TOPICS.map((topic) => ({
+          id: `guide:${topic.id}`,
+          label: topic.label,
+          onPress: () => {
+            setGuide(topic.id)
+            setLine(topic.intro)
+          },
+        }))
+      : told
+        ? [
+            ...told.tries.map((phrase) => ({ id: `try:${phrase}`, label: th.act2.guide.tryIt(phrase), onPress: () => voice.hear(phrase) })),
+            {
+              id: 'guide:more',
+              label: th.act2.guide.more,
+              onPress: () => {
+                setGuide('topics')
+                setLine(th.act2.guide.ask)
+              },
+            },
+          ]
+        : []
+
   const Panel = PANELS[nav.screen]
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
@@ -250,7 +287,7 @@ export function DashboardScreen() {
         </div>
       )}
       <div className="px-4 pt-2 pb-2">
-        <AiHelperBar text={line} notice={voice.notice} mic={voice.mic} onAvatar={voice.toggleMic} onSpoken={() => (lineDone.current ? lineDone.current() : resume.current())} choices={voice.choices} />
+        <AiHelperBar text={line} notice={voice.notice} mic={voice.mic} onAvatar={voice.toggleMic} onSpoken={() => lineDone.current?.()} choices={[...guideChoices, ...voice.choices]} />
       </div>
       <NavCursor target={cursor.target} taps={cursor.taps} />
     </div>

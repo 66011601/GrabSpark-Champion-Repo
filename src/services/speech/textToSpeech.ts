@@ -96,11 +96,39 @@ export function speak(text: string, onDone?: () => void): void {
     setSpeaking(false)
     onDone?.()
   }
-  const voice = getThaiVoice()
-  if (!voice || muted) {
+  if (muted || !supported()) {
     window.setTimeout(finish, 0)
     return
   }
+  // The first line of a visit often comes before the browser has listed its voices: wait for them a moment.
+  void voiceReady().then((voice) => {
+    if (mine !== turn) return
+    if (voice && !muted) say(voice, text, mine, finish)
+    else finish()
+  })
+}
+
+const VOICE_WAIT_MS = 2000
+
+/** The Thai voice, waiting up to VOICE_WAIT_MS for the browser to list its voices. Undefined when the device has none. */
+export function voiceReady(): Promise<SpeechSynthesisVoice | undefined> {
+  const now = getThaiVoice()
+  if (now || !supported()) return Promise.resolve(now)
+  return new Promise((resolve) => {
+    let unsubscribe = () => {}
+    const done = () => {
+      window.clearTimeout(timer)
+      unsubscribe()
+      resolve(getThaiVoice())
+    }
+    const timer = window.setTimeout(done, VOICE_WAIT_MS)
+    unsubscribe = onVoicesChanged(() => {
+      if (getThaiVoice()) done()
+    })
+  })
+}
+
+function say(voice: SpeechSynthesisVoice, text: string, mine: number, finish: () => void): void {
   const utterance = new SpeechSynthesisUtterance(toSpeech(text))
   utterance.voice = voice
   utterance.lang = voice.lang

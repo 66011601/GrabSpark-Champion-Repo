@@ -30,7 +30,7 @@ export function S4Shop() {
   const status = stepStatus(state.profile, 4)
   const setType = (value: BusinessType, heardFrom: string) => dispatch({ type: 'FILL', updates: { businessType: { value, confidence: 1, heardFrom } }, at: Date.now() })
 
-  const { mic, notice, choices, toggleMic, onSpoken } = useVoiceInput(
+  const { mic, notice, choices, toggleMic } = useVoiceInput(
     (text) => {
       const command = matchCommand(text, COMMANDS)
       if (command === 'personal' || command === 'company') setType(command, th.sources.suggested)
@@ -38,7 +38,7 @@ export function S4Shop() {
       if (command === 'back') dispatch({ type: 'BACK' })
       return command !== null
     },
-    { autoListen: true, understanding: { screen: 'S4' } },
+    { understanding: { screen: 'S4' } },
   )
 
   return (
@@ -49,7 +49,7 @@ export function S4Shop() {
       onBack={() => dispatch({ type: 'BACK' })}
       footer={
         <>
-          <AiHelperBar text={status.valid || fields.businessType.status === 'empty' ? th.s4.helper : problemText(status.issues[0])} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} choices={choices} />
+          <AiHelperBar text={status.valid || fields.businessType.status === 'empty' ? th.s4.helper : problemText(status.issues[0])} notice={notice} mic={mic} onAvatar={toggleMic} choices={choices} />
           <Button fullWidth disabled={!status.valid} onClick={() => dispatch({ type: 'NEXT' })}>
             {th.common.next}
           </Button>
