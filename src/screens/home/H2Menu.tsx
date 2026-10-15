@@ -1,7 +1,9 @@
 import { Plus, X } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
+import { saysDone } from '@/ai/commands/doneWords.ts'
 import { SAY } from '@/ai/commands/phrases.ts'
+import { listOf } from '@/ai/navigator/addMenu.ts'
 import { scanToUpdates } from '@/ai/onboarding/documents/scanToUpdates.ts'
 import { extractProfile } from '@/ai/onboarding/extractProfile.ts'
 import { SubmissionBlockedError, saveSetup } from '@/ai/onboarding/submit.ts'
@@ -36,6 +38,25 @@ export function H2Menu() {
   const [price, setPrice] = useState('')
   const [saving, setSaving] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
+  // Dishes added on this visit are a draft until "บันทึกเมนู": leaving or saying "ครบแล้ว" brings a reminder.
+  const [touched, setTouched] = useState(false)
+  const [warned, setWarned] = useState(false)
+  const [reminder, setReminder] = useState<string | null>(null)
+  const unsaved = items.length > 0 && (touched || !state.setupDone.menu)
+  const changed = () => {
+    setTouched(true)
+    setWarned(false)
+    setReminder(null)
+  }
+  /** Back: once with a reminder when the menu is not saved, then really back. */
+  const leave = () => {
+    if (unsaved && !warned) {
+      setWarned(true)
+      setReminder(th.h2.unsavedLeave)
+      return
+    }
+    dispatch({ type: 'BACK' })
+  }
   const mounted = useRef(true)
   useEffect(() => {
     mounted.current = true
@@ -53,13 +74,18 @@ export function H2Menu() {
         return true
       }
       if (command === 'back') {
-        dispatch({ type: 'BACK' })
+        leave()
         return true
       }
       const updates = extractProfile(text, { expecting: 'menu', landmarks })
-      if (!updates.menu) return false
-      dispatch({ type: 'FILL', updates: { menu: updates.menu }, at: Date.now() })
-      return true
+      const done = saysDone(text)
+      if (updates.menu) {
+        dispatch({ type: 'FILL', updates: { menu: updates.menu }, at: Date.now() })
+        changed()
+        return done ? th.h2.pressSave : th.h2.addedAsk(listOf(updates.menu.value))
+      }
+      if (done) return items.length > 0 ? th.h2.pressSave : th.h2.nothingYet
+      return false
     },
     { understanding: { screen: 'H2' } },
   )
@@ -74,6 +100,7 @@ export function H2Menu() {
     const amount = Number(price)
     if (!dish.trim() || !(amount > 0)) return
     dispatch({ type: 'FILL', updates: { menu: { value: [{ name: dish.trim(), priceTHB: amount }], confidence: 1, heardFrom: TYPED } }, at: Date.now() })
+    changed()
     setDish('')
     setPrice('')
   }
@@ -94,10 +121,10 @@ export function H2Menu() {
     <StepShell
       heading={th.h2.title}
       title={th.h2.title}
-      onBack={() => dispatch({ type: 'BACK' })}
+      onBack={leave}
       footer={
         <>
-          <AiHelperBar text={problem ?? th.h2.helper} notice={notice} mic={mic} onAvatar={toggleMic} choices={choices} action={{ kind: 'camera', label: th.h2.scan, onPress: openScan }} />
+          <AiHelperBar text={problem ?? reminder ?? th.h2.helper} notice={notice} mic={mic} onAvatar={toggleMic} choices={choices} action={{ kind: 'camera', label: th.h2.scan, onPress: openScan }} />
           <div className="flex gap-2">
             <Button variant="secondary" className="px-4!" onClick={() => setTalking(true)}>
               {th.h2.talk}
@@ -120,7 +147,10 @@ export function H2Menu() {
               <li key={item.name} className="flex min-h-14 items-center gap-3 pl-4">
                 <span className="min-w-0 flex-1">{item.name}</span>
                 <span className="font-bold">{formatTHB(item.priceTHB)}</span>
-                <button type="button" onClick={() => dispatch({ type: 'REMOVE_MENU_ITEM', name: item.name })} aria-label={th.h2.remove(item.name)} className="flex size-12 shrink-0 cursor-pointer items-center justify-center text-ink-muted">
+                <button type="button" onClick={() => {
+                    dispatch({ type: 'REMOVE_MENU_ITEM', name: item.name })
+                    changed()
+                  }} aria-label={th.h2.remove(item.name)} className="flex size-12 shrink-0 cursor-pointer items-center justify-center text-ink-muted">
                   <X className="size-5" aria-hidden />
                 </button>
               </li>
@@ -147,7 +177,10 @@ export function H2Menu() {
         onUse={(scan) => {
           // The paper menu fills the menu only: the shop's name and food type were settled at sign-up.
           const { menu } = scanToUpdates(scan)
-          if (menu) dispatch({ type: 'FILL', updates: { menu }, at: Date.now() })
+          if (menu) {
+            dispatch({ type: 'FILL', updates: { menu }, at: Date.now() })
+            changed()
+          }
           setScanning(false)
         }}
       />

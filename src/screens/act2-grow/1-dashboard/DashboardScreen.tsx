@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType }
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { backScript, matchButton, pressScript } from '@/ai/navigator/buttons.ts'
 import { BACK_TIMES, findItem } from '@/ai/navigator/drafts.ts'
+import { saysDone } from '@/ai/commands/doneWords.ts'
 import { addMenuScript, dishesIn, listOf, wantsToAddMenu } from '@/ai/navigator/addMenu.ts'
 import { asksWhatToDo, GUIDE_TOPICS, introduce, wantsIntro } from '@/ai/navigator/guide.ts'
 import { asksToConfirm, CONTROLS, matchIntent } from '@/ai/navigator/matchIntent.ts'
@@ -52,6 +53,7 @@ export function DashboardScreen() {
   const lineDone = useRef<(() => void) | null>(null) // the helper bar finished saying the line
   const skipLine = useRef<(() => void) | null>(null)
   const askedWhich = useRef(false) // "เมนูไหนหมดคะ" is waiting for a dish name
+  const leaveWarned = useRef(false) // the owner was reminded once that the new dishes are not added yet
   const [guide, setGuide] = useState<string | null>(null) // the tour: 'topics', 'intro', or the id of the topic being told
   const [introTries, setIntroTries] = useState<string[]>([]) // what the last introduction offered to try
   const navNow = useRef(nav)
@@ -169,6 +171,16 @@ export function DashboardScreen() {
     }
     setGuide(null)
     const control = matchCommand(text, CONTROLS)
+    // New dishes not confirmed yet: leaving reminds once ("ยังไม่ได้เพิ่ม…"), and asking again goes.
+    const adding = nav.adding && nav.done !== 'addMenu' && nav.screen === 'MENU' ? nav.adding : null
+    const unsaved = adding?.items.some((item) => item.name.trim() !== '') ?? false
+    const leaving = control === 'home' || control === 'back' || matchOpen(text) !== null || matchButton(text) !== null || matchIntent(text, SCRIPTS) !== null
+    if (unsaved && leaving && !leaveWarned.current) {
+      leaveWarned.current = true
+      setLine(th.act2.addMenu.unsavedLeave)
+      setHighlight('confirm')
+      return true
+    }
     if (control === 'stop') {
       stopRun()
       return th.act2.stopped
@@ -182,13 +194,20 @@ export function DashboardScreen() {
       if (back) void start(back, {}, true)
       return true
     }
-    // "เพิ่มเมนู น้ำส้มแก้วละ 20 บาท": draft new dishes. While the add sheet is open, any dish and price said joins it.
-    const adding = nav.adding && nav.done !== 'addMenu' && nav.screen === 'MENU' ? nav.adding : null
+    // "เพิ่มเมนู น้ำส้มแก้วละ 20 บาท": draft new dishes. While the add sheet is open, any dish and price said joins it,
+    // and "ครบแล้ว" points at the confirm button the owner has to tap.
     const dishes = dishesIn(text)
     if (adding && dishes.length > 0) {
       const items = [...adding.items.filter((item) => item.name.trim() !== ''), ...dishes]
       change({ adding: { kind: 'addMenu', items } })
-      setLine(th.act2.addMenu.ready(listOf(items)))
+      leaveWarned.current = false
+      setHighlight(saysDone(text) ? 'confirm' : null)
+      setLine(saysDone(text) ? th.act2.addMenu.pressConfirm : th.act2.addMenu.ready(listOf(items)))
+      return true
+    }
+    if (adding && saysDone(text)) {
+      setHighlight('confirm')
+      setLine(unsaved ? th.act2.addMenu.pressConfirm : th.act2.addMenu.ask)
       return true
     }
     if (wantsToAddMenu(text)) {
@@ -297,7 +316,7 @@ export function DashboardScreen() {
   const Panel = PANELS[nav.screen]
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <Panel nav={nav} highlight={highlight} change={change} ask={voice.hear} pick={pick} announce={announce} home={goHome} />
+      <Panel nav={nav} highlight={highlight} change={change} ask={voice.hear} pick={pick} announce={announce} home={goHome} line={line} />
       {running && (
         <div className="flex items-center gap-3 px-4 pt-2">
           <p aria-live="polite" className="flex-1 font-bold text-action">

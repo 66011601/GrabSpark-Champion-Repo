@@ -1,4 +1,5 @@
 import { Plus, Trash2 } from 'lucide-react'
+import { useState } from 'react'
 import { draftChecks } from '@/ai/guardrail/checks.ts'
 import type { NavState } from '@/ai/navigator/types.ts'
 import { BottomSheet } from '@/components/grab/BottomSheet.tsx'
@@ -15,18 +16,47 @@ const t = th.act2.addMenu
  * The new dishes the AI drafted from what the owner said, or typed here. Every box can be changed, and nothing is
  * added until the owner taps "ยืนยันเพิ่มเมนู" (the guardrail checks names, prices and duplicates first).
  */
-export function AddMenuSheet({ nav, highlight, change, announce }: Pick<PanelProps, 'nav' | 'highlight' | 'change' | 'announce'>) {
+export function AddMenuSheet({ nav, highlight, change, announce, line }: Pick<PanelProps, 'nav' | 'highlight' | 'change' | 'announce' | 'line'>) {
   const draft = nav.adding
   const open = Boolean(draft && nav.done !== 'addMenu')
   const items = draft?.items ?? []
   const setItems = (next: MenuEntry[]) => change({ adding: { kind: 'addMenu', items: next } })
   const setItem = (index: number, patch: Partial<MenuEntry>) => setItems(items.map((item, at) => (at === index ? { ...item, ...patch } : item)))
   const failing = draft ? draftChecks(draft, getMerchant()).filter((check) => !check.pass) : []
+  // Closing with dishes typed or said but not added asks first, so they are not lost by a stray tap.
+  const [closing, setClosing] = useState(false)
+  const named = items.some((item) => item.name.trim() !== '')
+  const close = () => {
+    if (named && !closing) return setClosing(true)
+    setClosing(false)
+    change({ adding: null })
+  }
   return (
-    <BottomSheet open={open} title={t.sheetTitle} onClose={() => change({ adding: null })}>
+    <BottomSheet open={open} title={t.sheetTitle} onClose={close}>
       {draft && (
         <div className="flex flex-col gap-3">
-          <p className="text-ink-muted">{t.hint}</p>
+          {closing && (
+            <div role="alert" className="flex flex-col gap-2 rounded-2xl bg-warn-bg p-3 text-warn-ink">
+              <p className="font-bold">{t.closeAsk}</p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setClosing(false)} className="min-h-12 flex-1 cursor-pointer rounded-xl bg-action font-bold text-white">
+                  {t.keepEditing}
+                </button>
+                <button type="button" onClick={close} className="min-h-12 flex-1 cursor-pointer rounded-xl bg-surface font-bold text-ink ring-1 ring-line">
+                  {t.discard}
+                </button>
+              </div>
+            </div>
+          )}
+          {/* The sheet covers the helper bar, so the companion's reminders ("มีเมนูอื่นอีกไหมคะ", "กดยืนยัน…") show here. */}
+          {line ? (
+            <p role="status" aria-live="polite" className="rounded-2xl bg-ok-bg p-3">
+              <span className="block text-sm font-bold text-action">{th.grab.aiHelper}</span>
+              {line}
+            </p>
+          ) : (
+            <p className="text-ink-muted">{t.hint}</p>
+          )}
           <ul className="flex flex-col gap-3">
             {items.map((item, index) => (
               <li key={index} className="flex items-end gap-2">

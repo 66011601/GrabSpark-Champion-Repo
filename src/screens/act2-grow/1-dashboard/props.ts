@@ -9,4 +9,5 @@ export interface PanelProps {
   pick: (until: SoldOutUntil) => void // the merchant chose how long a dish stays off
   announce: (line: string) => void // the companion says what just happened
   home: () => void
+  line: string // what the companion is saying now, for a sheet that covers the helper bar
 }

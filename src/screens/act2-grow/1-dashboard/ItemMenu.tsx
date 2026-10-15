@@ -18,7 +18,7 @@ const a = th.act2.addMenu
  * GrabMerchant's menu: a green switch on each dish. Sliding it off asks how long ('วันนี้' or 'ไม่มีกำหนด'),
  * and nothing changes until the merchant taps ยืนยัน in that sheet.
  */
-export function ItemMenu({ nav, highlight, change, pick, announce, home }: PanelProps) {
+export function ItemMenu({ nav, highlight, change, pick, announce, home, line }: PanelProps) {
   const shop = getMerchant()
   const draft = nav.soldOut
   const item = shop.menu.find((entry) => entry.id === draft?.itemId)
@@ -126,7 +126,7 @@ export function ItemMenu({ nav, highlight, change, pick, announce, home }: Panel
           </div>
         )}
       </BottomSheet>
-      <AddMenuSheet nav={nav} highlight={highlight} change={change} announce={announce} />
+      <AddMenuSheet nav={nav} highlight={highlight} change={change} announce={announce} line={line} />
     </>
   )
 }
