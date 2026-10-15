@@ -1,7 +1,9 @@
 import { Camera, Mic } from 'lucide-react'
-import { useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { CompanionAvatar } from '@/components/assistant/CompanionAvatar.tsx'
 import type { Choice, CompanionState } from '@/components/assistant/companionState.ts'
+import { Spotlight } from '@/components/assistant/Spotlight.tsx'
+import { markSeen, shouldSpotlight } from '@/components/assistant/spotlight.ts'
 import { useSpokenLine } from '@/components/assistant/useSpokenLine.ts'
 import { VoiceToggle } from '@/components/assistant/VoiceToggle.tsx'
 import { th } from '@/copy/th.ts'
@@ -22,8 +24,15 @@ export function AiHelperBar({ text, notice, mic, onAvatar, action, onSpoken, cho
   const speaking = useSyncExternalStore(subscribeVoice, isSpeakingNow)
   useSpokenLine(notice ? `${notice} ${text}` : text, { listening: mic === 'listening', onSpoken })
   const Icon = action?.kind === 'camera' ? Camera : Mic
+  // A new step opens with its advice in the spotlight: the page dims and the 3D companion says it.
+  // Once the companion says something else, the merchant has moved on, so the page comes back by itself.
+  const [spotlight, setSpotlight] = useState(() => shouldSpotlight(text))
+  const [firstLine] = useState(text)
+  useEffect(() => markSeen(firstLine), [firstLine])
+  if (spotlight && (text !== firstLine || notice)) setSpotlight(false)
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-ok-bg p-2 pr-2">
+      {spotlight && <Spotlight text={text} speaking={speaking} onClose={() => setSpotlight(false)} />}
       <CompanionAvatar size="sm" state={mic} speaking={speaking} onPress={onAvatar} />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-bold text-action">{th.grab.aiHelper}</p>
