@@ -2,7 +2,8 @@ import { EyeOff, Loader2, Mic, MicOff } from 'lucide-react'
 import { th } from '@/copy/th.ts'
 import { MIC_LABELS, type CompanionState, type MicState } from './companionState.ts'
 
-const FACE = '/images/companion/durian-face.webp'
+// Under GitHub Pages the app lives at a base path (vite.config.ts), so files in public/ go through BASE_URL.
+const FACE = `${import.meta.env.BASE_URL}images/companion/durian-face.webp`
 
 const RING: Record<CompanionState, string> = {
   idle: 'ring-grab',

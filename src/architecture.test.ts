@@ -18,6 +18,10 @@ const IMPORTS_SUBMIT = /(?:from\s+|import\s*\(\s*)['"][^'"]*(?:onboarding\/|\.\/
 // Map services (Google, OpenStreetMap) are called only from the places services, which know their rules.
 const MAP_HOSTS = /googleapis\.com|openstreetmap\.org|google\.com\/maps/
 
+// The app is served under a base path on GitHub Pages (vite.config.ts `base`). Vite adds it to links in
+// index.html, but not to paths written in code, so a file in public/ must be reached through BASE_URL.
+const ROOT_PUBLIC_PATH = /['"`]\/(?:images|audio|fonts)\//
+
 const appFiles = Object.entries(sources).filter(([path]) => !/\.test\.tsx?$/.test(path))
 
 describe('architecture', () => {
@@ -64,6 +68,11 @@ describe('architecture', () => {
     const offenders = appFiles
       .filter(([path, source]) => !path.startsWith('/src/services/places/') && MAP_HOSTS.test(source))
       .map(([path]) => path)
+    expect(offenders).toEqual([])
+  })
+
+  it('reaches files in public/ through the base path', () => {
+    const offenders = appFiles.filter(([, source]) => ROOT_PUBLIC_PATH.test(source)).map(([path]) => path)
     expect(offenders).toEqual([])
   })
 })
