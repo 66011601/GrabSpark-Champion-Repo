@@ -40,12 +40,16 @@ export function S2Account() {
     dispatch({ type: 'ACCOUNT_SET', email: email.trim(), at: Date.now() })
   }
 
-  const { mic, notice, toggleMic } = useVoiceInput((text) => {
-    const command = matchCommand(text, COMMANDS)
-    if (command === 'next') submit()
-    if (command === 'back') dispatch({ type: 'BACK' })
-    return command ? true : th.s2.typeItYourself
-  })
+  const { mic, notice, choices, toggleMic } = useVoiceInput(
+    (text) => {
+      const command = matchCommand(text, COMMANDS)
+      if (command === 'next') submit()
+      if (command === 'back') dispatch({ type: 'BACK' })
+      return command ? true : th.s2.typeItYourself
+    },
+    // Inert by design: interpret never returns false (unmatched speech gets the type-it-yourself line), so the matcher does not run here.
+    { understanding: { screen: 'S2_ACCOUNT' } },
+  )
 
   return (
     <StepShell
@@ -60,6 +64,7 @@ export function S2Account() {
             notice={notice}
             mic={inPassword ? 'private' : mic}
             onAvatar={inPassword ? undefined : toggleMic}
+            choices={choices}
           />
           <Button type="submit" form={FORM_ID} fullWidth>
             {th.common.next}

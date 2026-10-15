@@ -38,7 +38,7 @@ export function S5Owner() {
   const edit = (part: keyof OwnerIdentity) => (value: string) =>
     dispatch({ type: 'FILL', updates: { owner: { value: { ...owner, [part]: value }, confidence: 1, heardFrom: TYPED } }, at: Date.now() })
 
-  const { mic, notice, toggleMic, stop, onSpoken } = useVoiceInput(
+  const { mic, notice, choices, toggleMic, stop, onSpoken } = useVoiceInput(
     (text) => {
       const command = matchCommand(text, COMMANDS)
       if (command === 'shoot') setScanning(true)
@@ -47,7 +47,7 @@ export function S5Owner() {
       return command !== null
     },
     // The sheet speaks its own lines: keep the mic shut, and shut it again on its own, while it is up.
-    { autoListen: !scanning },
+    { autoListen: !scanning, understanding: { screen: 'S5' } },
   )
 
   const openScan = () => {
@@ -65,7 +65,7 @@ export function S5Owner() {
       onBack={() => dispatch({ type: 'BACK' })}
       footer={
         <>
-          <AiHelperBar text={helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} action={{ kind: 'camera', label: th.s5.scan, onPress: openScan }} />
+          <AiHelperBar text={helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} choices={choices} action={{ kind: 'camera', label: th.s5.scan, onPress: openScan }} />
           <Button fullWidth disabled={!status.valid} onClick={() => dispatch({ type: 'NEXT' })}>
             {th.common.next}
           </Button>

@@ -4,6 +4,12 @@ export type MicState = 'idle' | 'listening' | 'processing' | 'error'
 /** 'private' = looking away while the merchant types something the companion must not see. */
 export type CompanionState = MicState | 'private'
 
+/** A button the companion offers while it waits for the merchant to pick: yes / no, or one of its best guesses. */
+export interface Choice {
+  label: string
+  onPress: () => void
+}
+
 export const MIC_LABELS: Record<MicState, string> = {
   idle: th.mic.idle,
   listening: th.mic.listening,

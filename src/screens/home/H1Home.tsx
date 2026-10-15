@@ -15,7 +15,18 @@ export function H1Home() {
   const allDone = setupDone.menu && setupDone.hours
   // A returning merchant who logs in has startedAt equal to submittedAt: there is no sign-up time to show.
   const elapsed = startedAt !== null && submittedAt !== null && submittedAt - startedAt > 0 ? formatDuration(submittedAt - startedAt) : null
-  const { mic, notice, toggleMic, onSpoken } = useVoiceInput(() => false)
+  // Nothing here is understood by rules; the matcher's guess is acted on by opening the task it names.
+  const { mic, notice, choices, toggleMic, onSpoken } = useVoiceInput(() => false, {
+    understanding: {
+      screen: 'H1',
+      act: (label) => {
+        if (label === 'task:menu') dispatch({ type: 'GO', screen: 'H2_MENU' })
+        else if (label === 'task:hours') dispatch({ type: 'GO', screen: 'H3_HOURS' })
+        else return false
+        return true
+      },
+    },
+  })
   const tasks = [
     { key: 'menu' as const, label: th.h1.menuTask, Icon: UtensilsCrossed, screen: 'H2_MENU' as const },
     { key: 'hours' as const, label: th.h1.hoursTask, Icon: Clock, screen: 'H3_HOURS' as const },
@@ -60,7 +71,7 @@ export function H1Home() {
         )}
       </main>
       <div className="px-4 pt-2">
-        <AiHelperBar text={allDone ? th.h1.helperDone : th.h1.helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} />
+        <AiHelperBar text={allDone ? th.h1.helperDone : th.h1.helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} choices={choices} />
       </div>
       <nav className="mt-2 grid grid-cols-4 border-t border-line bg-surface" aria-hidden>
         {th.h1.nav.map((label, index) => {

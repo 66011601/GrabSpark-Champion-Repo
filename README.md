@@ -21,6 +21,18 @@ npm test        # unit + architecture tests
 - **3/7:** tap 🎤 and play "บรรทัด 1" from the panel (or speak it). Name, street, pin, address and food type fill in; tap **หมุดถูกแล้ว** and ✓ any amber box → **ต่อไป**.
 - **Shop location, other ways (3/7):** tap **ใช้ตำแหน่งตอนนี้** (tick "ตำแหน่งจำลอง" in the panel on a laptop), **ปักหมุดบนแผนที่** (move the map under the pin), paste a Google Maps / LINE location link, or type a postcode such as `40000` and pick the ตำบล. Saying "ใช้ตำแหน่งนี้" or "ปักหมุด" works too, and so does a full spoken address.
 - **Dialects and rude words:** the companion understands Isan, Northern (คำเมือง) and Southern function words and answers in central Thai, with one greeting in the merchant's style. Try in the panel's "พูดเอง" box on 3/7: `ข้อยขายส้มตำเด้อ`, `ร้านอยู่กาดหลวงเจ้า`; on Home → menu: `ข้าวเหนียวมะม่วงซาวห้าบาทเด้อ`; in Act 2: `เบิ่งยอดขายแหน่`. Rude words show as *** and never reach a field (`แม่งเอ๊ย ต่อไปเลย`). The sentence bank in `src/ai/language/corpus/` lists every sentence that is tested.
+- **Understanding new sentences:** the screen's own rules go first; when they do not understand, a matcher learned from about 3,100 sentences (central, Isan, Northern, Southern; `src/ai/understanding/bank/`) acts when it is sure, asks back ("หมายถึง…ใช่ไหมคะ?") when it is unsure, and offers two buttons when it is lost. It never fills a value and never sends or ticks for you. Measured on held-out sentences it never trained on (`bank/metrics.test.ts`):
+
+  | Region | Right (acted or asked about the right thing) | Asked back | Wrong without asking |
+  |---|---|---|---|
+  | Central | 90.0% | 28.0% | 0.4% |
+  | Isan | 89.0% | 32.0% | 0.3% |
+  | Northern | 89.7% | 23.8% | 0.3% |
+  | Southern | 87.7% | 26.9% | 0.3% |
+
+  The rows count each sentence on every screen that allows it. Act 2, with its 13 pages and many buttons, is the hardest screen on its own: 69% right, and it asks back about half the time.
+
+  Try these in "พูดเอง" (none of them is in the bank): on Home, `จะตั้งเวลาเปิดร้านค่ะ` (sure: opens the hours); on 3/7, `ร้านข้อยอยู่ใกล้วัดเด้อ` (asks "หมายถึงบอกที่ตั้งร้านใช่ไหมคะ?", answer `แม่น`); in Act 2, `มีคนติร้านเราไหม` (asks about reviews; answer `ไม่ใช่` for the next buttons).
 - **4/7:** tap "ใช้ธุรกิจส่วนตัว" → **ต่อไป**. **5/7:** tap 📷 → **ถ่ายรูป** → **ใช้รูปนี้** → **ต่อไป**. **6/7:** same with the bank book (the photo is attached) → **ต่อไป**.
 - **7/7:** read the summary (**ฟังสรุป** reads it aloud, numbers by their last 4 digits), tick both boxes yourself → **ส่งใบสมัคร**. Voice cannot tick or send.
 - **Home:** "อยู่ระหว่างตรวจสอบ" → **เพิ่มเมนู** (📷 paper menu: one price comes back amber, ✓ it; or play "บรรทัด 3") → **บันทึกเมนู** → **ตั้งเวลาเปิด-ปิด** (play "บรรทัด 2" or tap a chip) → **บันทึก** → **ดูต่อ: 30 วันต่อมา**.

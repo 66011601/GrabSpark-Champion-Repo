@@ -202,7 +202,7 @@ export function DashboardScreen() {
     return true
   }
 
-  const voice = useVoiceInput(interpret, { autoListen: !running })
+  const voice = useVoiceInput(interpret, { autoListen: !running, understanding: { screen: 'ACT2' } })
   useEffect(() => {
     resume.current = voice.onSpoken
   })
@@ -250,7 +250,7 @@ export function DashboardScreen() {
         </div>
       )}
       <div className="px-4 pt-2 pb-2">
-        <AiHelperBar text={line} notice={voice.notice} mic={voice.mic} onAvatar={voice.toggleMic} onSpoken={() => (lineDone.current ? lineDone.current() : resume.current())} />
+        <AiHelperBar text={line} notice={voice.notice} mic={voice.mic} onAvatar={voice.toggleMic} onSpoken={() => (lineDone.current ? lineDone.current() : resume.current())} choices={voice.choices} />
       </div>
       <NavCursor target={cursor.target} taps={cursor.taps} />
     </div>

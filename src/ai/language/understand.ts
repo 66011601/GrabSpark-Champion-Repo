@@ -25,6 +25,9 @@ const KNOWN_WORDS = [
   ...RUDE_WORDS,
   ...DIALECT.filter((entry) => GLUE_KINDS.includes(entry.kind) && length(entry.word) >= 3).map((entry) => entry.word),
 ].sort((a, b) => length(b) - length(a))
+// The same words by first letter, longest first within each: unglueKnownWords looks them up at every piece.
+const KNOWN_BY_LETTER = new Map<string, string[]>()
+for (const word of KNOWN_WORDS) KNOWN_BY_LETTER.set(word.charAt(0), [...(KNOWN_BY_LETTER.get(word.charAt(0)) ?? []), word])
 // A Thai word starts with a consonant or a leading vowel, never with a tone mark or a following vowel.
 const WORD_START = /^[ก-ฮเแโใไ]/
 // Words that start with a rude or dialect word and are neither (กูเกิล, ศาลเจ้า): nothing is matched where they start.
@@ -45,7 +48,10 @@ function phraseFrom(pieces: Piece[], from: number): { text: string; end: number 
   return { text: said(pieces, from, end), end }
 }
 
-const startsSafeWord = (pieces: Piece[], from: number) => SAFE_WORDS.some((word) => phraseFrom(pieces, from).text.startsWith(word))
+function startsSafeWord(pieces: Piece[], from: number): boolean {
+  const phrase = phraseFrom(pieces, from).text // once, not once per safe word: this runs at every piece
+  return SAFE_WORDS.some((word) => phrase.startsWith(word))
+}
 
 /**
  * The word breaker does not know rude or dialect words and may glue their last letter to the next word:
@@ -57,9 +63,10 @@ const startsSafeWord = (pieces: Piece[], from: number) => SAFE_WORDS.some((word)
 function unglueKnownWords(input: Piece[]): Piece[] {
   let pieces = input
   for (let index = 0; index < pieces.length; index += 1) {
-    if (!pieces[index].word || startsSafeWord(pieces, index)) continue
+    if (!pieces[index].word) continue
     const phrase = phraseFrom(pieces, index)
-    for (const known of KNOWN_WORDS) {
+    if (SAFE_WORDS.some((word) => phrase.text.startsWith(word))) continue
+    for (const known of KNOWN_BY_LETTER.get(phrase.text.charAt(0)) ?? []) {
       if (!phrase.text.startsWith(known)) continue
       let reach = 0
       for (let at = index; reach < known.length; at += 1) reach += pieces[at].text.length
@@ -107,8 +114,27 @@ const closesPhrase = (pieces: Piece[], at: number) =>
 const rudeAt = (pieces: Piece[], index: number) =>
   pieces[index].word && !startsSafeWord(pieces, index) ? firstMatch(pieces, index, RUDE_WORDS, (word) => word) : null
 
+// firstMatch runs through several word lists at every piece of every sentence, and a phrase can only match where the
+// piece starts with its first letter, so each list is grouped by first letter once (list order kept inside a group).
+const byFirstLetter = new WeakMap<object, Map<string, unknown[]>>()
+
+function startingWith<T>(list: T[], phrase: (item: T) => string, letter: string): T[] {
+  let groups = byFirstLetter.get(list) as Map<string, T[]> | undefined
+  if (!groups) {
+    groups = new Map()
+    for (const item of list) {
+      const first = phrase(item).replace(/\s+/g, '').charAt(0)
+      if (first) groups.set(first, [...(groups.get(first) ?? []), item])
+    }
+    byFirstLetter.set(list, groups)
+  }
+  return groups.get(letter) ?? []
+}
+
 function firstMatch<T>(pieces: Piece[], from: number, list: T[], phrase: (item: T) => string): { item: T; end: number } | null {
-  for (const item of list) {
+  const letter = (pieces[from]?.text ?? '').replace(/\s+/g, '').charAt(0)
+  // A piece of spaces only may be skipped over by a phrase, so then every entry is tried.
+  for (const item of letter ? startingWith(list, phrase, letter) : list) {
     const end = phraseEnd(pieces, from, phrase(item))
     if (end !== -1) return { item, end }
   }

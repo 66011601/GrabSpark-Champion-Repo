@@ -36,7 +36,7 @@ export function S6Bank() {
   const edit = (part: keyof PayoutAccount) => (value: string | null) =>
     dispatch({ type: 'FILL', updates: { payout: { value: { ...payout, [part]: value }, confidence: 1, heardFrom: TYPED } }, at: Date.now() })
 
-  const { mic, notice, toggleMic, stop, onSpoken } = useVoiceInput(
+  const { mic, notice, choices, toggleMic, stop, onSpoken } = useVoiceInput(
     (text) => {
       const command = matchCommand(text, COMMANDS)
       if (command === 'shoot') setScanning(true)
@@ -45,7 +45,7 @@ export function S6Bank() {
       return command !== null
     },
     // The sheet speaks its own lines: keep the mic shut, and shut it again on its own, while it is up.
-    { autoListen: !scanning },
+    { autoListen: !scanning, understanding: { screen: 'S6' } },
   )
 
   const openScan = () => {
@@ -64,7 +64,7 @@ export function S6Bank() {
       onBack={() => dispatch({ type: 'BACK' })}
       footer={
         <>
-          <AiHelperBar text={helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} action={{ kind: 'camera', label: th.s6.scan, onPress: openScan }} />
+          <AiHelperBar text={helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} choices={choices} action={{ kind: 'camera', label: th.s6.scan, onPress: openScan }} />
           <Button fullWidth disabled={!status.valid} onClick={() => dispatch({ type: 'NEXT' })}>
             {th.common.next}
           </Button>
