@@ -469,7 +469,7 @@ export const th = {
       ask: 'อยากรู้เรื่องไหนคะ? เลือกได้เลย หนูจะเล่าให้ฟังว่าทำอะไรได้บ้าง',
       more: 'ถามเรื่องอื่น',
       all: 'ดูทั้งหมด',
-      // "แนะนำหน่อย": two or three features to start with, a different set each time.
+      // "แนะนำหน่อย": two features to start with, a different pair each time.
       intro: (features: string[]) =>
         `ลองเริ่มจากพวกนี้ได้เลยค่ะ ${features.map((feature, index) => `${['อย่างแรก', 'อีกอย่าง', 'แล้วก็'][index]} ${feature}`).join(' ')} กดปุ่มข้างล่างให้หนูพาไปดูได้เลยนะคะ`,
       features: [
