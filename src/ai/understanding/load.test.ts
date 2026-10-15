@@ -5,12 +5,13 @@ import { matchOn } from './load.ts'
 
 /**
  * How long matchOn takes when the screen's index is not built yet. Fresh copies of load.ts and the bank are loaded
- * first (in the browser that is the lazy chunk's download, not index work), so nothing is cached; the best of three
- * cold builds is kept, because other test files run on the same machine at the same time.
+ * first (in the browser that is the lazy chunk's download, not index work), so nothing is cached. This file runs after
+ * the other test files (TIMED in vite.config.ts); the best of five cold builds is kept, so a garbage collection or a
+ * busy moment on the machine fails no build, while code that is slow every time still does.
  */
 async function coldBuild(screen: ScreenId): Promise<number> {
   let best = Infinity
-  for (let round = 0; round < 3; round += 1) {
+  for (let round = 0; round < 5; round += 1) {
     vi.resetModules()
     await import('./bank/index.ts')
     const fresh = await import('./load.ts')
