@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import type { DurianStage } from './avatar3d/durianScene.ts'
+import type { CompanionStage } from './avatar3d/companionScene.ts'
 
-const FACE = `${import.meta.env.BASE_URL}images/companion/durian-face.webp`
+const FACE = `${import.meta.env.BASE_URL}images/companion/strawberry-girl.webp`
 
 /**
  * The companion in 3D. three.js is loaded only when this first shows, so the rest of the app stays light.
- * Until it is ready, or where WebGL is missing, the photo stands in.
+ * Until it is ready, or where WebGL is missing, the photo stands in. `close` shows just her head, for a round avatar.
  */
-export function Avatar3D({ speaking, className = '' }: { speaking: boolean; className?: string }) {
+export function Avatar3D({ speaking, close = false, className = '' }: { speaking: boolean; close?: boolean; className?: string }) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const talking = useRef(speaking)
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>('loading')
@@ -18,11 +18,11 @@ export function Avatar3D({ speaking, className = '' }: { speaking: boolean; clas
 
   useEffect(() => {
     let alive = true
-    let stage: DurianStage | null = null
-    import('./avatar3d/durianScene.ts')
-      .then(({ mountDurian }) => {
+    let stage: CompanionStage | null = null
+    import('./avatar3d/companionScene.ts')
+      .then(({ mountCompanion }) => {
         if (!alive || !canvas.current) return
-        stage = mountDurian(canvas.current, { speaking: () => talking.current, reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches })
+        stage = mountCompanion(canvas.current, { speaking: () => talking.current, reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches, close })
         setState('ready')
       })
       .catch(() => alive && setState('failed'))
@@ -30,12 +30,12 @@ export function Avatar3D({ speaking, className = '' }: { speaking: boolean; clas
       alive = false
       stage?.dispose()
     }
-  }, [])
+  }, [close])
 
   return (
     <div className={`relative ${className}`} aria-hidden>
       <canvas ref={canvas} className={`size-full ${state === 'ready' ? '' : 'invisible'}`} />
-      {state !== 'ready' && <img src={FACE} alt="" className="absolute bottom-6 left-1/2 size-28 -translate-x-1/2 rounded-full object-cover ring-4 ring-grab" />}
+      {state !== 'ready' && <img src={FACE} alt="" className={`absolute object-cover object-[50%_70%] ${close ? 'inset-0 size-full origin-[50%_62%] scale-[1.9]' : 'bottom-6 left-1/2 size-28 -translate-x-1/2 rounded-full ring-4 ring-grab'}`} />}
     </div>
   )
 }

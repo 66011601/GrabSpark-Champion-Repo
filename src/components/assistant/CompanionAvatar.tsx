@@ -1,9 +1,7 @@
 import { EyeOff, Loader2, Mic, MicOff } from 'lucide-react'
 import { th } from '@/copy/th.ts'
+import { Avatar3D } from './Avatar3D.tsx'
 import { MIC_LABELS, type CompanionState, type MicState } from './companionState.ts'
-
-// Under GitHub Pages the app lives at a base path (vite.config.ts), so files in public/ go through BASE_URL.
-const FACE = `${import.meta.env.BASE_URL}images/companion/durian-face.webp`
 
 const RING: Record<CompanionState, string> = {
   idle: 'ring-grab',
@@ -26,7 +24,7 @@ function MicBadge({ state, small }: { state: MicState; small: boolean }) {
 }
 
 /**
- * The companion's face. With `onPress` it is the talk button: press to start, press again
+ * The companion's face, in 3D. With `onPress` it is the talk button: press to start, press again
  * while listening to stop. Without it, it only keeps the merchant company.
  */
 export function CompanionAvatar({
@@ -44,13 +42,7 @@ export function CompanionAvatar({
     <>
       {state === 'listening' && <span className="absolute inset-0 animate-listen rounded-full bg-grab" aria-hidden />}
       {speaking && state === 'idle' && <span className="absolute inset-0 animate-speak rounded-full bg-grab" aria-hidden />}
-      <img
-        src={FACE}
-        alt=""
-        width={size === 'sm' ? 48 : 72}
-        height={size === 'sm' ? 48 : 72}
-        className={`relative ${size === 'sm' ? 'size-12 ring-2' : 'size-18 ring-4'} rounded-full object-cover ${RING[state]}`}
-      />
+      <Avatar3D close speaking={speaking} className={`${size === 'sm' ? 'size-16 ring-2' : 'size-18 ring-4'} overflow-hidden rounded-full bg-ok-bg ${RING[state]}`} />
       {state === 'private' && (
         <span className="absolute inset-0 flex animate-pop items-center justify-center rounded-full bg-ink/60 text-white" aria-hidden>
           <EyeOff className="size-8" />
