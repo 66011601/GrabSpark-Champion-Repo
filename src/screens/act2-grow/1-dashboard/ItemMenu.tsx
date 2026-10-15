@@ -1,4 +1,4 @@
-import { CircleCheck, UtensilsCrossed } from 'lucide-react'
+import { CircleCheck, Plus, UtensilsCrossed } from 'lucide-react'
 import { BACK_TIMES } from '@/ai/navigator/drafts.ts'
 import { BottomSheet } from '@/components/grab/BottomSheet.tsx'
 import { mark } from '@/components/navigator/mark.ts'
@@ -6,11 +6,13 @@ import { Switch } from '@/components/ui/Switch.tsx'
 import { th } from '@/copy/th.ts'
 import { formatTHB } from '@/lib/format.ts'
 import { getMerchant } from '@/services/merchantApi.ts'
+import { AddMenuSheet } from './AddMenuSheet.tsx'
 import { AppHeader } from './AppHeader.tsx'
 import { ConfirmBar } from './ConfirmBar.tsx'
 import type { PanelProps } from './props.ts'
 
 const t = th.act2.soldOut
+const a = th.act2.addMenu
 
 /**
  * GrabMerchant's menu: a green switch on each dish. Sliding it off asks how long ('วันนี้' or 'ไม่มีกำหนด'),
@@ -31,7 +33,30 @@ export function ItemMenu({ nav, highlight, change, pick, announce, home }: Panel
             {t.done(item.name)}
           </p>
         )}
+        <button
+          type="button"
+          data-nav="add-menu"
+          onClick={() => change({ adding: { kind: 'addMenu', items: [{ name: '', priceTHB: 0 }] }, soldOut: null, done: null })}
+          className={`flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-surface font-bold text-action ring-1 ring-action active:bg-ok-bg ${mark(highlight, 'add-menu')}`}
+        >
+          <Plus className="size-5" aria-hidden />
+          {a.button}
+        </button>
         <ul className="divide-y divide-line rounded-2xl bg-surface px-3 ring-1 ring-line">
+          {nav.added.map((entry) => (
+            <li key={`new-${entry.name}`} className="flex items-center gap-3 py-2">
+              <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-ok-bg text-action">
+                <UtensilsCrossed className="size-6" aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="line-clamp-2 leading-snug font-bold">{entry.name}</p>
+                <p className="text-sm">
+                  <span className="tabular-nums">{formatTHB(entry.priceTHB)}</span>
+                  <span className="font-bold text-action"> · {a.isNew}</span>
+                </p>
+              </div>
+            </li>
+          ))}
           {shop.menu.map((entry) => {
             const drafting = draft?.itemId === entry.id
             const confirmed = nav.off[entry.id]
@@ -54,7 +79,7 @@ export function ItemMenu({ nav, highlight, change, pick, announce, home }: Panel
                   label={t.toggle(entry.name)}
                   disabled={drafting && !done}
                   // Off and confirmed: the merchant's own tap puts the dish back on sale.
-                  onChange={() => (confirmed !== undefined ? change({ off: Object.fromEntries(Object.entries(nav.off).filter(([id]) => id !== entry.id)), soldOut: drafting ? null : draft, done: drafting ? null : nav.done }) : change({ soldOut: { kind: 'soldOut', itemId: entry.id, until: null }, done: null }))}
+                  onChange={() => (confirmed !== undefined ? change({ off: Object.fromEntries(Object.entries(nav.off).filter(([id]) => id !== entry.id)), soldOut: drafting ? null : draft, done: drafting ? null : nav.done }) : change({ soldOut: { kind: 'soldOut', itemId: entry.id, until: null }, adding: null, done: null }))}
                   data-nav={`soldout-${entry.id}`}
                 />
               </li>
@@ -101,6 +126,7 @@ export function ItemMenu({ nav, highlight, change, pick, announce, home }: Panel
           </div>
         )}
       </BottomSheet>
+      <AddMenuSheet nav={nav} highlight={highlight} change={change} announce={announce} />
     </>
   )
 }

@@ -22,6 +22,13 @@ describe('parseMenuItems', () => {
     expect(parseMenuItems('หมูปิ้งไม้ละ 10 บาท')).toEqual([{ name: 'หมูปิ้ง', priceTHB: 10 }])
   })
 
+  it('leaves a count and its unit out too, and never reads the count as a price', () => {
+    expect(parseMenuItems('น้ำส้ม 1 แก้ว 20 บาท')).toEqual([{ name: 'น้ำส้ม', priceTHB: 20 }])
+    expect(parseMenuItems('น้ำส้มแก้วนึง 20 บาท')).toEqual([{ name: 'น้ำส้ม', priceTHB: 20 }])
+    expect(parseMenuItems('หมูปิ้ง 10 ไม้ 100 บาท')).toEqual([{ name: 'หมูปิ้ง', priceTHB: 100 }])
+    expect(parseMenuItems('ข้าวชุด 60 บาท')).toEqual([{ name: 'ข้าวชุด', priceTHB: 60 }])
+  })
+
   it('reads digit prices', () => {
     expect(parseMenuItems('ข้าวมันไก่ 50 ต้มเลือดหมู 40 บาท')).toEqual([
       { name: 'ข้าวมันไก่', priceTHB: 50 },

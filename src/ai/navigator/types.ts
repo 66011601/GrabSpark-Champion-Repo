@@ -1,3 +1,5 @@
+import type { MenuEntry } from '@/types/domain.ts'
+
 export type NavScreen = 'HOME' | 'INSIGHTS' | 'BOOST' | 'MENU' | 'FEEDBACK' | 'PAGE'
 
 /** The 13 items on GrabMerchant's home. */
@@ -30,7 +32,13 @@ export interface SoldOutDraft {
   until: SoldOutUntil | null
 }
 
-export type Draft = PromoDraft | SoldOutDraft
+/** New dishes the AI drafted from what the owner said. Nothing is added until the merchant taps the confirm bar. */
+export interface AddMenuDraft {
+  kind: 'addMenu'
+  items: MenuEntry[]
+}
+
+export type Draft = PromoDraft | SoldOutDraft | AddMenuDraft
 
 /** Everything the mock app shows. Scripts change it through `set`; they never write anywhere else. */
 export interface NavState {
@@ -46,9 +54,12 @@ export interface NavState {
   soldOut: SoldOutDraft | null
   negativeOnly: boolean
   lesson: boolean
-  done: 'promo' | 'soldOut' | null
+  adding: AddMenuDraft | null
+  done: 'promo' | 'soldOut' | 'addMenu' | null
   /** Dishes the merchant confirmed sold out, and until when. They stay off whatever screen the AI opens next. */
   off: Record<string, SoldOutUntil>
+  /** Dishes the merchant confirmed adding. They stay on the menu whatever screen the AI opens next. */
+  added: MenuEntry[]
 }
 
 export const INITIAL_NAV: NavState = {
@@ -64,12 +75,14 @@ export const INITIAL_NAV: NavState = {
   soldOut: null,
   negativeOnly: false,
   lesson: false,
+  adding: null,
   done: null,
   off: {},
+  added: [],
 }
 
-/** The home screen again, keeping what the merchant has confirmed (the dishes switched off). */
-export const freshNav = (now: NavState): NavState => ({ ...INITIAL_NAV, off: now.off })
+/** The home screen again, keeping what the merchant has confirmed (dishes switched off, dishes added). */
+export const freshNav = (now: NavState): NavState => ({ ...INITIAL_NAV, off: now.off, added: now.added })
 
 export type ScriptId = 'sales' | 'forecast' | 'promo' | 'soldOut' | 'feedback'
 

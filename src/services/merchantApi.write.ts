@@ -1,4 +1,4 @@
-import type { PromoDraft, SoldOutDraft } from '@/ai/navigator/types.ts'
+import type { AddMenuDraft, PromoDraft, SoldOutDraft } from '@/ai/navigator/types.ts'
 import type { OnboardingProfile, SetupPart } from '@/types/domain.ts'
 import { demoFlags } from './demoFlags.ts'
 
@@ -74,3 +74,6 @@ export const stopPromotion = (promoId: string) => mockCall(promoId)
 
 /** Act 2: marks a dish sold out until the time the merchant chose. */
 export const markSoldOut = (draft: SoldOutDraft) => mockCall(`SOLDOUT-${draft.itemId}`)
+
+/** Act 2: adds the new dishes the merchant confirmed. */
+export const addMenuItems = (draft: AddMenuDraft) => mockCall(`MENU-ADD-${draft.items.length}`)
