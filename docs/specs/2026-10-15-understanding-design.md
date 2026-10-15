@@ -88,12 +88,13 @@ Every bank sentence has `{ say, region: 'central' | 'isan' | 'north' | 'south', 
 
 ## 6. Integration
 
-- **`useVoiceInput(interpret, { autoListen, understanding })`:** `understanding = { screen, labels, act }`.
-  - `act: (label) => Reply | Promise<Reply>` performs a label using the screen's existing handlers.
+- **`useVoiceInput(interpret, { autoListen, understanding })`:** `understanding = { screen, act? }`. The screen's allowed labels come from one registry (`src/ai/understanding/labels.ts`).
+  - **Default `act` (no new screen logic):** a command, intent or button label is performed by **replaying its canonical phrase** (e.g. `SAY.next[0]`, a script's first phrase, a button's first name) through the screen's own `interpret`. A `topic:*` label replies with that field's follow-up question. A test checks that every canonical phrase routes back to its own label.
+  - **Custom `act`:** only screens whose labels have no spoken route supply their own (H1's `task:menu` / `task:hours`).
   - The hook runs the matcher only when the rules returned `false`. It holds the waiting ask-back and returns `choices: { label: string; onPress: () => void }[]`.
   - The decision (rules → matcher → act / ask / lost, and resolving yes/no) is a pure function in `src/components/assistant/understandingStep.ts`, so it is tested without a DOM.
 - **`AiHelperBar`:** gains `choices` and renders them as chips (48px tall) under the companion's line.
-- **Screens:** every listening screen adds its label list and an `act` map. G0, S1, S2 account, S2 phone, S3, S4, S5, S6, S7, H1, H2 and H3 are ours. **Act 2's `DashboardScreen.tsx` is edited minimally:** it adds the `understanding` option, and its `act` calls the existing `start(script(id))`, `openScript`, `pressScript`, `goHome` and `backScript`. Its scripts and button registry are not edited. The PR asks the teammate to review it.
+- **Screens:** every listening screen passes `understanding: { screen: '<id>' }` and renders the hook's `choices` in its helper bar. That covers G0, S1, S2 account, S2 phone, S3, S4, S5, S6, S7, H1, H2 and H3. **Act 2's `DashboardScreen.tsx` gets the same minimal edit** (the option and `choices`). Its scripts and button registry are not edited, and the PR asks the teammate to review it.
 - **Copy:** `th.understanding`: `ask(label)`, `unsure`, `yes`, `no`, and a readable name per label. Act 2 names come from `th.act2.grid` and the button registry's titles.
 
 ## 7. Safety
