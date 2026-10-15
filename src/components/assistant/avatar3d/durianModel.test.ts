@@ -6,7 +6,7 @@ describe('buildDurian', () => {
   const durian = buildDurian()
 
   it('has the parts the animation moves', () => {
-    for (const part of [durian.body, durian.eyes[0], durian.eyes[1], durian.smile, durian.talk, durian.waveArm]) expect(part).toBeInstanceOf(THREE.Object3D)
+    for (const part of [durian.body, durian.eyes[0], durian.eyes[1], durian.brows[0], durian.brows[1], durian.pout, durian.talk, durian.waveArm]) expect(part).toBeInstanceOf(THREE.Object3D)
     expect(durian.root.getObjectByName('spikes')).toBeInstanceOf(THREE.InstancedMesh)
     expect(durian.root.getObjectByName('collar')).toBeDefined()
   })
@@ -23,8 +23,8 @@ describe('buildDurian', () => {
     }
   })
 
-  it('starts with the mouth closed in a smile', () => {
-    expect(durian.smile.visible).toBe(true)
+  it('starts with the mouth closed in a pout', () => {
+    expect(durian.pout.visible).toBe(true)
     expect(durian.talk.visible).toBe(false)
   })
 

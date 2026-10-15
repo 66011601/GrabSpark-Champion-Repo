@@ -13,20 +13,21 @@ const easeOutBack = (t: number) => 1 + 2.2 * (t - 1) ** 3 + 1.2 * (t - 1) ** 2
 
 /**
  * Draws the 3D durian on a transparent canvas: it rises in, waves hello, then bobs, blinks,
- * and moves its mouth while `speaking()` is true. With reduced motion it simply stands there and only talks.
+ * and smiles and talks while `speaking()` is true. With reduced motion it simply stands there and only talks.
+ * `close` frames just the head, still and facing out, for the small round avatar.
  * Throws when WebGL is not available, so the caller can show the photo instead.
  */
-export function mountDurian(canvas: HTMLCanvasElement, { speaking, reducedMotion }: { speaking: () => boolean; reducedMotion: boolean }): DurianStage {
+export function mountDurian(canvas: HTMLCanvasElement, { speaking, reducedMotion, close = false }: { speaking: () => boolean; reducedMotion: boolean; close?: boolean }): DurianStage {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.setClearColor(0x000000, 0)
 
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 50)
-  camera.position.set(0, 0.2, 6)
-  camera.lookAt(0, -0.05, 0)
+  camera.position.set(0, close ? 0.1 : 0.2, close ? 5.2 : 6)
+  camera.lookAt(0, close ? 0.1 : -0.05, 0)
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x5a6b2f, 1.7))
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x6b5a3a, 1.7))
   const key = new THREE.DirectionalLight(0xffffff, 2.2)
   key.position.set(2, 3, 4)
   const rim = new THREE.DirectionalLight(0xfff3c4, 1.3)
@@ -34,7 +35,7 @@ export function mountDurian(canvas: HTMLCanvasElement, { speaking, reducedMotion
   scene.add(key, rim)
 
   const durian = buildDurian()
-  durian.root.rotation.y = -0.4 // turned towards the speech bubble on its left
+  if (!close) durian.root.rotation.y = -0.4 // turned towards the speech bubble on its left
   scene.add(durian.root)
 
   const fit = () => {
@@ -51,8 +52,9 @@ export function mountDurian(canvas: HTMLCanvasElement, { speaking, reducedMotion
   const start = performance.now()
   renderer.setAnimationLoop(() => {
     const t = (performance.now() - start) / 1000
-    if (reducedMotion) {
+    if (reducedMotion || close) {
       durian.root.position.y = 0
+      if (close && !reducedMotion) durian.body.position.y = Math.sin(t * 2) * 0.02
     } else {
       const enter = Math.min(1, Math.max(0, (t - ENTER_DELAY) / ENTER_TIME))
       durian.root.position.y = -2.8 * (1 - easeOutBack(enter))
@@ -64,9 +66,10 @@ export function mountDurian(canvas: HTMLCanvasElement, { speaking, reducedMotion
       for (const eye of durian.eyes) eye.scale.y = blink
     }
     const talking = speaking()
-    durian.smile.visible = !talking
+    durian.pout.visible = !talking
     durian.talk.visible = talking
     if (talking) durian.talk.scale.y = 0.35 + 0.55 * Math.abs(Math.sin(t * 13))
+    durian.brows.forEach((brow, i) => (brow.rotation.z = Math.PI / 2 + (i ? 1 : -1) * (talking ? 0.12 : 0.32))) // she eases her frown to talk
     renderer.render(scene, camera)
   })
 

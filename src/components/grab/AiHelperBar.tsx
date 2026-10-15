@@ -6,7 +6,6 @@ import { Spotlight } from '@/components/assistant/Spotlight.tsx'
 import { markSeen, shouldSpotlight } from '@/components/assistant/spotlight.ts'
 import { useSpokenLine } from '@/components/assistant/useSpokenLine.ts'
 import { VoiceToggle } from '@/components/assistant/VoiceToggle.tsx'
-import { th } from '@/copy/th.ts'
 import { isSpeakingNow, subscribeVoice } from '@/services/speech/textToSpeech.ts'
 
 interface AiHelperBarProps {
@@ -19,46 +18,32 @@ interface AiHelperBarProps {
   choices?: Choice[] // yes / no, or the best guesses, while the companion waits for the merchant to pick
 }
 
-/** The slim "ผู้ช่วย AI" bar above the screen's green button. */
-export function AiHelperBar({ text, notice, mic, onAvatar, action, onSpoken, choices }: AiHelperBarProps) {
+/**
+ * The companion above the screen's green button: her 3D face (the talk button), the voice switch and the screen's own action.
+ * What she says shows in the spotlight: on a new step, and whenever she has something to fix or a question to pick from.
+ */
+export function AiHelperBar({ text, notice, mic, onAvatar, action, onSpoken, choices = [] }: AiHelperBarProps) {
   const speaking = useSyncExternalStore(subscribeVoice, isSpeakingNow)
   useSpokenLine(notice ? `${notice} ${text}` : text, { listening: mic === 'listening', onSpoken })
   const Icon = action?.kind === 'camera' ? Camera : Mic
-  // A new step opens with its advice in the spotlight: the page dims and the 3D companion says it.
-  // Once the companion says something else, the merchant has moved on, so the page comes back by itself.
-  const [spotlight, setSpotlight] = useState(() => shouldSpotlight(text))
+  const asks = notice || choices.length ? `${notice ?? ''}|${choices.map((choice) => choice.id).join()}` : ''
+  const [spotlight, setSpotlight] = useState(() => shouldSpotlight(text) || asks !== '')
   const [firstLine] = useState(text)
   useEffect(() => markSeen(firstLine), [firstLine])
-  if (spotlight && (text !== firstLine || notice)) setSpotlight(false)
+  // A new line alone means the merchant moved on (a voice run walks the page), so the page comes back;
+  // something to fix or pick from opens the spotlight again.
+  const [shown, setShown] = useState({ text, asks })
+  if (shown.text !== text || shown.asks !== asks) {
+    setShown({ text, asks })
+    setSpotlight(asks !== '')
+  }
+  const talk = onAvatar && mic !== 'private' ? () => (setSpotlight(false), onAvatar()) : undefined
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-ok-bg p-2 pr-2">
-      {spotlight && <Spotlight text={text} speaking={speaking} onClose={() => setSpotlight(false)} />}
-      <CompanionAvatar size="sm" state={mic} speaking={speaking} onPress={onAvatar} />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold text-action">{th.grab.aiHelper}</p>
-        {notice && (
-          <p role="status" className="text-base text-warn-ink">
-            {notice}
-          </p>
-        )}
-        <p key={text} aria-live="polite" className="animate-rise text-base leading-snug">
-          {text}
-        </p>
-        {choices && choices.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {choices.map((choice) => (
-              <button
-                key={choice.id}
-                type="button"
-                onClick={choice.onPress}
-                className="min-h-12 cursor-pointer rounded-full bg-surface px-4 text-base font-medium text-action ring-1 ring-action active:bg-ok-bg"
-              >
-                {choice.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+    <div className="flex items-center justify-end gap-2">
+      {spotlight && <Spotlight text={text} notice={notice} choices={choices} speaking={speaking} onTalk={talk} onClose={() => setSpotlight(false)} />}
+      <p aria-live="polite" className="sr-only">
+        {notice ? `${notice} ${text}` : text}
+      </p>
       <VoiceToggle />
       {action && (
         <button
@@ -70,6 +55,7 @@ export function AiHelperBar({ text, notice, mic, onAvatar, action, onSpoken, cho
           <Icon className="size-6" aria-hidden />
         </button>
       )}
+      <CompanionAvatar size="sm" state={mic} speaking={speaking && !spotlight} onPress={onAvatar} />
     </div>
   )
 }
