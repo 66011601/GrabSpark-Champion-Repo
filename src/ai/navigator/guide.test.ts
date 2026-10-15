@@ -14,12 +14,11 @@ describe('the Act 2 guide', () => {
     for (const said of ['ขอดูยอดขายหน่อย', 'หมูกรอบหมดแล้ว']) expect(wantsIntro(said), said).toBe(false)
   })
 
-  it('introduces two or three features, never the same set twice in a row', () => {
+  it('introduces two features, never the same set twice in a row', () => {
     const introduce = createIntroducer()
     const sets = Array.from({ length: 8 }, () => introduce().map((feature) => feature.tryIt).join('|'))
     for (const [index, set] of sets.entries()) {
-      const size = set.split('|').length
-      expect(size === 2 || size === 3).toBe(true)
+      expect(set.split('|')).toHaveLength(2)
       if (index > 0) expect(set).not.toBe(sets[index - 1])
     }
   })

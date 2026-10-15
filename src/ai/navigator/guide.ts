@@ -12,18 +12,18 @@ export const wantsIntro = (text: string): boolean => WANTS_INTRO.test(text.repla
 
 export type Feature = (typeof th.act2.guide.features)[number]
 
+// Two suggestions keep the helper bar's buttons (two "ลองเลย" and "ดูทั้งหมด") inside the phone screen.
+const SUGGESTED = 2
+
 /**
- * Introduces two or three features, alternating, each time continuing round the list where the last one stopped,
+ * Introduces two features, each time continuing round the list where the last one stopped,
  * so asking again never gives the same suggestions back to back.
  */
 export function createIntroducer(features: readonly Feature[] = th.act2.guide.features) {
   let next = 0
-  let three = true
   return (): Feature[] => {
-    const count = three ? 3 : 2
-    const picked = Array.from({ length: count }, (_, step) => features[(next + step) % features.length])
-    next = (next + count) % features.length
-    three = !three
+    const picked = Array.from({ length: SUGGESTED }, (_, step) => features[(next + step) % features.length])
+    next = (next + SUGGESTED) % features.length
     return picked
   }
 }

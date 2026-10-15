@@ -247,7 +247,7 @@ export function DashboardScreen() {
       return true
     }
     if (!id) {
-      // "แนะนำป้าหน่อย ป้าต้องทำอะไร": two or three features to start with, different each time.
+      // "แนะนำป้าหน่อย ป้าต้องทำอะไร": two features to start with, a different pair each time.
       if (!wantsIntro(text)) return false
       const features = introduce()
       setIntroTries(features.map((feature) => feature.tryIt))
