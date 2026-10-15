@@ -45,19 +45,22 @@ export function S7Confirm() {
   const tick = (consent: keyof Consents) => (value: boolean) => dispatch({ type: 'SET_CONSENT', consent, value })
 
   // By voice the companion reads the summary; ticking and sending take the merchant's own tap.
-  const { mic, notice, toggleMic } = useVoiceInput((text) => {
-    const command = matchCommand(text, COMMANDS)
-    if (command === 'listen') {
-      readSummary()
-      return true
-    }
-    if (command === 'submit' || command === 'tick') return th.s7.mustTap
-    if (command === 'back') {
-      dispatch({ type: 'BACK' })
-      return true
-    }
-    return false
-  })
+  const { mic, notice, choices, toggleMic } = useVoiceInput(
+    (text) => {
+      const command = matchCommand(text, COMMANDS)
+      if (command === 'listen') {
+        readSummary()
+        return true
+      }
+      if (command === 'submit' || command === 'tick') return th.s7.mustTap
+      if (command === 'back') {
+        dispatch({ type: 'BACK' })
+        return true
+      }
+      return false
+    },
+    { understanding: { screen: 'S7' } },
+  )
 
   const send = async () => {
     setSending(true)
@@ -83,7 +86,7 @@ export function S7Confirm() {
       onBack={() => dispatch({ type: 'BACK' })}
       footer={
         <>
-          <AiHelperBar text={th.s7.helper} notice={apiError ? th.s7.apiError : notice} mic={mic} onAvatar={toggleMic} />
+          <AiHelperBar text={th.s7.helper} notice={apiError ? th.s7.apiError : notice} mic={mic} onAvatar={toggleMic} choices={choices} />
           {failed.length > 0 && (
             <ul role="alert" className="flex flex-col gap-1 rounded-2xl bg-warn-bg p-3 text-base text-warn-ink">
               {failed.map((check) => (

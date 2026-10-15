@@ -44,7 +44,7 @@ export function H2Menu() {
     }
   }, [])
 
-  const { mic, transcript, notice, toggleMic, stop, hear, onSpoken } = useVoiceInput(
+  const { mic, transcript, notice, choices, toggleMic, stop, hear, onSpoken } = useVoiceInput(
     (text) => {
       const command = matchCommand(text, COMMANDS)
       if (command === 'shoot') {
@@ -61,7 +61,7 @@ export function H2Menu() {
       dispatch({ type: 'FILL', updates: { menu: updates.menu }, at: Date.now() })
       return true
     },
-    { autoListen: talking && !scanning },
+    { autoListen: talking && !scanning, understanding: { screen: 'H2' } },
   )
 
   const openScan = () => {
@@ -97,7 +97,7 @@ export function H2Menu() {
       onBack={() => dispatch({ type: 'BACK' })}
       footer={
         <>
-          <AiHelperBar text={problem ?? th.h2.helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} action={{ kind: 'camera', label: th.h2.scan, onPress: openScan }} />
+          <AiHelperBar text={problem ?? th.h2.helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} choices={choices} action={{ kind: 'camera', label: th.h2.scan, onPress: openScan }} />
           <div className="flex gap-2">
             <Button variant="secondary" className="px-4!" onClick={() => setTalking(true)}>
               {th.h2.talk}
@@ -151,7 +151,7 @@ export function H2Menu() {
           setScanning(false)
         }}
       />
-      <TalkSheet open={talking} onClose={() => setTalking(false)} question={th.h2.talkQuestion} transcript={transcript} mic={mic} onMic={toggleMic} onType={hear} />
+      <TalkSheet open={talking} onClose={() => setTalking(false)} question={th.h2.talkQuestion} chips={choices} transcript={transcript} mic={mic} onMic={toggleMic} onType={hear} />
     </StepShell>
   )
 }

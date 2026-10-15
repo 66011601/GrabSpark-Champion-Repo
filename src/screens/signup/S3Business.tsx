@@ -238,7 +238,7 @@ export function S3Business() {
   const mismatch = wrongPostcode ? th.places.postcodeMismatch(wrongPostcode.postcode, wrongPostcode.actual, wrongPostcode.said) : null
   const canGoOn = status.valid && mismatch === null
 
-  const { mic, transcript, notice, toggleMic, stop, hear, onSpoken } = useVoiceInput(
+  const { mic, transcript, notice, choices, toggleMic, stop, hear, onSpoken } = useVoiceInput(
     async (text, isCurrent) => {
       setPlaceNotice(null) // a new turn: an old map notice must not hide what the companion says now
       const command = matchCommand(text, COMMANDS)
@@ -279,7 +279,7 @@ export function S3Business() {
       fill(updates)
       return Object.keys(updates).length > 0
     },
-    { autoListen: talking && pinView === null },
+    { autoListen: talking && pinView === null, understanding: { screen: 'S3' } },
   )
 
   useEffect(() => {
@@ -295,12 +295,14 @@ export function S3Business() {
       : question.text
     : (mismatch ?? (status.valid ? th.s3.helperDone : problemText(status.issues[0])))
   const amber = (key: ProfileFieldKey) => (needsAmber(fields[key]) ? () => dispatch({ type: 'CONFIRM_FIELD', field: key }) : null)
+  // The sheet covers the helper bar, so the companion's yes / no and best-guess buttons ride along with the chips.
   const chips = (question?.chips ?? []).flatMap((chip) => {
     if (chip.kind === 'say') return [{ label: chip.label, onPress: () => hear(chip.label) }]
     if (chip.kind === 'useDeviceLocation') return [{ label: chip.label, onPress: () => void locateHere() }]
     if (chip.kind === 'pinOnMap') return [{ label: chip.label, onPress: openPin }]
     return []
   })
+  const sheetChips = [...chips, ...choices]
 
   return (
     <StepShell
@@ -316,6 +318,7 @@ export function S3Business() {
             mic={mic}
             onAvatar={pressMic}
             onSpoken={onSpoken}
+            choices={choices}
             action={{ kind: 'mic', label: th.s3.talk, onPress: () => setTalking(true) }}
           />
           <Button fullWidth disabled={!canGoOn} onClick={() => dispatch({ type: 'NEXT' })}>
@@ -364,7 +367,7 @@ export function S3Business() {
         open={talking}
         onClose={() => setTalking(false)}
         question={line}
-        chips={chips}
+        chips={sheetChips}
         transcript={transcript}
         mic={mic}
         onMic={pressMic}

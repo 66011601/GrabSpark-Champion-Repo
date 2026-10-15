@@ -43,7 +43,7 @@ export function H3Hours() {
   const set = (change: Partial<OpeningHours>) =>
     dispatch({ type: 'FILL', updates: { hours: { value: { ...hours, ...change }, confidence: 1, heardFrom: TYPED } }, at: Date.now() })
 
-  const { mic, transcript, notice, toggleMic, hear, onSpoken } = useVoiceInput(
+  const { mic, transcript, notice, choices, toggleMic, hear, onSpoken } = useVoiceInput(
     (text) => {
       if (matchCommand(text, COMMANDS) === 'back') {
         dispatch({ type: 'BACK' })
@@ -54,7 +54,7 @@ export function H3Hours() {
       dispatch({ type: 'FILL', updates: { hours: updates.hours }, at: Date.now() })
       return true
     },
-    { autoListen: talking },
+    { autoListen: talking, understanding: { screen: 'H3' } },
   )
 
   const save = async () => {
@@ -81,7 +81,7 @@ export function H3Hours() {
       onBack={() => dispatch({ type: 'BACK' })}
       footer={
         <>
-          <AiHelperBar text={problem ?? th.h3.helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} action={{ kind: 'mic', label: th.h3.talk, onPress: () => setTalking(true) }} />
+          <AiHelperBar text={problem ?? th.h3.helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} choices={choices} action={{ kind: 'mic', label: th.h3.talk, onPress: () => setTalking(true) }} />
           <Button fullWidth disabled={!hours.open || !hours.close} loading={saving} onClick={save}>
             {saving ? th.h3.saving : th.h3.save}
           </Button>
@@ -119,7 +119,7 @@ export function H3Hours() {
         open={talking}
         onClose={() => setTalking(false)}
         question={th.h3.helper}
-        chips={[th.chips.hoursFullDay, th.chips.hoursMorning].map((label) => ({ label, onPress: () => hear(label) }))}
+        chips={[...[th.chips.hoursFullDay, th.chips.hoursMorning].map((label) => ({ label, onPress: () => hear(label) })), ...choices]}
         transcript={transcript}
         mic={mic}
         onMic={toggleMic}

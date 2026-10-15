@@ -24,7 +24,7 @@ const COMMANDS = [
 export function S1Service() {
   const { state, dispatch } = useJourney()
   const choose = (service: Service) => dispatch({ type: 'CHOOSE_SERVICE', service })
-  const { mic, notice, toggleMic, onSpoken } = useVoiceInput(
+  const { mic, notice, choices, toggleMic, onSpoken } = useVoiceInput(
     (text) => {
       const command = matchCommand(text, COMMANDS)
       if (command === 'food' || command === 'mart') choose(command)
@@ -32,7 +32,7 @@ export function S1Service() {
       if (command === 'back') dispatch({ type: 'BACK' })
       return command !== null
     },
-    { autoListen: true },
+    { autoListen: true, understanding: { screen: 'S1' } },
   )
   return (
     <StepShell
@@ -42,7 +42,7 @@ export function S1Service() {
       onBack={() => dispatch({ type: 'BACK' })}
       footer={
         <>
-          <AiHelperBar text={state.service === 'mart' ? th.s1.martNote : th.s1.helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} />
+          <AiHelperBar text={state.service === 'mart' ? th.s1.martNote : th.s1.helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} choices={choices} />
           <Button fullWidth disabled={!state.service} onClick={() => dispatch({ type: 'NEXT' })}>
             {th.common.next}
           </Button>
