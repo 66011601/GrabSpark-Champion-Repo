@@ -2,27 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { SAY } from '@/ai/commands/phrases.ts'
 import { SCREEN_COMMANDS } from '@/ai/language/corpus/screens.ts'
-import { matchButton } from '@/ai/navigator/buttons.ts'
-import { asksToConfirm, CONTROLS, matchIntent } from '@/ai/navigator/matchIntent.ts'
-import { matchOpen } from '@/ai/navigator/openPage.ts'
-import { SCRIPTS } from '@/ai/navigator/scripts.ts'
 import { understandThai } from '@/ai/language/understand.ts'
+import { act2Route } from './act2Route.ts'
 import type { ScreenId } from './bank/types.ts'
 import { BLOCKED, blockedReply, canonicalPhrase, SCREEN_LABELS, topicQuestion } from './labels.ts'
 import { labelName } from './labelNames.ts'
-
-// The same order DashboardScreen checks a sentence in (see src/ai/language/corpus/corpus.test.ts).
-function act2Route(text: string): string | null {
-  if (asksToConfirm(text)) return 'act2:confirm'
-  const control = matchCommand(text, CONTROLS)
-  if (control) return `control:${control}`
-  const page = matchOpen(text)
-  if (page) return `open:${page}`
-  const button = matchButton(text)
-  if (button) return `button:${button}`
-  const intent = matchIntent(text, SCRIPTS)
-  return intent ? `intent:${intent}` : null
-}
 
 describe('labels', () => {
   it('replays every command label through its own screen’s rules', () => {

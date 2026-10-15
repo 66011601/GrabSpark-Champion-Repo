@@ -12,6 +12,7 @@ interface Vector {
   norm: number
 }
 
+/** A screen's training sentences as TF-IDF vectors, with the rarity of every piece they contain. */
 export interface MatchIndex {
   idf: Map<string, number>
   vectors: Vector[]
@@ -25,12 +26,18 @@ export interface Match {
   ranked: string[] // labels by vote, best first
 }
 
+/** sure: act now; unsure: ask back; lost: offer buttons. */
 export type Level = 'sure' | 'unsure' | 'lost'
 
-// Initial values from the spec; Task 7 calibrates them on the held-out sentences and updates these lines.
-export const SURE_SCORE = 0.75
-export const SURE_MARGIN = 0.3
-export const ASK_SCORE = 0.45
+// Calibrated 2026-10-15 on the held-out sentences (bank/metrics.test.ts), over sure 0.6–0.9, margin 0.1–0.5 and
+// ask 0.3–0.6: the setting that passes both gates with the fewest questions. Measured there: right 90.0% central,
+// 89.0% Isan, 89.7% Northern, 87.7% Southern; wrong without asking 0.30%; asks 27.6%. Ask 0.35 already drops Isan and
+// Northern under 85% (unseen paraphrases share few character pieces), and the sure line moves only the ask rate.
+// Spec D1 §4 started at 0.75 / 0.3 / 0.45.
+export const SURE_SCORE = 0.6
+export const SURE_MARGIN = 0.1
+export const ASK_SCORE = 0.3
+/** How many nearest training sentences vote. */
 export const K = 5
 
 function weigh(counts: Map<string, number>, idf: Map<string, number>, label: string): Vector {
@@ -49,11 +56,22 @@ function weigh(counts: Map<string, number>, idf: Map<string, number>, label: str
 /** TF-IDF vectors of the training sentences. Rare pieces weigh more than ones every sentence has. */
 export function buildIndex(examples: Example[]): MatchIndex {
   const counted = examples.map((example) => ({ label: example.label, counts: ngrams(example.text) }))
-  const seenIn = new Map<string, number>()
-  for (const { counts } of counted) for (const gram of counts.keys()) seenIn.set(gram, (seenIn.get(gram) ?? 0) + 1)
+  const idf = new Map<string, number>()
+  for (const { counts } of counted) for (const gram of counts.keys()) idf.set(gram, (idf.get(gram) ?? 0) + 1)
   const total = counted.length
-  const idf = new Map([...seenIn].map(([gram, docs]) => [gram, Math.log((1 + total) / (1 + docs)) + 1]))
-  return { idf, vectors: counted.map(({ label, counts }) => weigh(counts, idf, label)) }
+  for (const [gram, docs] of idf) idf.set(gram, Math.log((1 + total) / (1 + docs)) + 1)
+  // Every training piece is in the idf, so each sentence's counts become its weights in place: the index is built on
+  // the merchant's first unknown sentence, and a second map per sentence was a third of the time.
+  const vectors = counted.map(({ label, counts }) => {
+    let sum = 0
+    for (const [gram, count] of counts) {
+      const weight = (count === 1 ? 1 : 1 + Math.log(count)) * idf.get(gram)!
+      counts.set(gram, weight)
+      sum += weight * weight
+    }
+    return { label, weights: counts, norm: Math.sqrt(sum) }
+  })
+  return { idf, vectors }
 }
 
 function cosine(a: Vector, b: Vector): number {

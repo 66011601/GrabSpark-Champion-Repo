@@ -16,17 +16,21 @@ export function splitWords(text: string): Piece[] {
     .map((part) => ({ text: part, word: !/^\s+$/.test(part) }))
 }
 
+// Called for every word list entry at every piece of every sentence: most texts have no space, so skip the copy.
+const SPACE = /\s/
+const squash = (text: string) => (SPACE.test(text) ? text.replace(/\s+/g, '') : text)
+
 /**
  * Where `phrase` ends if it starts at piece `from`: the index after its last piece, or -1.
  * A phrase covers whole pieces only (บ่ never matches inside บ่อ). Spaces are ignored on both sides,
  * and a phrase may span several pieces because the breaker splits some dialect words (หรอย → หรอ + ย).
  */
 export function phraseEnd(pieces: Piece[], from: number, phrase: string): number {
-  const wanted = phrase.replace(/\s+/g, '')
+  const wanted = squash(phrase)
   if (!wanted) return -1
   let joined = ''
   for (let index = from; index < pieces.length; index += 1) {
-    joined += pieces[index].text.replace(/\s+/g, '')
+    joined += squash(pieces[index].text)
     if (joined === wanted) return index + 1
     if (!wanted.startsWith(joined)) return -1
   }

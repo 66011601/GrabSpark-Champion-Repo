@@ -16,7 +16,7 @@ describe('decide', () => {
   })
 
   it('asks back when unsure, keeping the next two as the fallback', () => {
-    expect(decide(match('pin', 0.6, 0.1, ['pin', 'here', 'none', 'back']))).toEqual({ kind: 'ask', label: 'pin', rest: ['here', 'back'] })
+    expect(decide(match('pin', SURE_SCORE - 0.01, 0.1, ['pin', 'here', 'none', 'back']))).toEqual({ kind: 'ask', label: 'pin', rest: ['here', 'back'] })
   })
 
   it('offers the two best real labels when lost', () => {
@@ -102,7 +102,7 @@ describe('takeTurn', () => {
   })
 
   it('asks back when unsure and remembers the question', async () => {
-    const p = parts({ matchOn: vi.fn(async () => match('pin', 0.6, 0.1, ['pin', 'here', 'back'])) })
+    const p = parts({ matchOn: vi.fn(async () => match('pin', SURE_SCORE - 0.01, 0.1, ['pin', 'here', 'back'])) })
     const turn = await takeTurn(p)
     expect(turn.reply).toBe(th.understanding.ask('ปักหมุดบนแผนที่'))
     expect(turn.pending).toEqual({ label: 'pin', rest: ['here', 'back'] })

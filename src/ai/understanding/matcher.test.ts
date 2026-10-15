@@ -50,7 +50,8 @@ describe('classify', () => {
 describe('levelOf', () => {
   it('is sure only with a high score and a clear lead', () => {
     expect(levelOf({ label: 'intent:sales', score: SURE_SCORE, margin: SURE_MARGIN, ranked: [] })).toBe('sure')
-    expect(levelOf({ label: 'intent:sales', score: SURE_SCORE, margin: 0.1, ranked: [] })).toBe('unsure')
+    expect(levelOf({ label: 'intent:sales', score: SURE_SCORE, margin: SURE_MARGIN - 0.01, ranked: [] })).toBe('unsure')
+    expect(levelOf({ label: 'intent:sales', score: SURE_SCORE - 0.01, margin: 1, ranked: [] })).toBe('unsure')
     expect(levelOf({ label: 'intent:sales', score: ASK_SCORE, margin: 1, ranked: [] })).toBe('unsure')
     expect(levelOf({ label: 'intent:sales', score: ASK_SCORE - 0.01, margin: 1, ranked: [] })).toBe('lost')
     expect(levelOf({ label: 'none', score: 1, margin: 1, ranked: [] })).toBe('lost')
