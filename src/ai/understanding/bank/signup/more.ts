@@ -68,6 +68,22 @@ const TOPIC_HOURS = written('topic:hours', ['H3'], {
   south: ['ช่วงมรสุมเรือไม่ออก ร้านเปิดไม่แน่', 'หวันหยุดยาวร้านจะปิดม้าย ยังไม่รู้', 'ตอนค่ำเปิดอีกรอบ ใส่สองช่วงได้ม้าย'],
 })
 
+
+const MORE_CENTRAL = [
+  ...written('task:hours', ['H1'], {
+    central: ['ร้านหยุดวันจันทร์ ไปตั้งเวลาก่อนดีกว่า', 'เรื่องเปิดปิดร้านค่ะ ทำอันนี้ก่อน'],
+    isan: ['ฮ้านหยุดมื้อวันพระ ไปตั้งเวลาก่อนเด้อ'],
+  }),
+  ...written('topic:location', ['S3'], {
+    central: ['ไม่มีบ้านเลขที่ค่ะ ขายแบกะดิน', 'แถวนี้ซอยไม่มีป้ายเลยค่ะ'],
+    south: ['ร้านอยู่ในหลาดนัด ไม่มีบ้านเลขที่หนิ'],
+  }),
+  ...written('topic:menu', ['H2'], {
+    central: ['มีเพิ่มไข่ดาวเพิ่มเงิน ต้องใส่แยกไหมคะ', 'บางเมนูมีให้เลือกเผ็ดน้อยเผ็ดมาก ใส่ยังไง'],
+    north: ['มีเพิ่มไข่ต้องจ่ายเพิ่มเจ้า ใส่แยกก่'],
+  }),
+]
+
 /** Sign-up and Home, second round. */
 export const MORE_SIGNUP_BANK: BankEntry[] = [
   ...YES,
@@ -79,4 +95,5 @@ export const MORE_SIGNUP_BANK: BankEntry[] = [
   ...TASK_HOURS,
   ...TOPIC_MENU,
   ...TOPIC_HOURS,
+  ...MORE_CENTRAL,
 ]
