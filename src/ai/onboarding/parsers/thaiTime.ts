@@ -53,12 +53,45 @@ const DAY_WORDS: [string, Weekday][] = [
 const DAY = 'จันทร์|อังคาร|พุธ|พฤหัส(?:บดี)?|ศุกร์|เสาร์|อาทิตย์'
 const ONE_DAY = `(?:ทุก)?(?:วัน)?(?:${DAY})`
 const DAY_LIST = `${ONE_DAY}(?:\\s*(?:ถึง|กับ|และ|-|,)?\\s*${ONE_DAY})*`
-const CLOSED_VERB = '(?:หยุด|(?<!เ)ปิด)' // the ปิด inside เปิด never counts
+const CLOSED_VERB = '(?:หยุด|ไม่(?:ได้)?(?:เปิด|ขาย)|(?<!เ)ปิด)' // the ปิด inside เปิด never counts
 const OPEN_VERB = '(?:เปิด|ขาย)'
 // A list right after หยุด/ปิด: "หยุดวันเสาร์อาทิตย์", "ปิดทุกวันจันทร์".
 const CLOSED_AFTER = new RegExp(`${CLOSED_VERB}\\s*(${DAY_LIST})`, 'g')
 // A list right before หยุด/ปิด ("วันอาทิตย์หยุด"), unless it belongs to เปิด/ขาย or continues another list.
 const CLOSED_BEFORE = new RegExp(`(?<!(?:${OPEN_VERB}|${DAY}|ถึง|กับ|และ|-|,|ทุก|วัน)\\s*)(${DAY_LIST})\\s*${CLOSED_VERB}`, 'g')
+
+// Days the shop opens: "เปิดจันทร์ถึงศุกร์", "ขายแค่วันเสาร์อาทิตย์", "จันทร์ถึงศุกร์เปิด" (never after ไม่).
+const OPEN_AFTER = new RegExp(`(?<!ไม่(?:ได้)?\\s*)${OPEN_VERB}(?:ร้าน)?\\s*(?:แค่|เฉพาะ)?\\s*(${DAY_LIST})`, 'g')
+const OPEN_BEFORE = new RegExp(`(${DAY_LIST})\\s*(?:ก็)?\\s*${OPEN_VERB}`, 'g')
+// "ที่เหลือหยุด", "นอกนั้นไม่เปิด", "วันอื่นปิด": every day not named as open is closed.
+const REST_CLOSED = new RegExp(`(?:ที่เหลือ|นอกนั้น|นอกจากนั้น|วันอื่น)\\s*(?:ก็)?\\s*${CLOSED_VERB}`)
+const ONLY = /แค่|เฉพาะ/
+const NAMED_DAYS: [RegExp, string][] = [
+  [/วันธรรมดา/g, 'จันทร์ถึงศุกร์'],
+  [/(?:วัน)?สุดสัปดาห์|(?:วัน)?เสาร์\s*-\s*อาทิตย์/g, 'เสาร์อาทิตย์'],
+]
+
+/** Every day a list names, with ranges filled in: "จันทร์ถึงศุกร์" is five days, "ศุกร์ถึงจันทร์" wraps the weekend. */
+function daysOf(list: string): Weekday[] {
+  const order = DAY_WORDS.map(([, day]) => day)
+  const days: Weekday[] = []
+  let ranging = false
+  for (const [token] of list.matchAll(new RegExp(`${DAY}|ถึง|-`, 'g'))) {
+    if (token === 'ถึง' || token === '-') {
+      ranging = days.length > 0
+      continue
+    }
+    const day = DAY_WORDS.find(([word]) => token.startsWith(word))?.[1]
+    if (!day) continue
+    if (ranging) {
+      const from = order.indexOf(days[days.length - 1])
+      for (let step = 1; order[(from + step) % 7] !== day; step += 1) days.push(order[(from + step) % 7])
+      ranging = false
+    }
+    days.push(day)
+  }
+  return days
+}
 
 /** Every time expression in the text, in the order it was said. */
 export function findTimes(input: string): TimeMatch[] {
@@ -84,11 +117,24 @@ export function parseThaiTime(text: string): string | null {
   return findTimes(text)[0]?.time ?? null
 }
 
-/** Days the shop is closed: "หยุดวันอาทิตย์", "ปิดทุกวันจันทร์", "วันเสาร์อาทิตย์หยุด". */
-export function parseClosedDays(text: string): Weekday[] {
-  const lists = [...text.matchAll(CLOSED_AFTER), ...text.matchAll(CLOSED_BEFORE)].map((match) => match[1])
-  return DAY_WORDS.filter(([word]) => lists.some((list) => list.includes(word))).map(([, day]) => day)
+/**
+ * Days the shop is closed, or null when the merchant said nothing about days. Said outright ("หยุดวันอาทิตย์",
+ * "วันเสาร์อาทิตย์ไม่เปิด") or worked out from the open days: "เปิดจันทร์ถึงศุกร์ ที่เหลือหยุด" closes Saturday and Sunday.
+ * The open days count as the whole week's plan when they are a range, come with แค่/เฉพาะ, or the rest is said closed.
+ */
+export function parseDays(input: string): Weekday[] | null {
+  const text = NAMED_DAYS.reduce((said, [pattern, days]) => said.replace(pattern, days), input)
+  const closed = new Set([...text.matchAll(CLOSED_AFTER), ...text.matchAll(CLOSED_BEFORE)].flatMap((match) => daysOf(match[1])))
+  const openLists = [...text.matchAll(OPEN_AFTER), ...text.matchAll(OPEN_BEFORE)].map((match) => match[1])
+  const open = new Set(openLists.flatMap(daysOf))
+  const wholeWeek = REST_CLOSED.test(text) || ONLY.test(text) || openLists.some((list) => /ถึง|-/.test(list))
+  if (wholeWeek && open.size > 0) for (const [, day] of DAY_WORDS) if (!open.has(day)) closed.add(day)
+  if (closed.size === 0 && open.size === 0) return null
+  return DAY_WORDS.map(([, day]) => day).filter((day) => closed.has(day))
 }
+
+/** Days the shop is closed: "หยุดวันอาทิตย์", "ปิดทุกวันจันทร์", "วันเสาร์อาทิตย์หยุด", "เปิดจันทร์ถึงศุกร์". */
+export const parseClosedDays = (text: string): Weekday[] => parseDays(text) ?? []
 
 /** "สิบโมงเช้าถึงสองทุ่ม" → { open: "10:00", close: "20:00" }. Null unless both times are present. */
 export function parseOpeningHours(text: string): OpeningHours | null {

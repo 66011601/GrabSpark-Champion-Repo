@@ -21,6 +21,9 @@ const LEADING_FILLERS = ['แล้วก็', 'เมนู', 'ราคา', '
 const SPACED_FILLERS = ['กับ', 'และ']
 const TRAILING_FILLERS = ['ราคา', 'นะคะ', 'นะครับ', 'ครับ', 'ค่ะ', 'คะ']
 
+// "ก๋วยเตี๋ยวเรือชามละ 50", "ชาเย็นแก้วละ 25": the unit and ละ say how the price is counted, they are not the dish.
+const UNIT_EACH = /\s*(?:ชาม|จาน|ถ้วย|แก้ว|ห่อ|กล่อง|ถุง|ไม้|ชิ้น|ลูก|ตัว|อัน|ที่|ชุด|กิโล|โล|ขีด|ขวด|กระป๋อง|ถาด|หม้อ|คู่|พวง|ฟอง|แพ็ค|แพ็ก|ก้อน|แผ่น|ปั้น|ลิตร|จุก|ตับ)?\s*(?:ละ|ล่ะ)$/
+
 function isPrice(text: string, match: NumberMatch): boolean {
   if (match.value < MIN_PRICE || match.value > MAX_PRICE) return false
   return AFTER_PRICE.test(text.slice(match.end)) && !AFTER_ADDRESS_WORD.test(text.slice(0, match.start))
@@ -30,7 +33,9 @@ function stripFiller(name: string): string | null {
   const leading = LEADING_FILLERS.find((filler) => name.startsWith(filler)) ?? SPACED_FILLERS.find((filler) => name.startsWith(`${filler} `))
   if (leading) return name.slice(leading.length).trim()
   const trailing = TRAILING_FILLERS.find((filler) => name.endsWith(filler))
-  return trailing ? name.slice(0, -trailing.length).trim() : null
+  if (trailing) return name.slice(0, -trailing.length).trim()
+  const unit = UNIT_EACH.exec(name)
+  return unit && unit.index > 0 ? name.slice(0, unit.index).trim() : null
 }
 
 function cleanName(raw: string): string {

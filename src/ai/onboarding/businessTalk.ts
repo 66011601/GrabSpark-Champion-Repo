@@ -3,6 +3,7 @@ import { addressFromLocation, DERIVED_CONFIDENCE } from './addressFields.ts'
 import { extractProfile } from './extractProfile.ts'
 import { BUILDING_CONFIDENCE, parseBuilding } from './parsers/building.ts'
 import { stripParticles } from './parsers/particles.ts'
+import { isQuestion } from './parsers/question.ts'
 import { formatThaiAddress, parseThaiAddress, streetLine } from './parsers/thaiAddress.ts'
 import { onlyEmptyFields } from './profile.ts'
 
@@ -21,7 +22,10 @@ export const SPOKEN_ADDRESS_CONFIDENCE = 0.75
 
 /** What one sentence on 3/7 fills. Hours, menu and phone are left for later steps even if they were said. */
 export function businessUpdates(text: string, ctx: BusinessTalkContext): ProfileUpdates {
-  const heard = extractProfile(text, { expecting: ctx.expecting, landmarks: ctx.landmarks })
+  // The merchant may answer a different field than the one asked, or several at once: what they clearly said fills
+  // its own field, and the asked field takes the rest of the answer.
+  const said = ctx.expecting ? extractProfile(text, { landmarks: ctx.landmarks }) : {}
+  const heard = { ...said, ...extractProfile(text, { expecting: ctx.expecting, landmarks: ctx.landmarks }) }
   const updates: ProfileUpdates = {}
   if (heard.storeName) updates.storeName = heard.storeName
   if (heard.category) updates.category = heard.category
@@ -33,7 +37,7 @@ export function businessUpdates(text: string, ctx: BusinessTalkContext): Profile
 
   const named = parseBuilding(text)
   if (named) updates.building = { ...named, heardFrom: text }
-  else if (ctx.expecting === 'building' && stripParticles(text)) {
+  else if (ctx.expecting === 'building' && stripParticles(text) && !isQuestion(text) && !heard.storeName && !heard.category) {
     updates.building = { value: stripParticles(text), confidence: BUILDING_CONFIDENCE, heardFrom: text }
   } else if (spoken && streetLine(spoken)) {
     updates.building = { value: streetLine(spoken), confidence: DERIVED_CONFIDENCE, heardFrom: text }

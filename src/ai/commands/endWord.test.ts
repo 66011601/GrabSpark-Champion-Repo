@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cutAtEndWord } from './endWord.ts'
+import { cutAtEndWord, endsWithClosingWord } from './endWord.ts'
 
 describe('cutAtEndWord', () => {
   it('ends the turn at "จ้า" and drops it', () => {
@@ -27,5 +27,15 @@ describe('cutAtEndWord', () => {
 
   it('reports an empty turn when it is the only word', () => {
     expect(cutAtEndWord('จ้า')).toEqual({ text: '', ended: true })
+  })
+})
+
+describe('endsWithClosingWord', () => {
+  it('closes on a regional word at the very end', () => {
+    for (const said of ['ข้าวซอยหมดแล้วเจ้า', 'เปิดแปดโมงเน้อ', 'สิเพิ่มเมนูเด้อ', 'ปิดวันพุธเจ้าค่ะ', 'เปิดทุกวันจ้า ']) expect(endsWithClosingWord(said), said).toBe(true)
+  })
+
+  it('keeps listening when the word is inside the sentence or not there', () => {
+    for (const said of ['ร้านเจ้าของเดิม', 'ร้านข้าวมันไก่เจ้าเก่า', 'ร้านชื่อครัวป้าแดง']) expect(endsWithClosingWord(said), said).toBe(false)
   })
 })

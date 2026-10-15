@@ -6,7 +6,7 @@ import type { Turn } from './understandingStep.ts'
 export interface TapParts {
   guard: ReturnType<typeof createTurnGuard>
   mic: () => MicState
-  /** Clears the thinking and resume timers and stops the companion's voice. */
+  /** Clears the thinking timer and stops the companion's voice. */
   cancelPending: () => void
   /** Closes the open mic so that nothing it heard is reported afterwards. */
   closeMic: () => void
@@ -14,8 +14,6 @@ export interface TapParts {
   /** Forgets the waiting question and hides its buttons while the tap is worked on. */
   clearChoices: () => void
   show: (turn: Turn) => void
-  /** Listens again after a moment, as a spoken turn does (when the conversation is hands-free). */
-  resumeSoon: () => void
 }
 
 /**
@@ -36,7 +34,6 @@ export async function runTap(parts: TapParts, work: (isCurrent: () => boolean) =
   const turn = await work(isCurrent)
   if (!isCurrent()) return
   parts.show(turn)
-  parts.resumeSoon()
 }
 
 /**

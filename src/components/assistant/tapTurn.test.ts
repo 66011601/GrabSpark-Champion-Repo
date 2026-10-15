@@ -21,26 +21,25 @@ function hook(mic: MicState) {
     },
     clearChoices: () => calls.push('clearChoices'),
     show: () => calls.push('show'),
-    resumeSoon: () => calls.push('resumeSoon'),
   }
   return { parts, calls, mic: () => now }
 }
 
 describe('runTap', () => {
-  it('frees the mic a spoken turn left thinking, and listens again after the reply', async () => {
+  it('frees the mic a spoken turn left thinking', async () => {
     const { parts, calls, mic } = hook('processing')
     const spoken = parts.guard.begin() // the voice turn that was thinking when the button was tapped
     await runTap(parts, async () => turn)
     expect(mic()).toBe('idle')
     expect(spoken()).toBe(false) // its late answer is dropped
-    expect(calls).toEqual(['cancelPending', 'clearChoices', 'mic:idle', 'show', 'resumeSoon'])
+    expect(calls).toEqual(['cancelPending', 'clearChoices', 'mic:idle', 'show'])
   })
 
   it('closes a mic that reopened after an ask-back before the tap is answered', async () => {
     const { parts, calls, mic } = hook('listening')
     await runTap(parts, async () => turn)
     expect(mic()).toBe('idle')
-    expect(calls).toEqual(['cancelPending', 'closeMic', 'clearChoices', 'mic:idle', 'show', 'resumeSoon'])
+    expect(calls).toEqual(['cancelPending', 'closeMic', 'clearChoices', 'mic:idle', 'show'])
   })
 
   it('leaves an idle mic and a mic error alone', async () => {
@@ -48,18 +47,17 @@ describe('runTap', () => {
       const { parts, calls, mic } = hook(state)
       await runTap(parts, async () => turn)
       expect(mic()).toBe(state)
-      expect(calls).toEqual(['cancelPending', 'clearChoices', 'show', 'resumeSoon'])
+      expect(calls).toEqual(['cancelPending', 'clearChoices', 'show'])
     }
   })
 
-  it('shows nothing and does not resume when a newer turn began while the tap worked', async () => {
+  it('shows nothing when a newer turn began while the tap worked', async () => {
     const { parts, calls } = hook('idle')
     await runTap(parts, async () => {
       parts.guard.begin()
       return turn
     })
     expect(calls).not.toContain('show')
-    expect(calls).not.toContain('resumeSoon')
   })
 
   it('does nothing once the screen is gone', async () => {

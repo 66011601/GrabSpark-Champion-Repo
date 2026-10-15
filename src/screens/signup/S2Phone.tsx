@@ -66,7 +66,7 @@ export function S2Phone() {
     dispatch({ type: 'PHONE_VERIFIED', phone, heardFrom: fromAccount ? th.sources.account : th.sources.typed })
   }
 
-  const { mic, notice, choices, toggleMic, onSpoken } = useVoiceInput(
+  const { mic, notice, choices, toggleMic } = useVoiceInput(
     (text) => {
       const command = matchCommand(text, COMMANDS)
       if (command === 'yes' && stage === 'phone') takeAccountPhone()
@@ -93,7 +93,7 @@ export function S2Phone() {
       onBack={() => (stage === 'otp' && !state.phoneVerified ? setStage('phone') : dispatch({ type: 'BACK' }))}
       footer={
         <>
-          <AiHelperBar text={error ?? helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} choices={choices} />
+          <AiHelperBar text={error ?? helper} notice={notice} mic={mic} onAvatar={toggleMic} choices={choices} />
           <Button fullWidth disabled={stage === 'otp' && !state.phoneVerified && code.length !== OTP_LENGTH} onClick={next}>
             {stage === 'phone' ? th.s2phone.sendCode : th.common.next}
           </Button>

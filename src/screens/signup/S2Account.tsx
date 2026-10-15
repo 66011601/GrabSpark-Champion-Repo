@@ -40,6 +40,10 @@ export function S2Account() {
     dispatch({ type: 'ACCOUNT_SET', email: email.trim(), at: Date.now() })
   }
 
+  // Once both boxes are right the page is done: say so instead of repeating how to fill it.
+  const line =
+    emailError ?? passwordError ?? (!emailProblem && !passwordProblem ? th.s2.done : inPassword ? th.account.bubblePrivate : !emailProblem ? th.s2.passwordLeft : th.s2.helper)
+
   const { mic, notice, choices, toggleMic } = useVoiceInput(
     (text) => {
       const command = matchCommand(text, COMMANDS)
@@ -60,7 +64,7 @@ export function S2Account() {
       footer={
         <>
           <AiHelperBar
-            text={emailError ?? passwordError ?? (inPassword ? th.account.bubblePrivate : th.s2.helper)}
+            text={line}
             notice={notice}
             mic={inPassword ? 'private' : mic}
             onAvatar={inPassword ? undefined : toggleMic}

@@ -12,7 +12,7 @@ import { th } from '@/copy/th.ts'
 import { earcon } from '@/services/speech/earcon.ts'
 import { playScripted } from '@/services/speech/scripted.ts'
 import { startListening, type ListenSession } from '@/services/speech/speechToText.ts'
-import { isSpeaking, stopSpeaking } from '@/services/speech/textToSpeech.ts'
+import { stopSpeaking } from '@/services/speech/textToSpeech.ts'
 import type { Choice, MicState } from './companionState.ts'
 import { createSessionGate, runTap } from './tapTurn.ts'
 import { createTurnGuard } from './turnGuard.ts'
@@ -20,25 +20,19 @@ import { noticeFor, type Reply } from './turnReply.ts'
 import { answerPending, takeTurn, type Pending, type Turn } from './understandingStep.ts'
 
 const THINKING_MS = 500
-const RESUME_MS = 800
 
 export type { Reply }
-
-// The merchant's last turn was spoken, so the companion listens again once it has answered.
-// Shared by every screen: a conversation carries on across them.
-let handsFree = false
 
 /**
  * One merchant turn at a time, from the mic or a scripted demo line.
  * `interpret` gets the final words and says whether it understood them. It also gets `isCurrent`:
  * after any `await` it must check that, and stop without touching the journey when it is false
  * (the screen was left, the demo was reset, or the merchant has said something newer).
- * With `autoListen`, the screen keeps the conversation going without another tap.
+ * The mic opens only when the merchant taps it, and closes again after each turn: the companion never listens by itself.
  */
 export type Interpret = (text: string, isCurrent: () => boolean) => Reply | Promise<Reply>
 
 export interface VoiceOptions {
-  autoListen?: boolean
   /**
    * When the screen's rules do not understand a sentence, the matcher guesses what it meant on this screen.
    * `act` performs a label the screen's own way; without it the label's canonical phrase goes through `interpret`.
@@ -46,7 +40,7 @@ export interface VoiceOptions {
   understanding?: { screen: ScreenId; act?: (label: string) => Reply | Promise<Reply> }
 }
 
-export function useVoiceInput(interpret: Interpret, { autoListen = false, understanding }: VoiceOptions = {}) {
+export function useVoiceInput(interpret: Interpret, { understanding }: VoiceOptions = {}) {
   const [mic, setMicState] = useState<MicState>('idle')
   const [transcript, setTranscript] = useState<{ text: string; final: boolean } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -57,9 +51,7 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
   const listens = useRef(createSessionGate())
   const guard = useRef(createTurnGuard())
   const thinking = useRef<number | undefined>(undefined)
-  const resuming = useRef<number | undefined>(undefined)
   const cancelScript = useRef<(() => void) | null>(null)
-  const resume = useRef<() => void>(() => {})
   // Buttons call back into the hook; this ref lets `show` build them before those callbacks exist.
   const taps = useRef<{ answer: (answer: 'yes' | 'no') => void; run: (label: string) => void }>({ answer: () => {}, run: () => {} })
   // Screens pass a fresh `interpret` and options every render; always use the newest ones.
@@ -82,7 +74,6 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
     return () => {
       turns.unmount()
       window.clearTimeout(thinking.current)
-      window.clearTimeout(resuming.current)
       cancelScript.current?.()
       session.current?.stop()
     }
@@ -123,14 +114,6 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
     setNotice(noticeFor(turn.reply, takeGreeting()))
   }, [])
 
-  // When the answer changed nothing the companion has nothing to say, so it just listens again.
-  const resumeSoon = useCallback(() => {
-    window.clearTimeout(resuming.current)
-    resuming.current = window.setTimeout(() => {
-      if (!isSpeaking()) resume.current()
-    }, RESUME_MS)
-  }, [])
-
   // A tap on a button is a turn of its own: it wins over anything still in flight (see runTap).
   const tap = useCallback(
     (work: (isCurrent: () => boolean) => Promise<Turn>) =>
@@ -140,7 +123,6 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
           mic: () => micNow.current,
           cancelPending: () => {
             window.clearTimeout(thinking.current)
-            window.clearTimeout(resuming.current)
             stopSpeaking()
           },
           closeMic: () => {
@@ -154,11 +136,10 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
             setChoices([])
           },
           show,
-          resumeSoon,
         },
         work,
       ),
-    [resumeSoon, setMic, show],
+    [setMic, show],
   )
 
   useEffect(() => {
@@ -200,19 +181,16 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
         if (!isCurrent()) return
         show(turn)
         setMic('idle')
-        resumeSoon()
       }, THINKING_MS)
     },
-    [perform, resumeSoon, setMic, show],
+    [perform, setMic, show],
   )
 
-  // `auto`: the companion opened the mic itself, so silence is not worth a complaint.
   // A waiting question and its buttons stay through a mic turn: the merchant may be about to answer it.
   const listen = useCallback(
-    (auto: boolean) => {
+    () => {
       stopSpeaking()
-      window.clearTimeout(resuming.current)
-      if (!auto) setNotice(null)
+      setNotice(null)
       setTranscript(null)
       setMic('listening')
       earcon('listen')
@@ -224,16 +202,14 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
         },
         onFinal: (text) => {
           if (!live()) return
-          handsFree = true
           earcon('heard')
           hear(text)
         },
         onError: (kind) => {
           if (!live()) return
-          handsFree = false
           if (kind === 'no-speech') {
             setMic('idle')
-            if (!auto) setNotice(th.onboarding.notHeard)
+            setNotice(th.onboarding.notHeard)
             return
           }
           setMic('error')
@@ -247,27 +223,17 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
     [hear, setMic],
   )
 
-  useEffect(() => {
-    resume.current = () => {
-      if (autoListen && handsFree && guard.current.mounted() && micNow.current === 'idle') listen(true)
-    }
-  })
-
-  /** Closes an open mic and ends the hands-free conversation (a sheet is about to speak over it). */
+  /** Closes an open mic; what was said so far is still heard (a sheet is about to speak over it, or the merchant is done). */
   const stop = useCallback(() => {
     if (micNow.current !== 'listening') return
-    handsFree = false
     session.current?.stop()
   }, [])
 
   /** Press to talk (this also cuts the companion off mid-sentence); press again to stop. */
   const toggleMic = () => {
     if (micNow.current === 'listening') return stop()
-    listen(false)
+    listen()
   }
-
-  /** The companion finished saying its line. */
-  const onSpoken = useCallback(() => resume.current(), [])
 
   useEffect(
     () =>
@@ -281,5 +247,5 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
     [hear, setMic],
   )
 
-  return { mic, transcript, notice, setNotice, choices, toggleMic, stop, hear, onSpoken }
+  return { mic, transcript, notice, setNotice, choices, toggleMic, stop, hear }
 }

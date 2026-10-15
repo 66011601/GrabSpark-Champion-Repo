@@ -47,6 +47,8 @@ export interface NavState {
   negativeOnly: boolean
   lesson: boolean
   done: 'promo' | 'soldOut' | null
+  /** Dishes the merchant confirmed sold out, and until when. They stay off whatever screen the AI opens next. */
+  off: Record<string, SoldOutUntil>
 }
 
 export const INITIAL_NAV: NavState = {
@@ -63,7 +65,11 @@ export const INITIAL_NAV: NavState = {
   negativeOnly: false,
   lesson: false,
   done: null,
+  off: {},
 }
+
+/** The home screen again, keeping what the merchant has confirmed (the dishes switched off). */
+export const freshNav = (now: NavState): NavState => ({ ...INITIAL_NAV, off: now.off })
 
 export type ScriptId = 'sales' | 'forecast' | 'promo' | 'soldOut' | 'feedback'
 

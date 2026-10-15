@@ -21,7 +21,6 @@ export function ItemMenu({ nav, highlight, change, pick, announce, home }: Panel
   const draft = nav.soldOut
   const item = shop.menu.find((entry) => entry.id === draft?.itemId)
   const done = nav.done === 'soldOut'
-  const untilLabel = BACK_TIMES.find((time) => time.id === draft?.until)?.label
   return (
     <>
       <AppHeader title={t.title} onBack={home} />
@@ -34,7 +33,10 @@ export function ItemMenu({ nav, highlight, change, pick, announce, home }: Panel
         )}
         <ul className="divide-y divide-line rounded-2xl bg-surface px-3 ring-1 ring-line">
           {shop.menu.map((entry) => {
-            const off = draft?.itemId === entry.id
+            const drafting = draft?.itemId === entry.id
+            const confirmed = nav.off[entry.id]
+            const off = drafting || confirmed !== undefined
+            const offLabel = BACK_TIMES.find((time) => time.id === (drafting && done ? draft?.until : confirmed))?.label
             return (
               <li key={entry.id} data-nav={`item-${entry.id}`} className={`flex items-center gap-3 py-2 ${mark(highlight, `item-${entry.id}`)}`}>
                 <span className={`flex size-14 shrink-0 items-center justify-center rounded-xl ${off ? 'bg-canvas text-field' : 'bg-ok-bg text-action'}`}>
@@ -44,10 +46,17 @@ export function ItemMenu({ nav, highlight, change, pick, announce, home }: Panel
                   <p className={`line-clamp-2 leading-snug font-bold ${off ? 'text-ink-muted' : ''}`}>{entry.name}</p>
                   <p className="text-sm">
                     <span className="tabular-nums">{formatTHB(entry.priceTHB)}</span>
-                    {off && <span className="font-bold text-warn-ink"> · {done && untilLabel ? `${t.out} ${untilLabel}` : t.out}</span>}
+                    {off && <span className="font-bold text-warn-ink"> · {offLabel ? `${t.out} ${offLabel}` : t.out}</span>}
                   </p>
                 </div>
-                <Switch on={!off} label={t.toggle(entry.name)} disabled={off} onChange={() => change({ soldOut: { kind: 'soldOut', itemId: entry.id, until: null }, done: null })} data-nav={`soldout-${entry.id}`} />
+                <Switch
+                  on={!off}
+                  label={t.toggle(entry.name)}
+                  disabled={drafting && !done}
+                  // Off and confirmed: the merchant's own tap puts the dish back on sale.
+                  onChange={() => (confirmed !== undefined ? change({ off: Object.fromEntries(Object.entries(nav.off).filter(([id]) => id !== entry.id)), soldOut: drafting ? null : draft, done: drafting ? null : nav.done }) : change({ soldOut: { kind: 'soldOut', itemId: entry.id, until: null }, done: null }))}
+                  data-nav={`soldout-${entry.id}`}
+                />
               </li>
             )
           })}
@@ -84,7 +93,7 @@ export function ItemMenu({ nav, highlight, change, pick, announce, home }: Panel
                 label={t.confirm}
                 highlight={highlight}
                 onDone={() => {
-                  change({ done: 'soldOut' })
+                  change({ done: 'soldOut', off: { ...nav.off, [draft.itemId]: draft.until ?? 'indefinite' } })
                   announce(t.done(item.name))
                 }}
               />

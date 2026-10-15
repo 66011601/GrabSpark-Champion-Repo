@@ -1,4 +1,4 @@
-import { cutAtEndWord } from '@/ai/commands/endWord.ts'
+import { cutAtEndWord, endsWithClosingWord } from '@/ai/commands/endWord.ts'
 
 // Thin wrapper over the browser Web Speech API (Chrome, Edge, Android Chrome support th-TH).
 // Types are declared locally so we do not depend on which DOM lib version ships them.
@@ -35,9 +35,10 @@ interface RecognitionLike {
 
 type RecognitionConstructor = new () => RecognitionLike
 
-// How long the merchant may stay quiet before the turn is closed for them (they may forget to say "จ้า").
+// How long the merchant may stay quiet before the turn is closed for them: a while to start talking after the tap,
+// then two seconds of silence ends the sentence, whatever word it ended with.
 export const QUIET_BEFORE_SPEECH_MS = 10_000
-export const QUIET_AFTER_SPEECH_MS = 8_000
+export const QUIET_AFTER_SPEECH_MS = 2_000
 
 function getRecognition(): RecognitionConstructor | undefined {
   const w = window as unknown as { SpeechRecognition?: RecognitionConstructor; webkitSpeechRecognition?: RecognitionConstructor }
@@ -54,9 +55,8 @@ function toKind(error: string): RecognitionErrorKind {
 }
 
 /**
- * Listens for one Thai turn. A pause does not end it: the merchant closes it by saying "จ้า",
- * by pressing stop, or by staying quiet for a long while. onFinal fires once with the words
- * before "จ้า", then onEnd.
+ * Listens for one Thai turn. It ends when the merchant says "จ้า" (or ends on a regional closing word such as เจ้า),
+ * presses stop, or stays quiet for two seconds. onFinal fires once with the words before "จ้า", then onEnd.
  */
 export function startListening(handlers: ListenHandlers): ListenSession {
   const Recognition = getRecognition()
@@ -90,7 +90,7 @@ export function startListening(handlers: ListenHandlers): ListenSession {
     const turn = cutAtEndWord(finalText + interim)
     heard = turn.text
     if (heard) handlers.onInterim(heard)
-    if (turn.ended) {
+    if (turn.ended || (!interim && endsWithClosingWord(finalText))) {
       closed = true
       recognition.stop()
       return

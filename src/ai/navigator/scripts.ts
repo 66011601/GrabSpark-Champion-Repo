@@ -49,7 +49,7 @@ export const SCRIPTS: Script<ScriptId>[] = [
     keywords: [['โปร', 'ฝน'], ['โปร', 'ทำ'], ['โปร', 'สร้าง'], ['โปร', 'ตั้ง'], ['โปร', 'จัด'], ['โปร', 'เปิด'], ['โปร', 'ให้']],
     steps: [
       { screen: 'HOME', target: 'grid-boost', say: t.goTo(t.grid[3]) },
-      { screen: 'BOOST', target: 'create-promo', set: { promo }, say: t.promo.ready },
+      { screen: 'BOOST', target: 'create-promo', set: { promo, done: null }, say: t.promo.ready },
       { screen: 'BOOST', highlight: 'promo-fields', say: t.promo.explain(promo.bundlePrice, promo.normalPrice) },
       { screen: 'BOOST', highlight: 'checks', say: t.promo.safe(29, promo.dailyCap * (promo.normalPrice - promo.bundlePrice)) },
       { screen: 'BOOST', highlight: 'confirm', say: t.promo.yours },
@@ -63,7 +63,7 @@ export const SCRIPTS: Script<ScriptId>[] = [
     steps: [
       { screen: 'HOME', target: 'grid-menu', say: t.goTo(t.grid[1]) },
       { screen: 'MENU', highlight: 'item-{itemId}', say: t.soldOut.find('{item}') },
-      { screen: 'MENU', target: 'soldout-{itemId}', set: { soldOut: { kind: 'soldOut', itemId: '{itemId}', until: null } }, say: t.soldOut.tap },
+      { screen: 'MENU', target: 'soldout-{itemId}', set: { soldOut: { kind: 'soldOut', itemId: '{itemId}', until: null }, done: null }, say: t.soldOut.tap },
       { screen: 'MENU', highlight: 'back-times', say: t.soldOut.ask },
     ],
   },

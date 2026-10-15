@@ -4,8 +4,10 @@ import { SAY } from '@/ai/commands/phrases.ts'
 import { DERIVED_CONFIDENCE, GPS_CONFIDENCE, LINK_CONFIDENCE, redraftAddress, withArea } from '@/ai/onboarding/addressFields.ts'
 import { businessUpdates, STEP3_TALK } from '@/ai/onboarding/businessTalk.ts'
 import { pickFollowUp } from '@/ai/onboarding/followUp.ts'
-import { CATEGORY_LABELS } from '@/ai/onboarding/parsers/category.ts'
+import { asksForCategories, CATEGORY_LABELS, parseCategory } from '@/ai/onboarding/parsers/category.ts'
 import { locationPhrase } from '@/ai/onboarding/parsers/locationPhrase.ts'
+import { isQuestion } from '@/ai/onboarding/parsers/question.ts'
+import { parseStoreName } from '@/ai/onboarding/parsers/storeName.ts'
 import { formatThaiAddress, parseThaiAddress } from '@/ai/onboarding/parsers/thaiAddress.ts'
 import { stepStatus } from '@/ai/onboarding/steps.ts'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
@@ -239,7 +241,7 @@ export function S3Business() {
   const mismatch = wrongPostcode ? th.places.postcodeMismatch(wrongPostcode.postcode, wrongPostcode.actual, wrongPostcode.said) : null
   const canGoOn = status.valid && mismatch === null
 
-  const { mic, transcript, notice, choices, toggleMic, stop, hear, onSpoken } = useVoiceInput(
+  const { mic, transcript, notice, choices, toggleMic, stop, hear } = useVoiceInput(
     async (text, isCurrent) => {
       setPlaceNotice(null) // a new turn: an old map notice must not hide what the companion says now
       const command = matchCommand(text, COMMANDS)
@@ -266,11 +268,22 @@ export function S3Business() {
       }
       if (takeLink(text)) return true
       const expecting = question?.field ?? undefined
+      // "ประเภทอาหารมีอะไรบ้าง": name the types, or pick one when the merchant also said what they sell.
+      if (asksForCategories(text, expecting === 'category')) {
+        const guess = parseCategory(text)
+        if (!guess) return th.s3.categoryOptions(CATEGORY_LABELS.join(' '))
+        fill({ category: { ...guess, heardFrom: text } })
+        return th.s3.categoryPicked(guess.value)
+      }
+      // "ชื่อร้านต้องตั้งยังไง": a tip and the question again, instead of a guess.
+      if (isQuestion(text) && /ชื่อ/.test(text)) return th.s3.nameTip
       const spoken = parseThaiAddress(text)
-      const wantsPlace = expecting === 'location' || expecting === undefined || spoken !== null
       // OpenStreetMap does not understand house numbers or ต./อ./จ.: look a spoken address up by its plain area words.
       const areaWords = spoken ? [spoken.subdistrict, spoken.district, spoken.province].filter(Boolean).join(' ') : ''
-      const phrase = spoken ? areaWords || formatThaiAddress(spoken) : wantsPlace ? locationPhrase(text, expecting === 'location') : null
+      // "ร้านอยู่…" is looked up whatever was asked. The whole sentence is the place only when the companion asked where
+      // the shop is and the merchant answered that, not a question or the shop's name or food.
+      const wholeIsPlace = expecting === 'location' && !isQuestion(text) && !parseStoreName(text) && !parseCategory(text)
+      const phrase = spoken ? areaWords || formatThaiAddress(spoken) : locationPhrase(text, wholeIsPlace)
       const found = phrase ? await places.find(phrase) : null
       if (!isCurrent()) return false // the screen was left or reset while the map was answering
       // The pin's own address gains the ตำบล and postcode that were said, when it is in the same district.
@@ -280,7 +293,7 @@ export function S3Business() {
       fill(updates)
       return Object.keys(updates).length > 0
     },
-    { autoListen: talking && pinView === null, understanding: { screen: 'S3' } },
+    { understanding: { screen: 'S3' } },
   )
 
   useEffect(() => {
@@ -316,7 +329,7 @@ export function S3Business() {
             notice={placeNotice ?? notice}
             mic={mic}
             onAvatar={pressMic}
-            onSpoken={onSpoken}
+           
             choices={choices}
             action={{ kind: 'mic', label: th.s3.talk, onPress: () => setTalking(true) }}
           />

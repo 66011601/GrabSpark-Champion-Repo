@@ -8,3 +8,10 @@ export function cutAtEndWord(heard: string): { text: string; ended: boolean } {
   if (!match) return { text: heard.trim(), ended: false }
   return { text: heard.slice(0, match.index).trim(), ended: true }
 }
+
+// Other regions close a sentence with their own word: Northern เจ้า / เน้อ, Isan เด้อ. They are ordinary words
+// elsewhere ("เจ้าของ"), so they only close a turn as the very last thing the recogniser has settled on.
+const CLOSING_TAIL = /(?:เจ้าค่ะ|เจ้า|เน้อ|เด้อ|จ้ะ|จ้า)\s*$/
+
+/** True when the settled words end with a regional closing word, so the merchant has finished the turn. */
+export const endsWithClosingWord = (settled: string): boolean => CLOSING_TAIL.test(settled)

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { fillSlots, runScript, type RunnerIO } from './runner.ts'
+import { fillSlots, runScript, stepsFromHere, type RunnerIO } from './runner.ts'
 import { SCRIPTS } from './scripts.ts'
-import type { Script } from './types.ts'
+import { openScript } from './openPage.ts'
+import { INITIAL_NAV, type Script } from './types.ts'
 
 const script = (id: string) => SCRIPTS.find((s) => s.id === id) as Script
 
@@ -70,5 +71,23 @@ describe('fillSlots', () => {
   it('leaves a script without placeholders as it was', () => {
     const step = script('sales').steps[0]
     expect(fillSlots(step, {})).toEqual(step)
+  })
+})
+
+describe('stepsFromHere', () => {
+  const soldOut = script('soldOut').steps
+  it('skips the walk from the home screen when the owner is already on the page', () => {
+    expect(stepsFromHere(soldOut, { ...INITIAL_NAV, screen: 'MENU' })).toEqual(soldOut.slice(1))
+  })
+
+  it('walks from the home screen otherwise', () => {
+    expect(stepsFromHere(soldOut, INITIAL_NAV)).toBe(soldOut)
+    expect(stepsFromHere(soldOut, { ...INITIAL_NAV, screen: 'INSIGHTS' })).toBe(soldOut)
+  })
+
+  it('tells one PAGE from another', () => {
+    const express = openScript('express').steps
+    expect(stepsFromHere(express, { ...INITIAL_NAV, screen: 'PAGE', page: 'staff' })).toBe(express)
+    expect(stepsFromHere(express, { ...INITIAL_NAV, screen: 'PAGE', page: 'express' })).toEqual(express.slice(1))
   })
 })

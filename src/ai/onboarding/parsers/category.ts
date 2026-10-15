@@ -1,4 +1,5 @@
 import { stripParticles } from './particles.ts'
+import { isQuestion } from './question.ts'
 
 export const STATED_CONFIDENCE = 0.9
 export const INFERRED_CONFIDENCE = 0.74
@@ -33,10 +34,20 @@ export function parseCategory(text: string): { value: string; confidence: number
   return inferred ? { value: inferred.label, confidence: INFERRED_CONFIDENCE } : null
 }
 
+// "ประเภทอาหารมีอะไรบ้าง", "ไม่รู้จะเลือกหมวดไหน", or (just after the companion asked) "มีอะไรบ้าง", "แนะนำหน่อย".
+const ABOUT_TYPES = /ประเภท|หมวด|ชนิด/
+const WANTS_OPTIONS = /อะไรบ้าง|ไหนบ้าง|มีอะไร|แบบไหน|อันไหน|ไหนดี|อะไรดี|แนะนำ|ไม่รู้|ไม่แน่ใจ|เลือกไม่ถูก|เลือกยังไง|ยังไง/
+
+/** True when the merchant asks which food types there are, instead of naming one. */
+export function asksForCategories(text: string, justAsked: boolean): boolean {
+  return WANTS_OPTIONS.test(text) && (justAsked || ABOUT_TYPES.test(text))
+}
+
 /** Used right after the companion asked for the category: unknown answers are kept but flagged. */
 export function parseCategoryAnswer(text: string): { value: string; confidence: number } | null {
   const known = parseCategory(text)
   if (known) return known
+  if (isQuestion(text)) return null
   const value = stripParticles(text).replace(/^ขาย/, '').trim()
   return value ? { value, confidence: GUESSED_CONFIDENCE } : null
 }

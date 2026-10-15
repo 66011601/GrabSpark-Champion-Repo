@@ -16,14 +16,14 @@ const COMMANDS = [
 /** The app's first screen, GrabMerchant style. */
 export function G0Welcome() {
   const { dispatch } = useJourney()
-  const { mic, notice, choices, toggleMic, onSpoken } = useVoiceInput(
+  const { mic, notice, choices, toggleMic } = useVoiceInput(
     (text) => {
       const choice = matchCommand(text, COMMANDS)
       if (choice === 'register') dispatch({ type: 'GO', screen: 'S1_SERVICE' })
       if (choice === 'login') dispatch({ type: 'GO', screen: 'L1_LOGIN' })
       return choice !== null
     },
-    { autoListen: true, understanding: { screen: 'G0' } },
+    { understanding: { screen: 'G0' } },
   )
   return (
     <>
@@ -51,7 +51,7 @@ export function G0Welcome() {
         </ul>
       </main>
       <footer className="flex flex-col gap-3 px-4 pt-3 pb-4">
-        <AiHelperBar text={th.g0.helper} notice={notice} mic={mic} onAvatar={toggleMic} onSpoken={onSpoken} choices={choices} />
+        <AiHelperBar text={th.g0.helper} notice={notice} mic={mic} onAvatar={toggleMic} choices={choices} />
         <Button fullWidth onClick={() => dispatch({ type: 'GO', screen: 'S1_SERVICE' })}>
           {th.g0.register}
         </Button>
