@@ -13,7 +13,7 @@ interface Slots {
   price: string[]
   day: string[] // a day the merchant talks about: today, yesterday, this week…
   tomorrow: string[]
-  clock: string[]
+  clock: string[] // in the order of the day, so an opening time can come before a closing time
   closed: string[] // a day the shop shuts
   landmark: string[]
 }
@@ -30,7 +30,7 @@ const SLOTS: Record<Said, Slots> = {
     tomorrow: ['พรุ่งนี้', 'มะรืนนี้', 'เสาร์นี้', 'วันหยุดยาวนี้'],
     clock: ['เจ็ดโมงเช้า', 'แปดโมง', 'สิบโมง', 'เที่ยง', 'บ่ายสาม', 'ห้าโมงเย็น', 'สองทุ่ม', 'สี่ทุ่ม'],
     closed: ['วันจันทร์', 'วันพระ', 'ทุกวันพุธ', 'วันอาทิตย์', 'วันหยุดนักขัตฤกษ์'],
-    landmark: ['หน้าวัด', 'ข้างโรงเรียน', 'ตรงข้ามเซเว่น', 'หลังตลาด', 'ใกล้ปั๊มน้ำมัน', 'ปากซอย', 'ข้างโรงพยาบาล', 'หน้าที่ว่าการอำเภอ', 'ใต้ทางด่วน', 'ข้างวินมอเตอร์ไซค์'],
+    landmark: ['หน้าวัด', 'ตรงข้ามเซเว่น', 'หลังตลาด', 'ใกล้ปั๊มน้ำมัน', 'ปากซอย', 'ข้างโรงพยาบาล', 'หน้าที่ว่าการอำเภอ', 'ใต้ทางด่วน', 'ข้างวินมอเตอร์ไซค์'],
   },
   isan: {
     opener: ['', '', 'เอ้อ ', 'คือว่า ', 'ข้อยว่า ', 'อ้าว '],
@@ -41,7 +41,7 @@ const SLOTS: Record<Said, Slots> = {
     tomorrow: ['มื้ออื่น', 'มื้ออื่นมื้อฮือ', 'วันเสาร์นี่', 'บุญบั้งไฟนี่'],
     clock: ['หกโมงเช้า', 'เจ็ดโมง', 'สิบโมง', 'เที่ยง', 'บ่ายสอง', 'ตอนแลง', 'หนึ่งทุ่ม', 'สามทุ่ม'],
     closed: ['วันพระ', 'มื้อวันพระ', 'วันจันทร์', 'ฮอดวันศุกร์', 'ช่วงบุญ'],
-    landmark: ['หน้าวัดบ้าน', 'ข้างโฮงเรียน', 'ทางไปตลาดนัด', 'ใกล้หนองน้ำ', 'ปากทางเข้าบ้าน', 'ข้างศาลากลางบ้าน', 'หลังอนามัย', 'ตรงข้ามเซเว่น', 'ใกล้ปั๊มบางจาก'],
+    landmark: ['หน้าวัดบ้าน', 'ทางไปตลาดนัด', 'ใกล้หนองน้ำ', 'ปากทางเข้าบ้าน', 'ข้างศาลากลางบ้าน', 'หลังอนามัย', 'ตรงข้ามเซเว่น', 'ใกล้ปั๊มบางจาก'],
   },
   north: {
     opener: ['', '', 'เอ่อ ', 'คือว่า ', 'ข้าเจ้าว่า ', 'อ้าว '],
@@ -52,7 +52,7 @@ const SLOTS: Record<Said, Slots> = {
     tomorrow: ['วันพูก', 'วันพูกเช้า', 'วันเสาร์นี้', 'ช่วงปีใหม่เมือง'],
     clock: ['หกโมงเช้า', 'เจ็ดโมง', 'สิบโมง', 'เตี้ยง', 'บ่ายสาม', 'ตอนแลง', 'สองทุ่ม', 'สามทุ่ม'],
     closed: ['วันพระ', 'วันจันทร์', 'วันกาดนัด', 'วันอาทิตย์', 'ช่วงสงกรานต์'],
-    landmark: ['หน้ากาด', 'ข้างวัด', 'ใกล้โฮงเฮียน', 'ตรงข้ามเซเว่น', 'ตีนดอย', 'ข้างกาดหลวง', 'หลังโฮงยา', 'ปากซอยตี้ไปน้ำตก', 'ใกล้ประตูเมือง'],
+    landmark: ['หน้ากาด', 'ข้างวัด', 'ตรงข้ามเซเว่น', 'ตีนดอย', 'ข้างกาดหลวง', 'หลังโฮงยา', 'ปากซอยตี้ไปน้ำตก', 'ใกล้ประตูเมือง'],
   },
   south: {
     opener: ['', '', 'เอ่อ ', 'คือว่า ', 'ฉานว่า ', 'โอ๊ย '],
@@ -63,7 +63,7 @@ const SLOTS: Record<Said, Slots> = {
     tomorrow: ['ต่อเช้า', 'หวันเสาร์นี้', 'ช่วงชักพระ', 'หวันหยุดนี้'],
     clock: ['หกโมงเช้า', 'เจ็ดโมง', 'สิบโมง', 'เที่ยง', 'บ่ายสอง', 'ห้าโมงเย็น', 'สองทุ่ม', 'สามทุ่ม'],
     closed: ['หวันศุกร์', 'หวันจันทร์', 'ช่วงรายอ', 'หวันอาทิตย์', 'ทุกหวันพุธ'],
-    landmark: ['หน้ามัสยิด', 'ข้างหลาด', 'ใกล้ท่าเรือ', 'หน้าโรงเรียน', 'ตรงข้ามเซเว่น', 'หลังสภากาแฟ', 'ปากซอยไปหาดใหญ่', 'ข้างโรงพัก', 'ใกล้ควนนั่น'],
+    landmark: ['หน้ามัสยิด', 'ข้างหลาด', 'ใกล้ท่าเรือ', 'ตรงข้ามเซเว่น', 'หลังสภากาแฟ', 'ปากซอยไปหาดใหญ่', 'ข้างโรงพัก', 'ใกล้ควนนั่น'],
   },
 }
 
@@ -91,10 +91,10 @@ const TEMPLATES: Template[] = [
     screens: ['H3'],
     count: 16,
     frames: {
-      central: ['{opener}เปิด{clock} ปิด{clock}{particle}', '{opener}{closed}ร้านหยุด{particle}', '{opener}ร้านเปิดตั้งแต่{clock}{particle}'],
-      isan: ['{opener}เปิด{clock} ปิด{clock}{particle}', '{opener}{closed}ฮ้านปิด{particle}', '{opener}ฮ้านเปิดตั้งแต่{clock}{particle}'],
-      north: ['{opener}เปิด{clock} ปิด{clock}{particle}', '{opener}{closed}ร้านปิด{particle}', '{opener}ร้านเปิดตั้งแต่{clock}{particle}'],
-      south: ['{opener}เปิด{clock} ปิด{clock}{particle}', '{opener}{closed}ร้านปิด{particle}', '{opener}ร้านเปิดแต่{clock}{particle}'],
+      central: ['{opener}เปิด{open} ปิด{close}{particle}', '{opener}{closed}ร้านหยุด{particle}', '{opener}ร้านเปิดตั้งแต่{clock}{particle}'],
+      isan: ['{opener}เปิด{open} ปิด{close}{particle}', '{opener}{closed}ฮ้านปิด{particle}', '{opener}ฮ้านเปิดตั้งแต่{clock}{particle}'],
+      north: ['{opener}เปิด{open} ปิด{close}{particle}', '{opener}{closed}ร้านปิด{particle}', '{opener}ร้านเปิดตั้งแต่{clock}{particle}'],
+      south: ['{opener}เปิด{open} ปิด{close}{particle}', '{opener}{closed}ร้านปิด{particle}', '{opener}ร้านเปิดแต่{clock}{particle}'],
     },
   },
   {
@@ -190,7 +190,14 @@ function expand(): BankEntry[] {
       // Frames cycle so each is used; a repeated sentence is drawn again, with a bound in case the slots run out.
       for (let tries = 0; said.size < template.count && tries < template.count * 20; tries += 1) {
         const frame = template.frames[region][tries % template.frames[region].length]
-        const say = frame.replace(/\{(\w+)\}/g, (_, slot: keyof Slots) => pick(slots[slot])).trim()
+        // {open} and {close} are a pair from the day's clock: the shop closes after it opens, never at the same time.
+        const opens = Math.floor(random() * (slots.clock.length - 1))
+        const closes = opens + 1 + Math.floor(random() * (slots.clock.length - opens - 1))
+        const say = frame
+          .replace('{open}', slots.clock[opens])
+          .replace('{close}', slots.clock[closes])
+          .replace(/\{(\w+)\}/g, (_, slot: keyof Slots) => pick(slots[slot]))
+          .trim()
         if (said.has(say)) continue
         said.add(say)
         entries.push({ say, region, screens: template.screens, label: template.label, source: 'template' })

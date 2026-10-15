@@ -3,7 +3,7 @@ import type { Understood } from '@/ai/language/understand.ts'
 import type { ScreenId } from '@/ai/understanding/bank/types.ts'
 import { blockedReply, BLOCKED } from '@/ai/understanding/labels.ts'
 import { labelName } from '@/ai/understanding/labelNames.ts'
-import { levelOf, type Match } from '@/ai/understanding/matcher.ts'
+import { ASK_SCORE, levelOf, type Match } from '@/ai/understanding/matcher.ts'
 import { th } from '@/copy/th.ts'
 import { replyTo, type Reply } from './turnReply.ts'
 
@@ -19,7 +19,8 @@ const offerable = (labels: string[]) => labels.filter((label) => label !== 'none
 
 /** sure → act; unsure → ask about the top label; lost → offer the two best real labels. Blocked labels never act. */
 export function decide(match: Match): Step {
-  if (BLOCKED.has(match.label)) return { kind: 'blocked', label: match.label }
+  // A blocked guess answers only with some confidence: unrelated talk must not get the tap-only line.
+  if (BLOCKED.has(match.label) && match.score >= ASK_SCORE) return { kind: 'blocked', label: match.label }
   const level = levelOf(match)
   if (level === 'sure') return { kind: 'act', label: match.label }
   if (level === 'unsure') return { kind: 'ask', label: match.label, rest: offerable(match.ranked.slice(1)).slice(0, OFFERED) }

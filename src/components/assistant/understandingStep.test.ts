@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { SURE_MARGIN, SURE_SCORE, type Match } from '@/ai/understanding/matcher.ts'
+import { ASK_SCORE, SURE_MARGIN, SURE_SCORE, type Match } from '@/ai/understanding/matcher.ts'
 import { th } from '@/copy/th.ts'
 import { answerOf, answerPending, decide, takeTurn, type TurnParts } from './understandingStep.ts'
 
@@ -12,7 +12,11 @@ describe('decide', () => {
 
   it('never acts on a blocked label, however sure', () => {
     expect(decide(match('submit', 1, 1))).toEqual({ kind: 'blocked', label: 'submit' })
-    expect(decide(match('act2:confirm', 0.5, 0))).toEqual({ kind: 'blocked', label: 'act2:confirm' })
+    expect(decide(match('act2:confirm', ASK_SCORE, 0))).toEqual({ kind: 'blocked', label: 'act2:confirm' })
+  })
+
+  it('is lost, not blocked, when a blocked guess is weak', () => {
+    expect(decide(match('consentTick', ASK_SCORE - 0.01, 1, ['consentTick', 'back']))).toEqual({ kind: 'lost', options: ['back'] })
   })
 
   it('asks back when unsure, keeping the next two as the fallback', () => {
