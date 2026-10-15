@@ -1,8 +1,10 @@
 import { SCREEN_LABELS } from '../labels.ts'
 import { FROM_CORPUS } from './fromCorpus.ts'
+import { HOME_BANK } from './home.ts'
+import { SIGNUP_BANK } from './signup.ts'
 import type { BankEntry, ScreenId } from './types.ts'
 
-export const BANK: BankEntry[] = [...FROM_CORPUS]
+export const BANK: BankEntry[] = [...FROM_CORPUS, ...SIGNUP_BANK, ...HOME_BANK]
 
 // FNV-1a: a stable hash, so the same sentence is always in the same half.
 function hash(text: string): number {
