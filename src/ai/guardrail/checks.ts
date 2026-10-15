@@ -1,6 +1,6 @@
 import { th } from '@/copy/th.ts'
 import type { GuardrailCheck, Merchant } from '@/types/domain.ts'
-import type { Draft, PromoDraft, SoldOutDraft } from '@/ai/navigator/types.ts'
+import type { AddMenuDraft, Draft, PromoDraft, SoldOutDraft } from '@/ai/navigator/types.ts'
 import { profitPerUnit } from './promoMath.ts'
 
 const result = (id: string, pass: boolean, ok: string, fail: string): GuardrailCheck => ({ id, pass, message: pass ? ok : fail })
@@ -31,4 +31,23 @@ export function soldOutChecks(draft: SoldOutDraft, shop: Merchant): GuardrailChe
   ]
 }
 
-export const draftChecks = (draft: Draft, shop: Merchant): GuardrailCheck[] => (draft.kind === 'promo' ? promoChecks(draft, shop) : soldOutChecks(draft, shop))
+const MIN_PRICE = 5
+const MAX_PRICE = 5000
+
+/** Every new dish has a name and a sensible price, and is not already on the menu. */
+export function addMenuChecks(draft: AddMenuDraft, shop: Merchant): GuardrailCheck[] {
+  const named = draft.items.length > 0 && draft.items.every((item) => item.name.trim() !== '')
+  const priced = draft.items.every((item) => Number.isInteger(item.priceTHB) && item.priceTHB >= MIN_PRICE && item.priceTHB <= MAX_PRICE)
+  const known = new Set(shop.menu.map((item) => item.name))
+  const twin = draft.items.find((item) => known.has(item.name.trim()))
+  return [
+    result('ITEMS_NAMED', named, c.addNamed, c.addEmpty),
+    result('PRICE_RANGE', priced, c.addPriceOk, c.addPriceFail),
+    result('NOT_ON_MENU', twin === undefined, c.addNewOk, c.addDuplicate(twin?.name ?? '')),
+  ]
+}
+
+export function draftChecks(draft: Draft, shop: Merchant): GuardrailCheck[] {
+  if (draft.kind === 'promo') return promoChecks(draft, shop)
+  return draft.kind === 'soldOut' ? soldOutChecks(draft, shop) : addMenuChecks(draft, shop)
+}

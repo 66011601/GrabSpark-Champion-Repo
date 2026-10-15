@@ -63,7 +63,7 @@ export const SCRIPTS: Script<ScriptId>[] = [
     steps: [
       { screen: 'HOME', target: 'grid-menu', say: t.goTo(t.grid[1]) },
       { screen: 'MENU', highlight: 'item-{itemId}', say: t.soldOut.find('{item}') },
-      { screen: 'MENU', target: 'soldout-{itemId}', set: { soldOut: { kind: 'soldOut', itemId: '{itemId}', until: null }, done: null }, say: t.soldOut.tap },
+      { screen: 'MENU', target: 'soldout-{itemId}', set: { soldOut: { kind: 'soldOut', itemId: '{itemId}', until: null }, adding: null, done: null }, say: t.soldOut.tap },
       { screen: 'MENU', highlight: 'back-times', say: t.soldOut.ask },
     ],
   },

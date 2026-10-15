@@ -1,4 +1,4 @@
-import { markSoldOut, openPromotion, stopPromotion, type ActionReceipt } from '@/services/merchantApi.write.ts'
+import { addMenuItems, markSoldOut, openPromotion, stopPromotion, type ActionReceipt } from '@/services/merchantApi.write.ts'
 import type { GuardrailCheck, Merchant } from '@/types/domain.ts'
 import type { Draft } from '@/ai/navigator/types.ts'
 import { draftChecks } from './checks.ts'
@@ -17,7 +17,8 @@ export class ActionBlockedError extends Error {
 export async function confirmDraft(draft: Draft, shop: Merchant): Promise<ActionReceipt> {
   const failed = draftChecks(draft, shop).filter((check) => !check.pass)
   if (failed.length > 0) throw new ActionBlockedError(failed)
-  return draft.kind === 'promo' ? openPromotion(draft) : markSoldOut(draft)
+  if (draft.kind === 'promo') return openPromotion(draft)
+  return draft.kind === 'soldOut' ? markSoldOut(draft) : addMenuItems(draft)
 }
 
 /** "หยุดโปรนี้": always one tap, so it needs no checks. */

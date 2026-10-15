@@ -22,11 +22,17 @@ const SPACED_FILLERS = ['กับ', 'และ']
 const TRAILING_FILLERS = ['ราคา', 'นะคะ', 'นะครับ', 'ครับ', 'ค่ะ', 'คะ']
 
 // "ก๋วยเตี๋ยวเรือชามละ 50", "ชาเย็นแก้วละ 25": the unit and ละ say how the price is counted, they are not the dish.
-const UNIT_EACH = /\s*(?:ชาม|จาน|ถ้วย|แก้ว|ห่อ|กล่อง|ถุง|ไม้|ชิ้น|ลูก|ตัว|อัน|ที่|ชุด|กิโล|โล|ขีด|ขวด|กระป๋อง|ถาด|หม้อ|คู่|พวง|ฟอง|แพ็ค|แพ็ก|ก้อน|แผ่น|ปั้น|ลิตร|จุก|ตับ)?\s*(?:ละ|ล่ะ)$/
+// "น้ำส้ม 1 แก้ว 20 บาท", "น้ำส้มแก้วนึง 20", "หมูปิ้ง 10 ไม้ 100 บาท": a count and its unit say how much the price buys.
+const UNITS = 'ชาม|จาน|ถ้วย|แก้ว|ห่อ|กล่อง|ถุง|ไม้|ชิ้น|ลูก|ตัว|อัน|ที่|ชุด|กิโล|โล|ขีด|ขวด|กระป๋อง|ถาด|หม้อ|คู่|พวง|ฟอง|แพ็ค|แพ็ก|ก้อน|แผ่น|ปั้น|ลิตร|จุก|ตับ'
+const COUNT = '(?:\\d+|หนึ่ง|นึง|สอง|สาม|สี่|ห้า|หก|เจ็ด|แปด|เก้า|สิบ)'
+const UNIT_EACH = new RegExp(`\\s*(?:(?:${COUNT}\\s*)?(?:${UNITS})\\s*(?:ละ|ล่ะ)|${COUNT}\\s*(?:${UNITS})|(?:${UNITS})\\s*(?:นึง|หนึ่ง))$`)
+// A number followed by a unit is a count, never a price ("10 ไม้"). ที่ is left out: "50 ที่ร้าน" is still a price.
+const COUNTED = new RegExp(`^\\s*(?:${UNITS.replace('|ที่', '')})`)
 
 function isPrice(text: string, match: NumberMatch): boolean {
   if (match.value < MIN_PRICE || match.value > MAX_PRICE) return false
-  return AFTER_PRICE.test(text.slice(match.end)) && !AFTER_ADDRESS_WORD.test(text.slice(0, match.start))
+  const after = text.slice(match.end)
+  return AFTER_PRICE.test(after) && !COUNTED.test(after) && !AFTER_ADDRESS_WORD.test(text.slice(0, match.start))
 }
 
 function stripFiller(name: string): string | null {
