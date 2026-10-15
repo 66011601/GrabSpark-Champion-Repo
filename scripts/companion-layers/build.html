@@ -1,0 +1,277 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Companion layers</title>
+<!--
+  Cuts the companion's 2.5D layers out of the reference artwork (scripts/companion-layers/reference.webp).
+  Run `node scripts/companion-layers/save-server.mjs`, open this page through `npm run dev`
+  (/scripts/companion-layers/build.html), check the preview, then call save() in the console.
+  The green background is flood-filled away from the edges; the largest piece left is the character
+  (the headline and doodles fall away). She is split into body, head and two hands; where a layer is hidden behind
+  another, its colours are carried in from the surroundings, so the layers can move a little without showing holes.
+-->
+<body style="margin: 0; background: #444; font: 13px sans-serif; color: #fff">
+  <div id="out" style="display: flex; flex-wrap: wrap; gap: 6px"></div>
+  <script type="module">
+    const SOURCE = '/scripts/companion-layers/reference.webp'
+    const BG = [2, 177, 67] // the poster's green
+    const CROP = { x: 96, y: 270, w: 832, h: 754 } // the character's box in the artwork
+    const NECK = 826 // the head ends at the collar
+    // The hands (forearm, fist and thumb) as outlines in artwork pixels; each turns about its first point.
+    const HANDS = {
+      handL: [[265, 950], [172, 958], [166, 900], [170, 820], [190, 780], [204, 748], [222, 718], [246, 708], [270, 728], [276, 768], [318, 770], [348, 796], [354, 860], [348, 915], [338, 950]],
+      handR: [[780, 950], [718, 950], [704, 900], [702, 830], [712, 788], [750, 774], [790, 766], [798, 732], [826, 718], [852, 740], [866, 800], [872, 880], [866, 958]],
+    }
+    const FILL_REACH = 22 // how far (px) a layer's colours are carried in under the layer in front
+
+    const img = new Image()
+    await new Promise((resolve, reject) => {
+      img.onload = resolve
+      img.onerror = reject
+      img.src = SOURCE
+    })
+    const W = img.width
+    const H = img.height
+    const base = document.createElement('canvas')
+    base.width = W
+    base.height = H
+    const bctx = base.getContext('2d', { willReadFrequently: true })
+    bctx.drawImage(img, 0, 0)
+    const src = bctx.getImageData(0, 0, W, H).data
+    const N = W * H
+    const dist = new Float32Array(N)
+    for (let i = 0; i < N; i++) dist[i] = Math.hypot(src[i * 4] - BG[0], src[i * 4 + 1] - BG[1], src[i * 4 + 2] - BG[2])
+
+    // 1. background: flood fill from the edges through pixels close to the green
+    const bg = new Uint8Array(N)
+    const stack = []
+    const push = (i) => {
+      if (!bg[i] && dist[i] < 30) {
+        bg[i] = 1
+        stack.push(i)
+      }
+    }
+    for (let x = 0; x < W; x++) push(x), push((H - 1) * W + x)
+    for (let y = 0; y < H; y++) push(y * W), push(y * W + W - 1)
+    while (stack.length) {
+      const i = stack.pop()
+      const x = i % W
+      if (x > 0) push(i - 1)
+      if (x < W - 1) push(i + 1)
+      if (i >= W) push(i - W)
+      if (i < N - W) push(i + W)
+    }
+
+    // Pockets of green shut in by the character (between a braid, a fist and a shoulder) are background too;
+    // only big ones, so the bows' own lighter greens stay.
+    const seen = new Uint8Array(N)
+    for (let s0 = 0; s0 < N; s0++) {
+      if (bg[s0] || seen[s0] || dist[s0] >= 30) continue
+      const pocket = [s0]
+      seen[s0] = 1
+      for (let k = 0; k < pocket.length; k++) {
+        const i = pocket[k]
+        const x = i % W
+        for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) {
+          if (j < 0 || j >= N || bg[j] || seen[j] || dist[j] >= 30) continue
+          seen[j] = 1
+          pocket.push(j)
+        }
+      }
+      if (pocket.length > 150) for (const i of pocket) bg[i] = 1
+    }
+
+    // 2. the character: the largest piece that is not background
+    const label = new Int32Array(N).fill(-1)
+    let best = -1
+    let bestSize = 0
+    for (let s = 0; s < N; s++) {
+      if (bg[s] || label[s] >= 0) continue
+      let size = 0
+      stack.push(s)
+      label[s] = s
+      while (stack.length) {
+        const i = stack.pop()
+        size++
+        const x = i % W
+        for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) {
+          if (j < 0 || j >= N || bg[j] || label[j] >= 0) continue
+          label[j] = s
+          stack.push(j)
+        }
+      }
+      if (size > bestSize) (bestSize = size), (best = s)
+    }
+
+    // 3. alpha: solid inside; at the outline, how far a pixel is from the green; the green spill is taken back out
+    const alpha = new Float32Array(N)
+    const color = new Float32Array(N * 3)
+    for (let i = 0; i < N; i++) {
+      if (label[i] !== best) continue
+      const x = i % W
+      const edge = [i - 1, i + 1, i - W, i + W, i - W - 1, i - W + 1, i + W - 1, i + W + 1].some((j) => j >= 0 && j < N && Math.abs((j % W) - x) <= 1 && bg[j])
+      const a = edge ? Math.min(1, Math.max(0.15, (dist[i] - 20) / 70)) : 1
+      alpha[i] = a
+      for (let c = 0; c < 3; c++) color[i * 3 + c] = Math.min(255, Math.max(0, (src[i * 4 + c] - (1 - a) * BG[c]) / a))
+    }
+
+    // 4. which layer each pixel belongs to
+    const inside = (poly, x, y) => {
+      let hit = false
+      for (let a = 0, b = poly.length - 1; a < poly.length; b = a++) {
+        const [xa, ya] = poly[a]
+        const [xb, yb] = poly[b]
+        if (ya > y !== yb > y && x < ((xb - xa) * (y - ya)) / (yb - ya) + xa) hit = !hit
+      }
+      return hit
+    }
+    // Inside a hand's outline only skin counts as hand (red-pink, pale highlights included); braids, collar and apron
+    // under the outline stay with the head or body. Small gaps in the hand (glints, creases) are closed.
+    const skin = (i) => {
+      const [r, g, b] = [src[i * 4], src[i * 4 + 1], src[i * 4 + 2]]
+      return (r > 200 && r > g * 1.1 && r > b * 1.1) || (r > 110 && r > g * 1.6 && r > b * 1.5) // not the brown of the braids
+    }
+    const part = new Uint8Array(N) // 0 body, 1 head, 2 left hand, 3 right hand
+    const handOf = new Uint8Array(N)
+    for (let i = 0; i < N; i++) {
+      if (!alpha[i]) continue
+      const x = i % W
+      const y = (i / W) | 0
+      handOf[i] = inside(HANDS.handL, x, y) ? 2 : inside(HANDS.handR, x, y) ? 3 : 0
+      part[i] = handOf[i] && skin(i) ? handOf[i] : y < NECK ? 1 : 0
+    }
+    const close = (hand, radius) => {
+      const grown = new Uint8Array(N)
+      for (let i = 0; i < N; i++) {
+        if (handOf[i] !== hand) continue
+        const x = i % W
+        outer: for (let dy = -radius; dy <= radius; dy++)
+          for (let dx = -radius; dx <= radius; dx++) {
+            const j = i + dy * W + dx
+            if (x + dx >= 0 && x + dx < W && j >= 0 && j < N && part[j] === hand) { grown[i] = 1; break outer }
+          }
+      }
+      for (let i = 0; i < N; i++) {
+        if (!grown[i] || part[i] === hand) continue
+        const x = i % W
+        let all = true
+        for (let dy = -radius; dy <= radius && all; dy++)
+          for (let dx = -radius; dx <= radius && all; dx++) {
+            const j = i + dy * W + dx
+            if (x + dx < 0 || x + dx >= W || j < 0 || j >= N || !grown[j]) all = false
+          }
+        if (all) part[i] = hand
+      }
+    }
+    close(2, 3)
+    close(3, 3)
+
+    // 5. a layer: its own pixels, plus its colours carried a little way in under the layers in front of it
+    function layer(own, hiddenUnder) {
+      const a = new Float32Array(N)
+      const c = new Float32Array(N * 3)
+      for (let i = 0; i < N; i++)
+        if (alpha[i] && own(part[i])) {
+          a[i] = alpha[i]
+          for (let k = 0; k < 3; k++) c[i * 3 + k] = color[i * 3 + k]
+        }
+      // grow outwards one pixel at a time into what the front layers cover, averaging the known neighbours
+      let front = []
+      for (let i = 0; i < N; i++) if (!a[i] && alpha[i] && hiddenUnder(part[i])) front.push(i)
+      for (let step = 0; step < FILL_REACH && front.length; step++) {
+        const next = []
+        const grown = []
+        for (const i of front) {
+          const x = i % W
+          let n = 0
+          const sum = [0, 0, 0]
+          let sa = 0
+          for (const j of [i - 1, i + 1, i - W, i + W]) {
+            if (j < 0 || j >= N || Math.abs((j % W) - x) > 1 || !a[j]) continue
+            n++
+            sa += a[j]
+            for (let k = 0; k < 3; k++) sum[k] += c[j * 3 + k]
+          }
+          if (n) grown.push([i, sa / n, sum.map((v) => v / n)])
+          else next.push(i)
+        }
+        for (const [i, av, cv] of grown) {
+          a[i] = av * (1 - step / FILL_REACH) ** 0.5 * alpha[i]
+          c.set(cv, i * 3)
+        }
+        front = next
+      }
+      return { a, c }
+    }
+
+    const layers = {
+      body: layer((p) => p === 0, (p) => p !== 0),
+      head: layer((p) => p === 1, (p) => p === 2 || p === 3),
+      handL: layer((p) => p === 2, () => false),
+      handR: layer((p) => p === 3, () => false),
+    }
+
+    const out = document.getElementById('out')
+    const canvases = {}
+    for (const [name, { a, c }] of Object.entries(layers)) {
+      const canvas = document.createElement('canvas')
+      canvas.width = CROP.w
+      canvas.height = CROP.h
+      const ctx = canvas.getContext('2d')
+      const data = ctx.createImageData(CROP.w, CROP.h)
+      for (let y = 0; y < CROP.h; y++)
+        for (let x = 0; x < CROP.w; x++) {
+          const i = (y + CROP.y) * W + x + CROP.x
+          const o = (y * CROP.w + x) * 4
+          data.data[o] = c[i * 3]
+          data.data[o + 1] = c[i * 3 + 1]
+          data.data[o + 2] = c[i * 3 + 2]
+          data.data[o + 3] = Math.round(a[i] * 255)
+        }
+      ctx.putImageData(data, 0, 0)
+      canvases[name] = canvas
+      canvas.style.width = '300px'
+      canvas.style.background = 'repeating-conic-gradient(#888 0 25%, #aaa 0 50%) 0 0 / 16px 16px'
+      canvas.title = name
+      out.append(canvas)
+    }
+
+    // the layers stacked again, on the green, to check nothing is missing
+    const check = document.createElement('canvas')
+    check.width = CROP.w
+    check.height = CROP.h
+    const k = check.getContext('2d')
+    k.fillStyle = 'rgb(2,177,67)'
+    k.fillRect(0, 0, CROP.w, CROP.h)
+    for (const name of ['body', 'head', 'handL', 'handR']) k.drawImage(canvases[name], 0, 0)
+    check.style.width = '300px'
+    out.append(check)
+
+    // the pivots, in layer pixels, for the component
+    const pivot = (p) => [p[0] - CROP.x, p[1] - CROP.y]
+    window.meta = { width: CROP.w, height: CROP.h, neck: [510 - CROP.x, NECK - CROP.y], handL: pivot(HANDS.handL[0]), handR: pivot(HANDS.handR[0]) }
+    window.canvases = canvases
+
+    window.inspect = (name, x, y, w) => {
+      let big = document.getElementById('big')
+      if (!big) {
+        big = document.createElement('canvas')
+        big.id = 'big'
+        big.width = big.height = 700
+        big.style.cssText = 'position:fixed;left:0;top:0;width:700px;height:700px;background:repeating-conic-gradient(#888 0 25%,#aaa 0 50%) 0 0/16px 16px'
+        document.body.append(big)
+      }
+      const g = big.getContext('2d')
+      g.clearRect(0, 0, 700, 700)
+      g.imageSmoothingEnabled = false
+      g.drawImage(name === 'check' ? check : canvases[name], x - CROP.x, y - CROP.y, w, w, 0, 0, 700, 700)
+    }
+    window.save = async () => {
+      for (const [name, canvas] of Object.entries(canvases)) {
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.9))
+        await fetch(`http://localhost:5199/save?name=companion-${name}.webp`, { method: 'POST', body: blob })
+      }
+      return window.meta
+    }
+    window.ready = true
+  </script>
+</body>

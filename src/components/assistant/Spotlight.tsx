@@ -2,11 +2,11 @@ import { Mic } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { th } from '@/copy/th.ts'
-import { Avatar3D } from './Avatar3D.tsx'
+import { CompanionFigure } from './CompanionFigure.tsx'
 import type { Choice } from './companionState.ts'
 
 /**
- * What the 3D companion says, over a dimmed page, the way LINE's characters peek in with a tip:
+ * What the companion says, over a dimmed page, the way LINE's characters peek in with a tip:
  * a new step's advice, something to fix, or buttons to pick from.
  * The page dims first, then the companion rises at the right edge and its bubble appears.
  * Tapping "เข้าใจแล้ว", the dimmed page, or Escape brings the page back; the talk button brings it back and listens.
@@ -67,7 +67,7 @@ export function Spotlight({ text, notice, choices = [], speaking, onTalk, onClos
           </button>
           <span className="absolute -right-2 bottom-8 size-5 rotate-45 rounded-sm bg-action" aria-hidden />
         </div>
-        <Avatar3D speaking={speaking} className="h-64 w-48 shrink-0 translate-x-8" />
+        <CompanionFigure speaking={speaking} className="h-56 w-60 shrink-0 translate-x-6" />
       </div>
     </div>,
     phone,

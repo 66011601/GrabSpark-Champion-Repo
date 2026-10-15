@@ -19,7 +19,7 @@ interface AiHelperBarProps {
 }
 
 /**
- * The companion above the screen's green button: her 3D face (the talk button), the voice switch and the screen's own action.
+ * The companion above the screen's green button: her 2.5D face (the talk button), the voice switch and the screen's own action.
  * What she says shows in the spotlight: on a new step, and whenever she has something to fix or a question to pick from.
  */
 export function AiHelperBar({ text, notice, mic, onAvatar, action, onSpoken, choices = [] }: AiHelperBarProps) {
