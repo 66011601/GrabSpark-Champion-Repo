@@ -302,7 +302,7 @@ export function S3Business() {
     if (chip.kind === 'pinOnMap') return [{ label: chip.label, onPress: openPin }]
     return []
   })
-  const sheetChips = [...chips, ...choices]
+  const sheetChips = [...chips, ...choices.filter((choice) => !chips.some((chip) => chip.label === choice.label))]
 
   return (
     <StepShell
@@ -366,7 +366,7 @@ export function S3Business() {
       <TalkSheet
         open={talking}
         onClose={() => setTalking(false)}
-        question={line}
+        question={placeNotice ?? notice ?? line}
         chips={sheetChips}
         transcript={transcript}
         mic={mic}

@@ -47,6 +47,7 @@ export function S2Account() {
       if (command === 'back') dispatch({ type: 'BACK' })
       return command ? true : th.s2.typeItYourself
     },
+    // Inert by design: interpret never returns false (unmatched speech gets the type-it-yourself line), so the matcher does not run here.
     { understanding: { screen: 'S2_ACCOUNT' } },
   )
 

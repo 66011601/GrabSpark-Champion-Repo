@@ -118,8 +118,8 @@ export function H3Hours() {
       <TalkSheet
         open={talking}
         onClose={() => setTalking(false)}
-        question={th.h3.helper}
-        chips={[...[th.chips.hoursFullDay, th.chips.hoursMorning].map((label) => ({ label, onPress: () => hear(label) })), ...choices]}
+        question={notice ?? th.h3.helper}
+        chips={[...[th.chips.hoursFullDay, th.chips.hoursMorning].map((label) => ({ label, onPress: () => hear(label) })), ...choices.filter((choice) => ![th.chips.hoursFullDay, th.chips.hoursMorning].includes(choice.label))]}
         transcript={transcript}
         mic={mic}
         onMic={toggleMic}
