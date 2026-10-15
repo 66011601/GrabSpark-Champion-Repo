@@ -1,5 +1,17 @@
 /** Every merchant-facing string. Tone: warm and polite (ค่ะ/คะ), short sentences; the companion calls itself หนู. */
 export const th = {
+  // Shown before anything starts: the app is a presentation prototype. Thai first, English beside it.
+  demoNotice: {
+    badge: 'DEMO · PROTOTYPE',
+    title: 'แอปต้นแบบเพื่อการนำเสนอ',
+    body: 'นี่คือแอปพลิเคชันตัวอย่างสำหรับการนำเสนอ Business Case ของ GrabSpark เท่านั้น ไม่ใช่การเปิดตัวใช้งานจริง ข้อมูลและขั้นตอนทั้งหมดเป็นการจำลอง',
+    start: 'รับทราบ เริ่มเลย',
+    en: {
+      title: 'Prototype for presentation only',
+      body: 'This is a demo application for the GrabSpark Business Case presentation only. It is not a real-world launch. All data and steps are simulated.',
+      start: 'Got it, start',
+    },
+  },
   companion: {
     name: 'ผู้ช่วยร้าน',
     spotlight: { label: 'คำแนะนำจากผู้ช่วย', gotIt: 'เข้าใจแล้ว', talk: 'พูดกับหนู' },

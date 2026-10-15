@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { DemoPanel } from '@/app/demo/DemoPanel.tsx'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
 import { JourneyProvider } from '@/app/journey/JourneyProvider.tsx'
+import { DemoNotice } from '@/components/shell/DemoNotice.tsx'
 import { DeviceFrame } from '@/components/shell/DeviceFrame.tsx'
 import { DashboardScreen } from '@/screens/act2-grow/1-dashboard/DashboardScreen.tsx'
 import { ActTransition } from '@/screens/ActTransition.tsx'
@@ -55,11 +57,11 @@ function ScreenSwitch() {
 }
 
 function App() {
+  // Every load opens on the prototype notice; nothing runs behind it until it is acknowledged.
+  const [started, setStarted] = useState(false)
   return (
     <JourneyProvider>
-      <DeviceFrame side={<DemoPanel />}>
-        <ScreenSwitch />
-      </DeviceFrame>
+      <DeviceFrame side={<DemoPanel />}>{started ? <ScreenSwitch /> : <DemoNotice onStart={() => setStarted(true)} />}</DeviceFrame>
     </JourneyProvider>
   )
 }
