@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { understandThai } from '@/ai/language/understand.ts'
 import { takeTurn, type Turn } from '@/components/assistant/understandingStep.ts'
 import { th } from '@/copy/th.ts'
@@ -14,17 +14,20 @@ const blockedSentences = BANK.filter((entry) => BLOCKED.has(entry.label))
 const tapOnly = new Set([th.s7.mustTap, th.act2.confirm.byTap])
 
 async function turnOn(screen: ScreenId, say: string): Promise<{ turn: Turn; performed: string[] }> {
-  const perform = vi.fn(async () => true as const)
+  const performed: string[] = []
   const turn = await takeTurn({
     heard: understandThai(say),
     pending: null,
     screen,
     rules: () => false,
-    perform,
+    perform: async (label) => {
+      performed.push(label)
+      return true
+    },
     matchOn,
     isCurrent: () => true,
   })
-  return { turn, performed: perform.mock.calls.map(([label]) => label as string) }
+  return { turn, performed }
 }
 
 describe('blocked labels (spec D1 §7)', () => {
