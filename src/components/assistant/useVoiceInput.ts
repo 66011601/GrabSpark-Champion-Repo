@@ -110,10 +110,10 @@ export function useVoiceInput(interpret: Interpret, { autoListen = false, unders
     setChoices(
       turn.pending
         ? [
-            { label: th.understanding.yes, onPress: () => taps.current.answer('yes') },
-            { label: th.understanding.no, onPress: () => taps.current.answer('no') },
+            { id: 'answer:yes', label: th.understanding.yes, onPress: () => taps.current.answer('yes') },
+            { id: 'answer:no', label: th.understanding.no, onPress: () => taps.current.answer('no') },
           ]
-        : turn.offers.map((label) => ({ label: labelName(label), onPress: () => taps.current.run(label) })),
+        : turn.offers.map((label) => ({ id: label, label: labelName(label), onPress: () => taps.current.run(label) })),
     )
     setNotice(noticeFor(turn.reply, takeGreeting()))
   }, [])

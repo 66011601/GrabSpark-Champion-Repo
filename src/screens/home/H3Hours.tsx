@@ -4,6 +4,7 @@ import { SAY } from '@/ai/commands/phrases.ts'
 import { extractProfile } from '@/ai/onboarding/extractProfile.ts'
 import { SubmissionBlockedError, saveSetup } from '@/ai/onboarding/submit.ts'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
+import { withChoices } from '@/components/assistant/companionState.ts'
 import { TalkSheet } from '@/components/assistant/TalkSheet.tsx'
 import { useVoiceInput } from '@/components/assistant/useVoiceInput.ts'
 import { AiHelperBar } from '@/components/grab/AiHelperBar.tsx'
@@ -118,8 +119,12 @@ export function H3Hours() {
       <TalkSheet
         open={talking}
         onClose={() => setTalking(false)}
-        question={notice ?? th.h3.helper}
-        chips={[...[th.chips.hoursFullDay, th.chips.hoursMorning].map((label) => ({ label, onPress: () => hear(label) })), ...choices.filter((choice) => ![th.chips.hoursFullDay, th.chips.hoursMorning].includes(choice.label))]}
+        notice={notice}
+        question={th.h3.helper}
+        chips={withChoices(
+          [th.chips.hoursFullDay, th.chips.hoursMorning].map((label) => ({ label, onPress: () => hear(label) })),
+          choices,
+        )}
         transcript={transcript}
         mic={mic}
         onMic={toggleMic}

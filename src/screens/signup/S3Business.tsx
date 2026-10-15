@@ -9,6 +9,7 @@ import { locationPhrase } from '@/ai/onboarding/parsers/locationPhrase.ts'
 import { formatThaiAddress, parseThaiAddress } from '@/ai/onboarding/parsers/thaiAddress.ts'
 import { stepStatus } from '@/ai/onboarding/steps.ts'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
+import { withChoices } from '@/components/assistant/companionState.ts'
 import { TalkSheet } from '@/components/assistant/TalkSheet.tsx'
 import { useVoiceInput } from '@/components/assistant/useVoiceInput.ts'
 import { AiHelperBar } from '@/components/grab/AiHelperBar.tsx'
@@ -295,14 +296,12 @@ export function S3Business() {
       : question.text
     : (mismatch ?? (status.valid ? th.s3.helperDone : problemText(status.issues[0])))
   const amber = (key: ProfileFieldKey) => (needsAmber(fields[key]) ? () => dispatch({ type: 'CONFIRM_FIELD', field: key }) : null)
-  // The sheet covers the helper bar, so the companion's yes / no and best-guess buttons ride along with the chips.
   const chips = (question?.chips ?? []).flatMap((chip) => {
     if (chip.kind === 'say') return [{ label: chip.label, onPress: () => hear(chip.label) }]
     if (chip.kind === 'useDeviceLocation') return [{ label: chip.label, onPress: () => void locateHere() }]
     if (chip.kind === 'pinOnMap') return [{ label: chip.label, onPress: openPin }]
     return []
   })
-  const sheetChips = [...chips, ...choices.filter((choice) => !chips.some((chip) => chip.label === choice.label))]
 
   return (
     <StepShell
@@ -366,8 +365,9 @@ export function S3Business() {
       <TalkSheet
         open={talking}
         onClose={() => setTalking(false)}
-        question={placeNotice ?? notice ?? line}
-        chips={sheetChips}
+        notice={placeNotice ?? notice}
+        question={line}
+        chips={withChoices(chips, choices)}
         transcript={transcript}
         mic={mic}
         onMic={pressMic}

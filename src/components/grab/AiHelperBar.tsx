@@ -39,7 +39,7 @@ export function AiHelperBar({ text, notice, mic, onAvatar, action, onSpoken, cho
           <div className="mt-2 flex flex-wrap gap-2">
             {choices.map((choice) => (
               <button
-                key={choice.label}
+                key={choice.id}
                 type="button"
                 onClick={choice.onPress}
                 className="min-h-12 cursor-pointer rounded-full bg-surface px-4 text-base font-medium text-action ring-1 ring-action active:bg-ok-bg"
