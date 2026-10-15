@@ -1,3 +1,4 @@
+import { learnable } from '../features.ts'
 import { SCREEN_LABELS } from '../labels.ts'
 import { FROM_CORPUS } from './fromCorpus.ts'
 import { HOME_BANK } from './home.ts'
@@ -16,8 +17,22 @@ function hash(text: string): number {
   return value
 }
 
-/** One written sentence in five is kept out of training, to measure how well unseen speech is understood. */
-export const isHeldOut = (entry: BankEntry): boolean => entry.source === 'written' && hash(entry.say) % 5 === 0
+// Every screen's index asks about every entry; running the language layer each time would be wasted work.
+const heldOut = new WeakMap<BankEntry, boolean>()
+
+/**
+ * One written sentence in five is kept out of training, to measure how well unseen speech is understood. The hash is of
+ * the form the matcher learns, so ค่ะ/ครับ or spacing variants of one sentence always land on the same side.
+ */
+export function isHeldOut(entry: BankEntry): boolean {
+  if (entry.source !== 'written') return false
+  let held = heldOut.get(entry)
+  if (held === undefined) {
+    held = hash(learnable(entry.say)) % 5 === 0
+    heldOut.set(entry, held)
+  }
+  return held
+}
 
 const onScreen = (entry: BankEntry, screen: ScreenId) =>
   (entry.screens === 'any' || entry.screens.includes(screen)) && (entry.label === 'none' || SCREEN_LABELS[screen].includes(entry.label))

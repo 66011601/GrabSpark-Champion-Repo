@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { understandThai } from '@/ai/language/understand.ts'
+import { businessUpdates } from '@/ai/onboarding/businessTalk.ts'
+import { createEmptyProfile } from '@/ai/onboarding/profile.ts'
+import { getLandmarks } from '@/services/merchantApi.ts'
 import { SCREEN_LABELS } from '../labels.ts'
 import { BANK, heldOutFor, isHeldOut, trainingFor } from './index.ts'
+import { SIGNUP_BANK } from './signup.ts'
 import type { ScreenId } from './types.ts'
 
 const ALL_LABELS = new Set(['none', ...Object.values(SCREEN_LABELS).flat()])
@@ -31,6 +36,17 @@ describe('bank structure', () => {
       const key = `${entry.screens === 'any' ? 'any' : entry.screens.join(',')}|${entry.say}`
       if (seen.has(key)) expect(seen.get(key), entry.say).toBe(entry.label)
       seen.set(key, entry.label)
+    }
+  })
+
+  // The matcher only hears what 3/7's rules did not understand, so a topic sentence the parsers fill would never reach
+  // it. (The corpus's S3 field sentences are the opposite: the parsers must fill them, so they are not checked here.)
+  it('keeps every written S3 topic and type-instead sentence out of the parsers, so it reaches the matcher', () => {
+    const landmarks = getLandmarks()
+    const talk = SIGNUP_BANK.filter((entry) => entry.screens !== 'any' && entry.screens.includes('S3'))
+    for (const entry of talk.filter((e) => e.label.startsWith('topic:') || e.label === 'typeInstead')) {
+      const updates = businessUpdates(understandThai(entry.say).text, { expecting: undefined, landmarks, profile: createEmptyProfile() })
+      expect(Object.keys(updates), entry.say).toEqual([])
     }
   })
 })
