@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react'
+import { checkedField } from '@/ai/commands/checked.ts'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { SAY } from '@/ai/commands/phrases.ts'
 import { DERIVED_CONFIDENCE, GPS_CONFIDENCE, LINK_CONFIDENCE, redraftAddress, withArea } from '@/ai/onboarding/addressFields.ts'
@@ -247,7 +248,12 @@ export function S3Business() {
       const command = matchCommand(text, COMMANDS)
       if (command === 'next') {
         if (canGoOn) dispatch({ type: 'NEXT' })
-        else if (mismatch) return mismatch
+        else return th.grab.notYet // the helper line under it says what is left
+        return true
+      }
+      const checked = checkedField(text, status)
+      if (checked) {
+        dispatch({ type: 'CONFIRM_FIELD', field: checked })
         return true
       }
       if (command === 'back') {

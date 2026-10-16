@@ -104,6 +104,14 @@ describe('startListening', () => {
     expect(h.onFinal).toHaveBeenCalledWith('เห็ดจั่งได๋', ['เฮ็ดจั่งใด๋'])
   })
 
+  it('ends the other guesses with the words still unsettled when "จ้า" closed the turn', () => {
+    const { h, recognition } = listen()
+    recognition.onresult?.({ resultIndex: 0, results: [{ isFinal: true, length: 2, 0: { transcript: 'ร้านชื่อ' }, 1: { transcript: 'ร้านชือ' } }] })
+    recognition.onresult?.({ resultIndex: 1, results: [{ isFinal: true, 0: { transcript: 'ร้านชื่อ' } }, { isFinal: false, 0: { transcript: 'ครัวป้าแดงจ้า' } }] })
+    recognition.onend?.()
+    expect(h.onFinal).toHaveBeenCalledWith('ร้านชื่อครัวป้าแดง', ['ร้านชือครัวป้าแดง'])
+  })
+
   it('hears a stretch Android sends twice only once', () => {
     const { h, recognition } = listen()
     recognition.onresult?.({ resultIndex: 0, results: [{ isFinal: true, 0: { transcript: 'ถัดไป' } }] })

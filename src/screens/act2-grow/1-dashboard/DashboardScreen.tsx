@@ -34,6 +34,8 @@ const script = (id: ScriptId) => SCRIPTS.find((entry) => entry.id === id) as Scr
 const SETTLE_MS = 500
 const TRAVEL_MS = 800
 const TAP_MS = 250
+// The longest a step waits for its line to be spoken before it moves on anyway.
+const MAX_LINE_MS = 20_000
 
 /**
  * Act 2: the GrabMerchant home, driven by voice. The owner asks, the runner plays a script (screen, cursor, tap, one spoken line),
@@ -97,7 +99,10 @@ export function DashboardScreen() {
         return new Promise<void>((resolve) => {
           // A line stays up long enough to read, even when the device cannot speak it.
           const readable = new Promise<void>((done) => setTimeout(done, fast.current ? 0 : Math.min(4000, 1200 + text.length * 35)))
+          // The line may never finish being spoken (speech waits for the first tap, a voice stalls): never wait forever.
+          const giveUp = setTimeout(() => lineDone.current?.(), fast.current ? 0 : Math.min(MAX_LINE_MS, 3000 + text.length * 150))
           const finish = () => {
+            clearTimeout(giveUp)
             lineDone.current = null
             skipLine.current = null
             resolve()
