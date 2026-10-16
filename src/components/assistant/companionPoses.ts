@@ -21,8 +21,8 @@ export interface PoseMoment {
   shop: boolean // Act 2: running the shop, not signing up
 }
 
-// "Nothing changes until you tap", "thank you": a heart for trusting her.
-const HEART = /กดเอง|ส่งเอง|แทนไม่ได้|ยืนยันเอง|จนกว่าคุณจะกด|หนูไม่กด|ขอบคุณ/
+// "Nothing changes until you tap", "thank you", her answer to thanks or praise: a heart.
+const HEART = /กดเอง|ส่งเอง|แทนไม่ได้|ยืนยันเอง|จนกว่าคุณจะกด|หนูไม่กด|ขอบคุณ|ยินดี|เขิน|ดีใจที่ได้ช่วย/
 // Something done: a filled page, a saved menu, a sent application, a dish added or switched off.
 const CHEER = /เรียบร้อย|สำเร็จ|เสร็จแล้ว|ครบแล้ว|บันทึกแล้ว|ได้รับ SMS แล้ว|เพิ่มเมนูใหม่ \d+ รายการแล้ว|ปิดการขาย “.+” แล้ว|เปิดใช้งานแล้ว|(?:รับ|เพิ่ม|ส่ง)\S*แล้วค่ะ$|แล้วค่ะ!/
 // A question back to the merchant.

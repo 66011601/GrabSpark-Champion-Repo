@@ -62,6 +62,9 @@ const ENGLISH: Record<string, string> = {
   home: 'หน้าหลัก',
   stop: 'หยุด',
   cancel: 'ยกเลิก',
+  thanks: 'ขอบคุณ',
+  thankyou: 'ขอบคุณ',
+  thank: 'ขอบคุณ',
 }
 const ENGLISH_ALONE = new RegExp(`^([a-z][a-z.\\s]*?)(${ENDINGS})$`, 'i')
 
