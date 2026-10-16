@@ -90,6 +90,20 @@ describe('answerPending', () => {
 })
 
 describe('takeTurn', () => {
+  it('tries the recogniser\'s other guesses with the rules before the matcher guesses', async () => {
+    const rules = vi.fn((text: string) => text === 'เฮ็ดจั่งใด๋')
+    const p = parts({ heard: heard('เห็ดจั่งได๋'), others: [heard('อะไรนะ'), heard('เฮ็ดจั่งใด๋')], rules })
+    expect(await takeTurn(p)).toEqual({ reply: true, pending: null, offers: [] })
+    expect(rules).toHaveBeenCalledTimes(3)
+    expect(p.matchOn).not.toHaveBeenCalled()
+  })
+
+  it('asks the matcher about the first guess when no guess is understood', async () => {
+    const p = parts({ heard: heard('อะไรสักอย่าง'), others: [heard('อะไรสักอัน')] })
+    await takeTurn(p)
+    expect(p.matchOn).toHaveBeenCalledWith('S4', 'อะไรสักอย่าง')
+  })
+
   it('lets the rules answer first, and never wakes the matcher', async () => {
     const p = parts({ rules: vi.fn(() => true as const) })
     expect(await takeTurn(p)).toEqual({ reply: true, pending: null, offers: [] })

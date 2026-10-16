@@ -31,6 +31,10 @@ describe('cutAtEndWord', () => {
 })
 
 describe('endsWithClosingWord', () => {
+  it('closes on เด้อ as the recogniser writes it', () => {
+    expect(endsWithClosingWord('หมูกรอบหมดแล้วเดอ')).toBe(true)
+  })
+
   it('closes on a regional word at the very end', () => {
     for (const said of ['ข้าวซอยหมดแล้วเจ้า', 'เปิดแปดโมงเน้อ', 'สิเพิ่มเมนูเด้อ', 'ปิดวันพุธเจ้าค่ะ', 'เปิดทุกวันจ้า ']) expect(endsWithClosingWord(said), said).toBe(true)
   })

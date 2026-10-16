@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useJourney } from '@/app/journey/JourneyContext.ts'
 import type { Screen } from '@/app/journey/journeyMachine.ts'
+import { useHeardLog } from '@/components/shell/useHeardLog.ts'
 import { demoFlags } from '@/services/demoFlags.ts'
+import { clearHeardLog, downloadHeardLog, setHeardLogOn } from '@/services/speech/heardLog.ts'
 import { demoBus } from './demoBus.ts'
 import { th } from '@/copy/th.ts'
 import { scriptLines, step4DemoProfile, submittedDemoProfile } from './demoProfile.ts'
@@ -36,6 +38,7 @@ export function DemoPanel() {
   const [failApi, setFailApi] = useState(demoFlags.simulateApiFailure)
   const [fakeLocation, setFakeLocation] = useState(demoFlags.simulateLocation)
   const [line, setLine] = useState('')
+  const heardLog = useHeardLog()
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -157,6 +160,22 @@ export function DemoPanel() {
         <button type="button" className="min-h-12 rounded-xl px-3 text-left ring-1 ring-line hover:bg-canvas" onClick={() => dispatch({ type: 'RESET' })}>
           เริ่มใหม่ทั้งหมด
         </button>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h3 className="font-bold">{th.heardLog.panelTitle}</h3>
+        <label className="flex min-h-12 items-center gap-3">
+          <input type="checkbox" className="size-5" checked={heardLog.on} onChange={(event) => setHeardLogOn(event.target.checked)} />
+          {th.heardLog.keep}
+        </label>
+        <div className="flex gap-2">
+          <button type="button" disabled={heardLog.count === 0} className="min-h-12 flex-1 rounded-xl px-3 ring-1 ring-line hover:bg-canvas disabled:opacity-40" onClick={() => downloadHeardLog()}>
+            {th.heardLog.download(heardLog.count)}
+          </button>
+          <button type="button" disabled={heardLog.count === 0} className="min-h-12 rounded-xl px-3 ring-1 ring-line hover:bg-canvas disabled:opacity-40" onClick={clearHeardLog}>
+            {th.heardLog.clear}
+          </button>
+        </div>
       </section>
     </aside>
   )

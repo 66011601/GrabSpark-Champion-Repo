@@ -19,6 +19,8 @@ describe('drafts', () => {
     ['หมู กรอบ หมดแล้วค่ะ', 'M04'],
     ['ชาไทยหมด', 'D01'],
     ['กะเพราหมดเกลี้ยง', 'M02'],
+    ['หมูกอบหมดแล้ว', 'M04'], // the ร dropped, as many say it and the recogniser writes it
+    ['กะเพาหมดแล้ว', 'M02'],
   ])('finds the item in "%s"', (said, id) => {
     expect(findItem(said, shop)?.id).toBe(id)
   })

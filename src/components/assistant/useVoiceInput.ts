@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cutAtEndWord } from '@/ai/commands/endWord.ts'
 import { greetingFor, holdGreeting, takeGreeting } from '@/ai/language/greeting.ts'
+import { fixHeard } from '@/ai/language/heard.ts'
 import { noteRegion } from '@/ai/language/region.ts'
 import { maskRude, understandThai } from '@/ai/language/understand.ts'
 import type { ScreenId } from '@/ai/understanding/bank/types.ts'
@@ -10,6 +11,7 @@ import { matchOn } from '@/ai/understanding/load.ts'
 import { demoBus } from '@/app/demo/demoBus.ts'
 import { th } from '@/copy/th.ts'
 import { earcon } from '@/services/speech/earcon.ts'
+import { noteHeard } from '@/services/speech/heardLog.ts'
 import { playScripted } from '@/services/speech/scripted.ts'
 import { startListening, type ListenSession } from '@/services/speech/speechToText.ts'
 import { stopSpeaking } from '@/services/speech/textToSpeech.ts'
@@ -152,14 +154,16 @@ export function useVoiceInput(interpret: Interpret, { understanding }: VoiceOpti
     }
   })
 
-  // Every input path (mic, scripted demo line, chip, keyboard) ends here. The language layer comes first:
-  // rude words out, dialect into central Thai, so every screen reads the same plain sentence.
-  const hear = useCallback(
-    (words: string) => {
+  // Every input path (mic, scripted demo line, chip, keyboard) ends here. The recogniser's known mistakes are put
+  // right first (fixHeard), then the language layer takes rude words out and dialect into central Thai, so every
+  // screen reads the same plain sentence. A mic turn also brings the recogniser's other guesses.
+  const hearTurn = useCallback(
+    (words: string, spoken?: { others: string[] }) => {
       if (!guard.current.mounted()) return
       // A scripted or typed line may close with "จ้า" too, just like a spoken one.
-      const said = cutAtEndWord(words).text || words
+      const said = fixHeard(cutAtEndWord(words).text || words)
       const heard = understandThai(said)
+      const others = (spoken?.others ?? []).map((other) => understandThai(fixHeard(other))).filter((other) => other.text !== heard.text)
       holdGreeting(greetingFor(noteRegion(heard.regionWords)))
       const isCurrent = guard.current.begin()
       setTranscript({ text: heard.shown, final: true })
@@ -171,6 +175,7 @@ export function useVoiceInput(interpret: Interpret, { understanding }: VoiceOpti
         // In order: a question that is waiting, the screen's own rules, and only then the matcher's guess.
         const turn = await takeTurn({
           heard,
+          others,
           pending: pending.current,
           screen: latestOptions.current?.screen ?? null,
           rules: (text) => latestInterpret.current(text, isCurrent),
@@ -181,10 +186,16 @@ export function useVoiceInput(interpret: Interpret, { understanding }: VoiceOpti
         if (!isCurrent()) return
         show(turn)
         setMic('idle')
+        if (spoken) {
+          const outcome = turn.pending ? 'asked' : turn.offers.length > 0 ? 'offered' : turn.reply === false ? 'lost' : 'done'
+          noteHeard({ screen: latestOptions.current?.screen ?? null, said: words, others: spoken.others, fixed: said, outcome })
+        }
       }, THINKING_MS)
     },
     [perform, setMic, show],
   )
+
+  const hear = useCallback((words: string) => hearTurn(words), [hearTurn])
 
   // A waiting question and its buttons stay through a mic turn: the merchant may be about to answer it.
   const listen = useCallback(
@@ -200,10 +211,10 @@ export function useVoiceInput(interpret: Interpret, { understanding }: VoiceOpti
         onInterim: (text) => {
           if (live()) setTranscript({ text: maskRude(text), final: false })
         },
-        onFinal: (text) => {
+        onFinal: (text, others) => {
           if (!live()) return
           earcon('heard')
-          hear(text)
+          hearTurn(text, { others })
         },
         onError: (kind) => {
           if (!live()) return
@@ -220,7 +231,7 @@ export function useVoiceInput(interpret: Interpret, { understanding }: VoiceOpti
         },
       })
     },
-    [hear, setMic],
+    [hearTurn, setMic],
   )
 
   /** Closes an open mic; what was said so far is still heard (a sheet is about to speak over it, or the merchant is done). */

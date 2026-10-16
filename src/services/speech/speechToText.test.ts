@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { QUIET_AFTER_SPEECH_MS, startListening } from './speechToText.ts'
+import { addStretch, otherGuesses, QUIET_AFTER_SPEECH_MS, startListening } from './speechToText.ts'
 
-type ResultLike = { isFinal: boolean; 0: { transcript: string } }
+type ResultLike = { isFinal: boolean; length?: number; [guess: number]: { transcript: string } }
 
 class FakeRecognition {
   static last: FakeRecognition | null = null
@@ -44,7 +44,7 @@ describe('startListening', () => {
     const { h, recognition } = listen()
     recognition.onresult?.({ resultIndex: 0, results: [{ isFinal: true, 0: { transcript: ' สิบโมงเช้า ' } }] })
     recognition.onend?.()
-    expect(h.onFinal).toHaveBeenCalledWith('สิบโมงเช้า')
+    expect(h.onFinal).toHaveBeenCalledWith('สิบโมงเช้า', [])
     expect(h.onError).not.toHaveBeenCalled()
     expect(h.onEnd).toHaveBeenCalledTimes(1)
   })
@@ -64,7 +64,7 @@ describe('startListening', () => {
     // Whatever the recogniser adds while it shuts down is ignored.
     recognition.onresult?.({ resultIndex: 0, results: [{ isFinal: true, 0: { transcript: 'ร้านชื่อครัวป้าแดงจ้า แล้วก็' } }] })
     recognition.onend?.()
-    expect(h.onFinal).toHaveBeenCalledWith('ร้านชื่อครัวป้าแดง')
+    expect(h.onFinal).toHaveBeenCalledWith('ร้านชื่อครัวป้าแดง', [])
   })
 
   it('closes the turn for a merchant who goes quiet', () => {
@@ -76,7 +76,7 @@ describe('startListening', () => {
     vi.advanceTimersByTime(1)
     expect(recognition.stop).toHaveBeenCalledTimes(1)
     recognition.onend?.()
-    expect(h.onFinal).toHaveBeenCalledWith('สิบโมงเช้า')
+    expect(h.onFinal).toHaveBeenCalledWith('สิบโมงเช้า', [])
     vi.useRealTimers()
   })
 
@@ -96,11 +96,42 @@ describe('startListening', () => {
     expect(h.onError).toHaveBeenCalledWith('not-allowed')
   })
 
+  it('passes on the recogniser\'s other guesses', () => {
+    const { h, recognition } = listen()
+    expect(recognition.maxAlternatives).toBe(3)
+    recognition.onresult?.({ resultIndex: 0, results: [{ isFinal: true, length: 3, 0: { transcript: 'เห็ดจั่งได๋' }, 1: { transcript: 'เฮ็ดจั่งใด๋' }, 2: { transcript: 'เห็ดจั่งได๋' } }] })
+    recognition.onend?.()
+    expect(h.onFinal).toHaveBeenCalledWith('เห็ดจั่งได๋', ['เฮ็ดจั่งใด๋'])
+  })
+
+  it('hears a stretch Android sends twice only once', () => {
+    const { h, recognition } = listen()
+    recognition.onresult?.({ resultIndex: 0, results: [{ isFinal: true, 0: { transcript: 'ถัดไป' } }] })
+    recognition.onresult?.({ resultIndex: 1, results: [{ isFinal: true, 0: { transcript: 'ถัดไป' } }, { isFinal: true, 0: { transcript: 'ถัดไป' } }] })
+    recognition.onend?.()
+    expect(h.onFinal).toHaveBeenCalledWith('ถัดไป', [])
+  })
+
   it('reports unsupported browsers', () => {
     vi.stubGlobal('window', {})
     const h = handlers()
     startListening(h)
     expect(h.onError).toHaveBeenCalledWith('unsupported')
     expect(h.onEnd).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('stretches of speech', () => {
+  it('drops a repeat and lets a stretch that repeats all before it replace them', () => {
+    expect(addStretch([['ร้านชื่อ']], ['ร้านชื่อ'])).toEqual([['ร้านชื่อ']])
+    expect(addStretch([['ร้านชื่อ']], ['ร้านชื่อ ครัวป้าแดง'])).toEqual([['ร้านชื่อ ครัวป้าแดง']])
+    expect(addStretch([['ร้านชื่อ']], ['ครัวป้าแดง'])).toEqual([['ร้านชื่อ'], ['ครัวป้าแดง']])
+    expect(addStretch([['ร้านชื่อ']], [])).toEqual([['ร้านชื่อ']])
+  })
+
+  it('builds other whole sentences, one stretch changed at a time, two at most', () => {
+    expect(otherGuesses([['ขอ'], ['เบิ้งยอดขาย', 'เบิ่งยอดขาย']])).toEqual(['ขอเบิ่งยอดขาย'])
+    expect(otherGuesses([['ก', 'ข', 'ค'], ['ง', 'จ']])).toEqual(['ขง', 'คง'])
+    expect(otherGuesses([['ถัดไป']])).toEqual([])
   })
 })
