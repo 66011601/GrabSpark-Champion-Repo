@@ -16,11 +16,12 @@ const PHONE_DIGITS: [string, string][] = [
   ['เก้า', '9'],
 ]
 
-/** "ศูนย์แปดหนึ่ง สองสามสี่…" → "081234…". Null unless it is a 10-digit number starting with 0. */
+/** "ศูนย์แปดหนึ่ง สองสามสี่…" → "081234…", "+66 81 234 5678" → "0812345678". Null unless it is a 10-digit number starting with 0. */
 export function parsePhone(input: string): string | null {
   // Remove "โทร" first so its "โท" is not read as a 2.
   let text = normalizeThaiDigits(input).replace(/โทรศัพท์|โทร/g, '')
   for (const [word, digit] of PHONE_DIGITS) text = text.split(word).join(digit)
-  const digits = text.replace(/\D/g, '')
+  // The recogniser may write a mobile number the international way: +66 in place of the first 0.
+  const digits = text.replace(/\D/g, '').replace(/^66(?=\d{9}$)/, '0')
   return /^0\d{9}$/.test(digits) ? digits : null
 }

@@ -67,6 +67,8 @@ export async function answerPending(pending: Pending, answer: 'yes' | 'no', perf
 /** Everything one turn needs; the hook supplies the real rules, performer and matcher, tests supply fakes. */
 export interface TurnParts {
   heard: Pick<Understood, 'text' | 'onlyRude'>
+  /** The recogniser's other guesses, already through the language layer: tried by the rules when the first is not understood. */
+  others?: Pick<Understood, 'text' | 'onlyRude'>[]
   pending: Pending | null
   /** null when the screen has no understanding option. */
   screen: ScreenId | null
@@ -76,14 +78,23 @@ export interface TurnParts {
   isCurrent: () => boolean
 }
 
-/** A turn runs in this order: a waiting question, then the screen's rules, then (only if they did not understand) the matcher. */
-export async function takeTurn({ heard, pending, screen, rules, perform, matchOn, isCurrent }: TurnParts): Promise<Turn> {
+/**
+ * A turn runs in this order: a waiting question, then the screen's rules (on the recogniser's first guess, then on its
+ * other guesses), then (only if none was understood) the matcher on the first guess.
+ */
+export async function takeTurn({ heard, others = [], pending, screen, rules, perform, matchOn, isCurrent }: TurnParts): Promise<Turn> {
   if (pending) {
     const answer = answerOf(heard.text)
     if (answer) return answerPending(pending, answer, perform)
   }
   const reply = await replyTo(heard, rules)
-  if (reply !== false || !screen || !heard.text) return plain(reply)
+  if (reply !== false) return plain(reply)
+  for (const other of others) {
+    if (other.onlyRude || !isCurrent()) continue
+    const second = await replyTo(other, rules)
+    if (second !== false) return plain(second)
+  }
+  if (!screen || !heard.text) return plain(reply)
   // A failed bank import means "no guess", so the usual not-understood line is shown.
   const match = await matchOn(screen, heard.text).catch(() => null)
   if (!match || !isCurrent()) return plain(false)

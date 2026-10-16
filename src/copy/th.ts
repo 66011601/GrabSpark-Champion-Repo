@@ -713,6 +713,13 @@ export const th = {
     stopped: 'หยุดแล้วค่ะ',
   },
   // Asking back when the companion is not sure (spec 2026-10-15-understanding-design).
+  // Testers collecting real speech (spec D3): what the recogniser heard, saved on this device only.
+  heardLog: {
+    download: (count: number) => `บันทึกคำที่ได้ยิน (${count})`,
+    panelTitle: 'เก็บคำที่ระบบได้ยิน (เก็บในเครื่องนี้เท่านั้น)',
+    keep: 'เปิดเก็บ (หรือเปิดลิงก์ด้วย ?heardlog)',
+    clear: 'ล้าง',
+  },
   understanding: {
     ask: (what: string) => `หมายถึง${what}ใช่ไหมคะ?`,
     unsure: 'หนูยังไม่แน่ใจค่ะ เลือกจากปุ่มนี้ หรือพูดใหม่อีกทีนะคะ',

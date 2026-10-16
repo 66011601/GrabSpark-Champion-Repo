@@ -4,6 +4,7 @@ import { useJourney } from '@/app/journey/JourneyContext.ts'
 import { JourneyProvider } from '@/app/journey/JourneyProvider.tsx'
 import { DemoNotice } from '@/components/shell/DemoNotice.tsx'
 import { DeviceFrame } from '@/components/shell/DeviceFrame.tsx'
+import { HeardLogButton } from '@/components/shell/HeardLogButton.tsx'
 import { DashboardScreen } from '@/screens/act2-grow/1-dashboard/DashboardScreen.tsx'
 import { ActTransition } from '@/screens/ActTransition.tsx'
 import { H1Home } from '@/screens/home/H1Home.tsx'
@@ -19,6 +20,10 @@ import { S4Shop } from '@/screens/signup/S4Shop.tsx'
 import { S5Owner } from '@/screens/signup/S5Owner.tsx'
 import { S6Bank } from '@/screens/signup/S6Bank.tsx'
 import { S7Confirm } from '@/screens/signup/S7Confirm.tsx'
+import { heardLogFromUrl } from '@/services/speech/heardLog.ts'
+
+// A tester's link (?heardlog) turns on collecting what the recogniser hears, before anything is said.
+heardLogFromUrl(window.location.search)
 
 function ScreenSwitch() {
   const { state } = useJourney()
@@ -62,6 +67,7 @@ function App() {
   return (
     <JourneyProvider>
       <DeviceFrame side={<DemoPanel />}>{started ? <ScreenSwitch /> : <DemoNotice onStart={() => setStarted(true)} />}</DeviceFrame>
+      <HeardLogButton />
     </JourneyProvider>
   )
 }

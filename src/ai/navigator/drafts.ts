@@ -4,6 +4,9 @@ import type { Merchant, ShopItem } from '@/types/domain.ts'
 import type { PromoDraft, SoldOutUntil } from './types.ts'
 
 const squash = (text: string) => stripParticles(text).toLowerCase().replace(/\s+/g, '')
+// Many merchants drop the ร or ล of a cluster (หมูกรอบ → "หมูกอบ", ปลา → "ปา") and the recogniser writes what it heard,
+// so dish names are compared without them, on both sides.
+const loose = (text: string) => squash(text).replace(/([กขคตปพผบดฟ])[รล](?=[ก-ฮ\u0E30-\u0E3A\u0E47-\u0E4E])/g, '$1')
 
 /** The rain-day bundle of spec 6.6: the best-selling main with the best-margin drink that already sells. */
 export function buildRainPromo(shop: Merchant): PromoDraft {
@@ -18,8 +21,8 @@ export function buildRainPromo(shop: Merchant): PromoDraft {
 
 /** The menu item a sentence names ("หมูกรอบหมดแล้ว"), by its name or what owners call it. */
 export function findItem(text: string, shop: Merchant): ShopItem | null {
-  const said = squash(text)
-  return shop.menu.find((item) => [item.name, ...item.aliases].some((name) => said.includes(squash(name)))) ?? null
+  const said = loose(text)
+  return shop.menu.find((item) => [item.name, ...item.aliases].some((name) => said.includes(loose(name)))) ?? null
 }
 
 /** How long a switched-off dish stays off, as GrabMerchant asks it. The chips and the spoken answers share these. */
