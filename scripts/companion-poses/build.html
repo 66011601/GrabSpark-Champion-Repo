@@ -1,0 +1,156 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Companion poses</title>
+<!--
+  Cleans the companion's full-body poses (scripts/companion-poses/source/*.png, transparent PNGs from the art team)
+  into public/images/companion/poses/*.webp.
+  Run `node scripts/companion-layers/save-server.mjs`, open this page through `npm run dev`
+  (/scripts/companion-poses/build.html), check the preview, then call save() in the console.
+  Each pose keeps only the character: the largest opaque piece and anything at least KEEP of its size. The doodles
+  around her (hearts, sparkle lines) are separate small pieces and fall away. The result is cropped to her outline.
+  The sizes printed under the previews go into POSES in src/components/assistant/companionPoses.ts.
+-->
+<body style="margin: 0; background: #444; font: 13px sans-serif; color: #fff">
+  <div id="out" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 8px"></div>
+  <pre id="sizes"></pre>
+  <script type="module">
+    const NAMES = ['wave', 'hips', 'cheer', 'heart', 'bag', 'peace']
+    const SOLID = 24 // alpha above this counts as part of a piece
+    const KEEP = 0.03 // a piece this share of the largest one stays (a hand drawn apart from the body would)
+    const PAD = 2
+    const QUALITY = 0.9
+    // A doodle that touches her, so it is part of her piece: its colour is cleared inside a box (in the cropped pose's
+    // pixels). Cheer's yellow sparkle line touches her bow.
+    const ERASE = {
+      cheer: { box: [300, 55, 372, 112], colour: ([r, g, b]) => r > 110 && g > 100 && r - b > 30 && g - b > 20 },
+    }
+
+    const load = (src) =>
+      new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => resolve(img)
+        img.onerror = reject
+        img.src = src
+      })
+
+    function clean(img) {
+      const W = img.width
+      const H = img.height
+      const canvas = document.createElement('canvas')
+      canvas.width = W
+      canvas.height = H
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      ctx.drawImage(img, 0, 0)
+      const data = ctx.getImageData(0, 0, W, H)
+      const px = data.data
+      const N = W * H
+      // label the opaque pieces (8-connected)
+      const label = new Int32Array(N).fill(-1)
+      const sizes = []
+      const stack = []
+      for (let start = 0; start < N; start++) {
+        if (label[start] !== -1 || px[start * 4 + 3] <= SOLID) continue
+        const id = sizes.length
+        let size = 0
+        label[start] = id
+        stack.push(start)
+        while (stack.length) {
+          const i = stack.pop()
+          size++
+          const x = i % W
+          const y = (i - x) / W
+          for (let dy = -1; dy <= 1; dy++)
+            for (let dx = -1; dx <= 1; dx++) {
+              const nx = x + dx
+              const ny = y + dy
+              if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue
+              const j = ny * W + nx
+              if (label[j] === -1 && px[j * 4 + 3] > SOLID) {
+                label[j] = id
+                stack.push(j)
+              }
+            }
+        }
+        sizes.push(size)
+      }
+      const largest = Math.max(...sizes)
+      const kept = new Set(sizes.map((size, id) => (size >= largest * KEEP ? id : -1)).filter((id) => id >= 0))
+      // clear everything else, including faint pixels that belong to no kept piece
+      let minX = W, minY = H, maxX = 0, maxY = 0
+      for (let i = 0; i < N; i++) {
+        const x = i % W
+        const y = (i - x) / W
+        const mine = kept.has(label[i]) || (label[i] === -1 && px[i * 4 + 3] > 0 && nearKept(i, x, y))
+        if (!mine) {
+          px[i * 4 + 3] = 0
+          continue
+        }
+        if (px[i * 4 + 3] > SOLID) {
+          if (x < minX) minX = x
+          if (x > maxX) maxX = x
+          if (y < minY) minY = y
+          if (y > maxY) maxY = y
+        }
+      }
+      // a faint edge pixel stays only next to a kept piece (anti-aliasing), never as a stray haze
+      function nearKept(i, x, y) {
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = x + dx
+            const ny = y + dy
+            if (nx >= 0 && ny >= 0 && nx < W && ny < H && kept.has(label[ny * W + nx])) return true
+          }
+        return false
+      }
+      ctx.putImageData(data, 0, 0)
+      const x0 = Math.max(0, minX - PAD)
+      const y0 = Math.max(0, minY - PAD)
+      const w = Math.min(W, maxX + PAD + 1) - x0
+      const h = Math.min(H, maxY + PAD + 1) - y0
+      const out = document.createElement('canvas')
+      out.width = w
+      out.height = h
+      out.getContext('2d').drawImage(canvas, x0, y0, w, h, 0, 0, w, h)
+      return { canvas: out, pieces: sizes.length, dropped: sizes.length - kept.size }
+    }
+
+    function erase(canvas, { box: [x0, y0, x1, y1], colour }) {
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      const px = data.data
+      let cleared = 0
+      for (let y = y0; y < Math.min(y1, canvas.height); y++)
+        for (let x = x0; x < Math.min(x1, canvas.width); x++) {
+          const i = (y * canvas.width + x) * 4
+          if (px[i + 3] > 0 && colour([px[i], px[i + 1], px[i + 2]])) {
+            px[i + 3] = 0
+            cleared++
+          }
+        }
+      ctx.putImageData(data, 0, 0)
+      return cleared
+    }
+
+    const results = {}
+    for (const name of NAMES) {
+      const { canvas, pieces, dropped } = clean(await load(`/scripts/companion-poses/source/${name}.png`))
+      if (ERASE[name]) erase(canvas, ERASE[name])
+      results[name] = canvas
+      const card = document.createElement('figure')
+      card.style.cssText = 'margin: 0; background: repeating-conic-gradient(#666 0 25%, #888 0 50%) 0 0 / 16px 16px'
+      canvas.style.cssText = 'display: block; height: 320px'
+      card.append(canvas, Object.assign(document.createElement('figcaption'), { textContent: `${name} ${canvas.width}×${canvas.height} · ${dropped} of ${pieces} pieces dropped` }))
+      document.querySelector('#out').append(card)
+    }
+    document.querySelector('#sizes').textContent = NAMES.map((name) => `${name}: { width: ${results[name].width}, height: ${results[name].height} },`).join('\n')
+
+    window.results = results
+    window.save = async () => {
+      for (const [name, canvas] of Object.entries(results)) {
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', QUALITY))
+        await fetch(`http://localhost:5199/?name=poses/${name}.webp`, { method: 'POST', body: blob })
+      }
+      return 'saved'
+    }
+  </script>
+</body>

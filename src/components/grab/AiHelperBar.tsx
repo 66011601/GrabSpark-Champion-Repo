@@ -15,6 +15,7 @@ interface AiHelperBarProps {
   onAvatar?: () => void // the face is the talk button
   action?: { kind: 'mic' | 'camera'; label: string; onPress: () => void } | null
   onSpoken?: () => void
+  shop?: boolean // Act 2: the companion's poses for running the shop
   choices?: Choice[] // yes / no, or the best guesses, while the companion waits for the merchant to pick
 }
 
@@ -22,7 +23,7 @@ interface AiHelperBarProps {
  * The companion above the screen's green button: her 2.5D face (the talk button), the voice switch and the screen's own action.
  * What she says shows in the spotlight: on a new step, and whenever she has something to fix or a question to pick from.
  */
-export function AiHelperBar({ text, notice, mic, onAvatar, action, onSpoken, choices = [] }: AiHelperBarProps) {
+export function AiHelperBar({ text, notice, mic, onAvatar, action, onSpoken, choices = [], shop = false }: AiHelperBarProps) {
   const speaking = useSyncExternalStore(subscribeVoice, isSpeakingNow)
   useSpokenLine(notice ? `${notice} ${text}` : text, { listening: mic === 'listening', onSpoken })
   const Icon = action?.kind === 'camera' ? Camera : Mic
@@ -40,7 +41,7 @@ export function AiHelperBar({ text, notice, mic, onAvatar, action, onSpoken, cho
   const talk = onAvatar && mic !== 'private' ? () => (setSpotlight(false), onAvatar()) : undefined
   return (
     <div className="flex items-center justify-end gap-2">
-      {spotlight && <Spotlight text={text} notice={notice} choices={choices} speaking={speaking} onTalk={talk} onClose={() => setSpotlight(false)} />}
+      {spotlight && <Spotlight text={text} notice={notice} choices={choices} speaking={speaking} shop={shop} onTalk={talk} onClose={() => setSpotlight(false)} />}
       <p aria-live="polite" className="sr-only">
         {notice ? `${notice} ${text}` : text}
       </p>
