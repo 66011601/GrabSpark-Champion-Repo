@@ -1,8 +1,9 @@
-// Receives the layers from build.html and writes them to public/images/companion/. Stop it with Ctrl+C.
+// Receives the layers (scripts/companion-layers/build.html) and the full-body poses (scripts/companion-poses/build.html)
+// and writes them to public/images/companion/. Stop it with Ctrl+C.
 import { writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 
-const NAMES = /^companion-(body|head|handL|handR)\.webp$/
+const NAMES = /^(?:companion-(?:body|head|handL|handR)|poses\/(?:wave|hips|cheer|heart|bag|peace))\.webp$/
 
 createServer((request, response) => {
   response.setHeader('Access-Control-Allow-Origin', '*')

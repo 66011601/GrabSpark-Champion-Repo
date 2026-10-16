@@ -333,7 +333,7 @@ export function DashboardScreen() {
         </div>
       )}
       <div className="px-4 pt-2 pb-2">
-        <AiHelperBar text={line} notice={voice.notice} mic={voice.mic} onAvatar={voice.toggleMic} onSpoken={() => lineDone.current?.()} choices={[...guideChoices, ...voice.choices]} />
+        <AiHelperBar shop text={line} notice={voice.notice} mic={voice.mic} onAvatar={voice.toggleMic} onSpoken={() => lineDone.current?.()} choices={[...guideChoices, ...voice.choices]} />
       </div>
       <NavCursor target={cursor.target} taps={cursor.taps} />
     </div>

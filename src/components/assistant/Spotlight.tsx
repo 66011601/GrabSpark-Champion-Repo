@@ -2,13 +2,15 @@ import { Mic } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { th } from '@/copy/th.ts'
-import { CompanionFigure } from './CompanionFigure.tsx'
+import { CompanionPose } from './CompanionPose.tsx'
+import { poseFor } from './companionPoses.ts'
 import type { Choice } from './companionState.ts'
 
 /**
  * What the companion says, over a dimmed page, the way LINE's characters peek in with a tip:
  * a new step's advice, something to fix, or buttons to pick from.
- * The page dims first, then the companion rises at the right edge and its bubble appears.
+ * The page dims first, then the companion peeks up from behind the phone's bottom edge, in the pose that fits what
+ * she says, and her bubble appears.
  * Tapping "เข้าใจแล้ว", the dimmed page, or Escape brings the page back; the talk button brings it back and listens.
  */
 interface SpotlightProps {
@@ -16,11 +18,12 @@ interface SpotlightProps {
   notice?: string | null
   choices?: Choice[]
   speaking: boolean
+  shop?: boolean // Act 2: she carries the delivery bag
   onTalk?: () => void
   onClose: () => void
 }
 
-export function Spotlight({ text, notice, choices = [], speaking, onTalk, onClose }: SpotlightProps) {
+export function Spotlight({ text, notice, choices = [], speaking, shop = false, onTalk, onClose }: SpotlightProps) {
   // Found from a placeholder once it is in the page: on the app's first screen the phone frame is not there yet while this renders.
   const [phone, setPhone] = useState<HTMLElement | null>(null)
   const button = useRef<HTMLButtonElement>(null)
@@ -42,7 +45,7 @@ export function Spotlight({ text, notice, choices = [], speaking, onTalk, onClos
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={th.companion.spotlight.label} className="absolute inset-0 z-50 overflow-hidden">
       <button type="button" tabIndex={-1} aria-hidden onClick={onClose} className="absolute inset-0 animate-dim cursor-default bg-ink/75" />
-      <div className="pointer-events-none absolute inset-x-4 bottom-20 flex flex-col items-end">
+      <div className="pointer-events-none absolute inset-x-4 bottom-0 flex flex-col items-end">
         <div className="pointer-events-auto relative max-h-[55%] w-full animate-rise overflow-y-auto rounded-3xl bg-action p-4 text-white shadow-2xl [animation-delay:0.6s] motion-reduce:animate-none">
           <p className="text-sm font-bold text-white/85">{th.grab.aiHelper}</p>
           {notice && <p className="mt-1 rounded-xl bg-warn-bg px-2 py-1 text-base text-warn-ink">{notice}</p>}
@@ -67,7 +70,7 @@ export function Spotlight({ text, notice, choices = [], speaking, onTalk, onClos
           </button>
           </div>
         <span className="relative -mt-2.5 mr-24 size-5 rotate-45 rounded-sm bg-action" aria-hidden />
-        <CompanionFigure speaking={speaking} className="-mt-4 h-52 w-56 shrink-0 translate-x-4" />
+        <CompanionPose pose={poseFor({ text, notice, asking: choices.length > 0, shop })} speaking={speaking} className="-mt-3 h-60 w-60 shrink-0 translate-x-4" />
       </div>
     </div>,
     phone,
