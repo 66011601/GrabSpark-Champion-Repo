@@ -1,5 +1,6 @@
 import { Info } from 'lucide-react'
 import { useState } from 'react'
+import { checkedField } from '@/ai/commands/checked.ts'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { SAY } from '@/ai/commands/phrases.ts'
 import { scanToUpdates } from '@/ai/onboarding/documents/scanToUpdates.ts'
@@ -40,7 +41,14 @@ export function S5Owner() {
 
   const { mic, notice, choices, toggleMic, stop } = useVoiceInput(
     (text) => {
+      const checked = checkedField(text, status)
+      if (checked) {
+        dispatch({ type: 'CONFIRM_FIELD', field: checked })
+        return true
+      }
       const command = matchCommand(text, COMMANDS)
+      // ต่อไป on an unfinished page: the helper line under the reply says what is left.
+      if (command === 'next' && !status.valid) return th.grab.notYet
       if (command === 'shoot') setScanning(true)
       if (command === 'next') dispatch({ type: 'NEXT' })
       if (command === 'back') dispatch({ type: 'BACK' })

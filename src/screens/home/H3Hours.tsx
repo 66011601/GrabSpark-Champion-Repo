@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { saysDone } from '@/ai/commands/doneWords.ts'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { SAY } from '@/ai/commands/phrases.ts'
 import { extractProfile, HOURS_CONFIDENCE } from '@/ai/onboarding/extractProfile.ts'
@@ -34,6 +35,26 @@ export function H3Hours() {
   const [talking, setTalking] = useState(false)
   const [saving, setSaving] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
+  // Hours set on this visit are a draft until "บันทึก": leaving or saying "ครบแล้ว" brings a reminder, as on the menu page.
+  const [touched, setTouched] = useState(false)
+  const [warned, setWarned] = useState(false)
+  const [reminder, setReminder] = useState<string | null>(null)
+  const filled = Boolean(hours.open && hours.close)
+  const unsaved = filled && (touched || !state.setupDone.hours)
+  const changed = () => {
+    setTouched(true)
+    setWarned(false)
+    setReminder(null)
+  }
+  /** Back: once with a reminder when the hours are not saved, then really back. */
+  const leave = () => {
+    if (unsaved && !warned) {
+      setWarned(true)
+      setReminder(th.h3.unsavedLeave)
+      return
+    }
+    dispatch({ type: 'BACK' })
+  }
   const mounted = useRef(true)
   useEffect(() => {
     mounted.current = true
@@ -42,27 +63,31 @@ export function H3Hours() {
     }
   }, [])
 
-  const set = (change: Partial<OpeningHours>) =>
+  const set = (change: Partial<OpeningHours>) => {
+    changed()
     dispatch({ type: 'FILL', updates: { hours: { value: { ...hours, ...change }, confidence: 1, heardFrom: TYPED } }, at: Date.now() })
+  }
 
   const { mic, transcript, notice, choices, toggleMic, hear } = useVoiceInput(
     (text) => {
       if (matchCommand(text, COMMANDS) === 'back') {
-        dispatch({ type: 'BACK' })
+        leave()
         return true
       }
       const updates = extractProfile(text, { expecting: 'hours', landmarks })
       if (!updates.hours) {
         // Only the days: "เปิดจันทร์ถึงศุกร์ ที่เหลือหยุด" ticks Saturday and Sunday and keeps the times already set.
         const closedDays = parseDays(text)
-        if (!closedDays) return false
+        if (!closedDays) return saysDone(text) ? (filled ? th.h3.pressSave : th.h3.nothingYet) : false
+        changed()
         dispatch({ type: 'FILL', updates: { hours: { value: { ...hours, closedDays }, confidence: HOURS_CONFIDENCE, heardFrom: text } }, at: Date.now() })
         return th.h3.closedHeard(closedDays.map((day) => th.h3.dayNames[day]).join(' '))
       }
       // Times said on their own keep the days off already set ("…ที่เหลือหยุด", then "แปดโมงถึงห้าโมงเย็น").
       const said = parseDays(text) === null ? { ...updates.hours, value: { ...updates.hours.value, closedDays: hours.closedDays } } : updates.hours
+      changed()
       dispatch({ type: 'FILL', updates: { hours: said }, at: Date.now() })
-      return true
+      return saysDone(text) ? th.h3.pressSave : true
     },
     { understanding: { screen: 'H3' } },
   )
@@ -88,10 +113,10 @@ export function H3Hours() {
     <StepShell
       heading={th.h3.title}
       title={th.h3.title}
-      onBack={() => dispatch({ type: 'BACK' })}
+      onBack={leave}
       footer={
         <>
-          <AiHelperBar text={problem ?? th.h3.helper} notice={notice} mic={mic} onAvatar={toggleMic} choices={choices} action={{ kind: 'mic', label: th.h3.talk, onPress: () => setTalking(true) }} />
+          <AiHelperBar text={problem ?? reminder ?? (unsaved ? th.h3.helperFilled : th.h3.helper)} notice={notice} mic={mic} onAvatar={toggleMic} choices={choices} action={{ kind: 'mic', label: th.h3.talk, onPress: () => setTalking(true) }} />
           <Button fullWidth disabled={!hours.open || !hours.close} loading={saving} onClick={save}>
             {saving ? th.h3.saving : th.h3.save}
           </Button>

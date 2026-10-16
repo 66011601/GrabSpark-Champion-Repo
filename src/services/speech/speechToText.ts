@@ -106,6 +106,7 @@ export function startListening(handlers: ListenHandlers): ListenSession {
   recognition.maxAlternatives = GUESSES
   let stretches: Stretch[] = []
   let heard = '' // everything so far, including words the recogniser may still revise
+  let unsettled = '' // the words not yet final when the turn closed: the other guesses end with them too
   let closed = false // the merchant said "จ้า"
   let errored = false
   let quiet: ReturnType<typeof setTimeout> | undefined
@@ -124,6 +125,7 @@ export function startListening(handlers: ListenHandlers): ListenSession {
     const finalText = stretches.map((stretch) => stretch[0]).join('')
     const turn = cutAtEndWord(finalText + interim)
     heard = turn.text
+    unsettled = interim
     if (heard) handlers.onInterim(heard)
     if (turn.ended || (!interim && endsWithClosingWord(finalText))) {
       closed = true
@@ -139,10 +141,9 @@ export function startListening(handlers: ListenHandlers): ListenSession {
   recognition.onend = () => {
     clearTimeout(quiet)
     if (heard) {
-      const others = otherGuesses(stretches).map((guess) => cutAtEndWord(guess).text)
+      const others = otherGuesses(stretches).map((guess) => cutAtEndWord(guess + unsettled).text)
       handlers.onFinal(heard, [...new Set(others)].filter((guess) => guess !== '' && guess !== heard))
-    }
-    else if (!errored) handlers.onError('no-speech') // ended without hearing anything and without an error event
+    } else if (!errored) handlers.onError('no-speech') // ended without hearing anything and without an error event
     handlers.onEnd()
   }
   recognition.start()

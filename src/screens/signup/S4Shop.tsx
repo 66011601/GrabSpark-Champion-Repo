@@ -1,4 +1,5 @@
 import { CheckCircle2, ShieldCheck } from 'lucide-react'
+import { checkedField } from '@/ai/commands/checked.ts'
 import { matchCommand } from '@/ai/commands/matchCommand.ts'
 import { SAY } from '@/ai/commands/phrases.ts'
 import { stepStatus } from '@/ai/onboarding/steps.ts'
@@ -32,7 +33,14 @@ export function S4Shop() {
 
   const { mic, notice, choices, toggleMic } = useVoiceInput(
     (text) => {
+      const checked = checkedField(text, status)
+      if (checked) {
+        dispatch({ type: 'CONFIRM_FIELD', field: checked })
+        return true
+      }
       const command = matchCommand(text, COMMANDS)
+      // ต่อไป on an unfinished page: the helper line under the reply says what is left.
+      if (command === 'next' && !status.valid) return th.grab.notYet
       if (command === 'personal' || command === 'company') setType(command, th.sources.suggested)
       if (command === 'next') dispatch({ type: 'NEXT' })
       if (command === 'back') dispatch({ type: 'BACK' })

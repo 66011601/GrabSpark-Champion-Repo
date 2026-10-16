@@ -9,7 +9,12 @@ export function useSpokenLine(line: string, { listening, onSpoken }: { listening
   })
   useEffect(() => {
     if (!line) return // nothing to say (e.g. a closed sheet): leave whatever is playing alone
-    if (!latest.current.listening) speak(line, () => latest.current.onSpoken?.())
+    // Not said over the merchant (the mic would hear it), so whoever waits for the line need not wait.
+    if (latest.current.listening) {
+      latest.current.onSpoken?.()
+      return
+    }
+    speak(line, () => latest.current.onSpoken?.())
     return stopSpeaking
   }, [line])
 }
