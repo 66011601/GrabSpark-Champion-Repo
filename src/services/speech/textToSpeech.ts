@@ -1,4 +1,5 @@
 import { toSpeech } from '@/lib/speechText.ts'
+import { clipsFor, clipUrl, loadVoice, noteSpoken } from './voiceClips.ts'
 
 const supported = () => typeof window !== 'undefined' && 'speechSynthesis' in window
 
@@ -69,6 +70,11 @@ function whenAllowed(run: () => void): void {
     run()
     return
   }
+  hold(run)
+}
+
+/** Runs `run` on the next tap or key press, inside it, so the browser lets it make sound. */
+function hold(run: () => void): void {
   waiting = run
   if (armed) return
   armed = true
@@ -85,27 +91,73 @@ function whenAllowed(run: () => void): void {
 }
 
 /**
- * Says a line in Thai, replacing whatever was being said. `onDone` runs when the line finishes,
- * or straight away when the device cannot speak or is muted; it never runs for a line that was cut off.
+ * Says a line in Thai, replacing whatever was being said: in the companion's recorded voice when the line was
+ * recorded (the same on every device), otherwise in the device's own Thai voice. `onDone` runs when the line
+ * finishes, or straight away when nothing can say it or the voice is muted; it never runs for a line that was cut off.
  */
 export function speak(text: string, onDone?: () => void): void {
   stopSpeaking()
+  noteSpoken(text)
   const mine = turn
   const finish = () => {
     if (mine !== turn) return
     setSpeaking(false)
     onDone?.()
   }
-  if (muted || !supported()) {
+  if (muted) {
     window.setTimeout(finish, 0)
     return
   }
-  // The first line of a visit often comes before the browser has listed its voices: wait for them a moment.
-  void voiceReady().then((voice) => {
+  const byDevice = () => {
+    if (!supported()) return finish()
+    // The first line of a visit often comes before the browser has listed its voices: wait for them a moment.
+    void voiceReady().then((voice) => {
+      if (mine !== turn) return
+      if (voice && !muted) say(voice, text, mine, finish)
+      else finish()
+    })
+  }
+  void loadVoice().then((recorded) => {
     if (mine !== turn) return
-    if (voice && !muted) say(voice, text, mine, finish)
-    else finish()
+    const clips = recorded && clipsFor(text, recorded)
+    if (clips) play(clips, mine, finish, byDevice)
+    else byDevice()
   })
+}
+
+// One audio element for every recording: a phone lets a page play sound only after a tap, and the element the
+// first tap started may play again later without one.
+let player: HTMLAudioElement | null = null
+
+/** Plays the recordings one after another. A recording that will not load hands the whole line to the device voice. */
+function play(clips: string[], mine: number, finish: () => void, instead: () => void): void {
+  player ??= new Audio()
+  const audio = player
+  let index = 0
+  const next = () => {
+    if (mine !== turn) return
+    if (index >= clips.length) return finish()
+    audio.src = clipUrl(clips[index])
+    index += 1
+    whenAllowed(() => {
+      if (mine !== turn) return
+      audio.play().then(
+        () => mine === turn && setSpeaking(true),
+        (error: unknown) => {
+          if (mine !== turn) return
+          // Not allowed yet (no tap so far): wait for one. Anything else: let the device say it.
+          if (error instanceof DOMException && error.name === 'NotAllowedError') hold(() => void audio.play().catch(instead))
+          else instead()
+        },
+      )
+    })
+  }
+  audio.onended = next
+  // A load cut short by the next recording (MEDIA_ERR_ABORTED) is not a failure.
+  audio.onerror = () => {
+    if (mine === turn && audio.error && audio.error.code !== MediaError.MEDIA_ERR_ABORTED) instead()
+  }
+  next()
 }
 
 const VOICE_WAIT_MS = 2000
@@ -147,10 +199,16 @@ export function stopSpeaking(): void {
   turn += 1
   waiting = null
   setSpeaking(false)
+  if (player) {
+    player.onended = null
+    player.onerror = null
+    player.pause()
+  }
   if (supported()) window.speechSynthesis.cancel()
 }
 
 /** True while a line is playing or queued. */
 export function isSpeaking(): boolean {
+  if (player && !player.paused && !player.ended) return true
   return supported() && (window.speechSynthesis.speaking || window.speechSynthesis.pending)
 }

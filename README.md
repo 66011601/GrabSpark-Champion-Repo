@@ -60,6 +60,21 @@ npm test        # unit + architecture tests
 - **Trust rule to show the judges:** say "ยืนยัน" on the promotion: the AI answers that only you can press the button. Only a tap opens the promotion (then **หยุดโปรนี้** is one tap).
 - Forecast and impact are ranges labelled ประมาณการ. The rain and bundle lifts are demo assumptions, not Grab data. Speech works in Chrome and Edge; without a Thai voice each line stays on screen long enough to read.
 
+### The companion's voice
+
+She speaks with recorded lines (Google Cloud Text-to-Speech, Thai voice Aoede) from `public/voice/`, so she sounds the same on every device. A line with no recording, such as a dish name the merchant made up, is read by the device's own Thai voice.
+
+After changing what she says, record the new lines (only lines without a recording are sent):
+
+```bash
+npm run voice
+```
+
+- **Key:** the script reads `GOOGLE_TTS_API_KEY` from the environment or from `.env.local`. That file is git-ignored; never commit the key.
+- **Restricted key:** if the key only works from the site's address, set `TTS_REFERER` to that address.
+- **Lines from the demo:** lines spoken with demo data (sample shop, prices) are listed in `scripts/voice/spoken.json`. To collect more, run the demo on the dev server, then copy `JSON.stringify([...window.__spokenLines], null, 1)` from the browser console into that file.
+- **Gemini voice:** `TTS_VOICE=gemini npm run voice` uses Gemini 3.1 Flash TTS with the style "Cute, Friendly, Little Girl". It needs the Vertex AI API turned on in the Google Cloud project.
+
 ### Credits
 
 - Map pictures and place search: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL), via Nominatim, within its [usage policy](https://operations.osmfoundation.org/policies/nominatim/).

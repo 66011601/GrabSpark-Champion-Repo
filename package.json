@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "voice": "node scripts/voice/build.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

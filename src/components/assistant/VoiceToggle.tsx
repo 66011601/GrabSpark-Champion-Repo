@@ -2,10 +2,11 @@ import { Volume2, VolumeX } from 'lucide-react'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { th } from '@/copy/th.ts'
 import { getThaiVoice, isMuted, onVoicesChanged, setMuted, subscribeVoice, voiceReady } from '@/services/speech/textToSpeech.ts'
+import { loadVoice } from '@/services/speech/voiceClips.ts'
 
 /**
- * Turns the companion's voice off and on. It is always a button: on a device that cannot speak Thai (yet) a tap
- * looks for the voice again and, when there is none, says why there is no sound and what to do.
+ * Turns the companion's voice off and on. Her recorded voice plays on any device; only when it cannot be loaded and
+ * the device has no Thai voice either does a tap look for one again and, when there is none, say what to do.
  */
 export function VoiceToggle() {
   const muted = useSyncExternalStore(subscribeVoice, isMuted)
@@ -14,10 +15,10 @@ export function VoiceToggle() {
   // Voices are listed late, and the event can fire before this screen subscribes: look once more after mounting.
   useEffect(() => {
     let current = true
-    void voiceReady().then((voice) => {
-      if (current) setAvailable(voice !== undefined)
+    void Promise.all([loadVoice(), voiceReady()]).then(([recorded, voice]) => {
+      if (current) setAvailable(recorded !== null || voice !== undefined)
     })
-    const unsubscribe = onVoicesChanged(() => setAvailable(getThaiVoice() !== undefined))
+    const unsubscribe = onVoicesChanged(() => setAvailable((now) => now || getThaiVoice() !== undefined))
     return () => {
       current = false
       unsubscribe()
