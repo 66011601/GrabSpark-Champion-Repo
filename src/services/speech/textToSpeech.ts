@@ -1,3 +1,4 @@
+import { spokenForm } from '@/lib/spokenForm.ts'
 import { toSpeech } from '@/lib/speechText.ts'
 import { clipsFor, clipUrl, loadVoice, noteSpoken } from './voiceClips.ts'
 
@@ -119,9 +120,12 @@ export function speak(text: string, onDone?: () => void): void {
   }
   void loadVoice().then((recorded) => {
     if (mine !== turn) return
-    const clips = recorded && clipsFor(text, recorded.lines)
-    if (clips) play(clips, recorded.playbackRate, mine, finish, byDevice)
-    else byDevice()
+    // A line with the merchant's own dishes in it: the fixed version the recorded voice can say.
+    const clips = recorded && (clipsFor(text, recorded.lines) ?? clipsFor(spokenForm(text), recorded.lines))
+    if (clips) return play(clips, recorded.playbackRate, mine, finish, byDevice)
+    // While developing, say which lines still need a recording (npm run voice).
+    if (import.meta.env.DEV && recorded) console.warn('[voice] not recorded:', text)
+    byDevice()
   })
 }
 
