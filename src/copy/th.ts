@@ -1,3 +1,5 @@
+import { sayInstead } from '@/lib/spokenForm.ts'
+
 /** Every merchant-facing string. Tone: warm and polite (ค่ะ/คะ), short sentences; the companion calls itself หนู. */
 export const th = {
   // Shown before anything starts: the app is a presentation prototype. Thai first, English beside it.
@@ -291,7 +293,9 @@ export const th = {
     talkQuestion: 'มีเมนูอะไรบ้างคะ บอกพร้อมราคาได้เลย',
     apiError: 'ตอนนี้ระบบช้าอยู่ค่ะ ลองกดอีกครั้งนะคะ',
     // Before the merchant leaves: what was said is only a draft until "บันทึกเมนู" is tapped.
-    addedAsk: (list: string) => `ได้ ${list} แล้วค่ะ มีเมนูอื่นอีกไหมคะ? ถ้าครบแล้ว กด “บันทึกเมนู” ข้างล่างได้เลย`,
+    // The dishes are shown; the recorded voice says addedSaid (spokenForm.ts).
+    addedAsk: (list: string) => sayInstead(`ได้ ${list} แล้วค่ะ มีเมนูอื่นอีกไหมคะ? ถ้าครบแล้ว กด “บันทึกเมนู” ข้างล่างได้เลย`, th.h2.addedSaid),
+    addedSaid: 'ได้แล้วค่ะ ดูชื่อกับราคาในรายการนะคะ มีเมนูอื่นอีกไหมคะ? ถ้าครบแล้ว กด “บันทึกเมนู” ข้างล่างได้เลย',
     pressSave: 'ครบแล้วนะคะ ตรวจชื่อกับราคาอีกครั้ง แล้วกด “บันทึกเมนู” ข้างล่างเพื่อบันทึกค่ะ หนูกดบันทึกแทนไม่ได้นะคะ',
     nothingYet: 'ยังไม่มีเมนูเลยค่ะ บอกชื่อเมนูกับราคาได้เลย เช่น “น้ำส้มแก้วละ 20 บาท”',
     unsavedLeave: 'เมนูยังไม่ได้บันทึกนะคะ กด “บันทึกเมนู” ก่อนไหมคะ? ถ้าจะออกเลย กดย้อนกลับอีกครั้งค่ะ',
@@ -658,7 +662,9 @@ export const th = {
       remove: (name: string) => `ลบ ${name || 'รายการนี้'}`,
       hint: 'พูดได้เลย เช่น “น้ำส้มแก้วละ 20 บาท” หรือพิมพ์เองก็ได้',
       ask: 'จะเพิ่มเมนูอะไรคะ บอกชื่อกับราคาได้เลย เช่น “น้ำส้มแก้วละ 20 บาท”',
-      ready: (list: string) => `หนูร่างเมนูใหม่ให้แล้วค่ะ ${list} มีเมนูอื่นอีกไหมคะ? ถ้าครบแล้ว ตรวจชื่อกับราคา แล้วกด “ยืนยันเพิ่มเมนู” นะคะ`,
+      // The dishes are shown; the recorded voice says readySaid (spokenForm.ts).
+      ready: (list: string) => sayInstead(`หนูร่างเมนูใหม่ให้แล้วค่ะ ${list} มีเมนูอื่นอีกไหมคะ? ถ้าครบแล้ว ตรวจชื่อกับราคา แล้วกด “ยืนยันเพิ่มเมนู” นะคะ`, th.act2.addMenu.readySaid),
+      readySaid: 'หนูร่างเมนูใหม่ให้แล้วค่ะ ดูชื่อกับราคาในรายการนะคะ มีเมนูอื่นอีกไหมคะ? ถ้าครบแล้ว กด “ยืนยันเพิ่มเมนู” นะคะ',
       pressConfirm: 'ครบแล้วนะคะ ตรวจชื่อกับราคา แล้วกด “ยืนยันเพิ่มเมนู” ตรงที่หนูชี้ได้เลยค่ะ หนูกดแทนไม่ได้นะคะ',
       unsavedLeave: 'เมนูใหม่ยังไม่ได้เพิ่มนะคะ กด “ยืนยันเพิ่มเมนู” ก่อนไหมคะ? ถ้าไม่เอาแล้ว พูดอีกครั้งได้เลยค่ะ',
       closeAsk: 'ยังไม่ได้ยืนยันเพิ่มเมนูนะคะ จะปิดโดยไม่เพิ่มเลยไหมคะ?',

@@ -3,8 +3,9 @@
 //   npm run voice            records lines that have no recording yet (and drops recordings no longer used)
 //   TTS_VOICE=gemini npm run voice    the Gemini voice with its style prompt (needs the Vertex AI API on)
 //
-// The lines are every sentence in src/copy/th.ts plus scripts/voice/spoken.json: lines heard while running the demo
-// (dish names, prices, the sample shop), collected in the dev server with
+// The lines are every sentence in src/copy/th.ts, the lines built from the demo's data (scripts/voice/demoLines.ts:
+// Act 2 scripts, pages and buttons, every dish, every ask-back) and scripts/voice/spoken.json: lines heard while
+// running the demo, collected in the dev server with
 // `copy(JSON.stringify([...window.__spokenLines], null, 1))`.
 // The key is read from GOOGLE_TTS_API_KEY (or .env.local) and is never written anywhere. A key restricted to the
 // site's address needs TTS_REFERER set to that address. Output: public/voice/<id>.mp3 and public/voice/manifest.json.
@@ -45,6 +46,7 @@ const sentence = (text) => THAI.test(text) && (text.replace(/\s/g, '').length >=
 const vite = await createServer({ root: fileURLToPath(ROOT), server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
 const { th } = await vite.ssrLoadModule('/src/copy/th.ts')
 const { toSpeech } = await vite.ssrLoadModule('/src/lib/speechText.ts')
+const { demoLines } = await vite.ssrLoadModule('/scripts/voice/demoLines.ts')
 await vite.close()
 
 const strings = []
@@ -55,7 +57,7 @@ const walk = (value) => {
 }
 walk(th)
 const spoken = existsSync(SPOKEN) ? JSON.parse(readFileSync(SPOKEN, 'utf8')) : []
-const lines = [...new Set([...strings.filter(sentence), ...spoken].map(lineKey).filter(Boolean))].sort()
+const lines = [...new Set([...strings.filter(sentence), ...demoLines(), ...spoken].map(lineKey).filter(Boolean))].sort()
 
 const idOf = (line) => createHash('sha1').update(`${VOICE.label}\n${toSpeech(line)}`).digest('hex').slice(0, 12)
 
