@@ -1,5 +1,3 @@
-import { cutAtEndWord, endsWithClosingWord } from '@/ai/commands/endWord.ts'
-
 // Thin wrapper over the browser Web Speech API (Chrome, Edge, Android Chrome support th-TH).
 // Types are declared locally so we do not depend on which DOM lib version ships them.
 
@@ -38,9 +36,9 @@ interface RecognitionLike {
 type RecognitionConstructor = new () => RecognitionLike
 
 // How long the merchant may stay quiet before the turn is closed for them: a while to start talking after the tap,
-// then two seconds of silence ends the sentence, whatever word it ended with.
+// then a second and a half of silence ends the sentence. No closing word is needed.
 export const QUIET_BEFORE_SPEECH_MS = 10_000
-export const QUIET_AFTER_SPEECH_MS = 2_000
+export const QUIET_AFTER_SPEECH_MS = 1_500
 
 function getRecognition(): RecognitionConstructor | undefined {
   const w = window as unknown as { SpeechRecognition?: RecognitionConstructor; webkitSpeechRecognition?: RecognitionConstructor }
@@ -89,8 +87,8 @@ function toKind(error: string): RecognitionErrorKind {
 }
 
 /**
- * Listens for one Thai turn. It ends when the merchant says "จ้า" (or ends on a regional closing word such as เจ้า),
- * presses stop, or stays quiet for two seconds. onFinal fires once with the words before "จ้า", then onEnd.
+ * Listens for one Thai turn. It ends when the merchant stops talking for QUIET_AFTER_SPEECH_MS or presses stop.
+ * onFinal fires once with everything heard, then onEnd.
  */
 export function startListening(handlers: ListenHandlers): ListenSession {
   const Recognition = getRecognition()
@@ -107,7 +105,6 @@ export function startListening(handlers: ListenHandlers): ListenSession {
   let stretches: Stretch[] = []
   let heard = '' // everything so far, including words the recogniser may still revise
   let unsettled = '' // the words not yet final when the turn closed: the other guesses end with them too
-  let closed = false // the merchant said "จ้า"
   let errored = false
   let quiet: ReturnType<typeof setTimeout> | undefined
   const waitForQuiet = (ms: number) => {
@@ -115,7 +112,6 @@ export function startListening(handlers: ListenHandlers): ListenSession {
     quiet = setTimeout(() => recognition.stop(), ms)
   }
   recognition.onresult = (event) => {
-    if (closed) return
     let interim = ''
     for (let i = event.resultIndex; i < event.results.length; i++) {
       const result = event.results[i]
@@ -123,15 +119,9 @@ export function startListening(handlers: ListenHandlers): ListenSession {
       else interim += result[0].transcript
     }
     const finalText = stretches.map((stretch) => stretch[0]).join('')
-    const turn = cutAtEndWord(finalText + interim)
-    heard = turn.text
+    heard = (finalText + interim).trim()
     unsettled = interim
     if (heard) handlers.onInterim(heard)
-    if (turn.ended || (!interim && endsWithClosingWord(finalText))) {
-      closed = true
-      recognition.stop()
-      return
-    }
     waitForQuiet(QUIET_AFTER_SPEECH_MS)
   }
   recognition.onerror = (event) => {
@@ -141,7 +131,7 @@ export function startListening(handlers: ListenHandlers): ListenSession {
   recognition.onend = () => {
     clearTimeout(quiet)
     if (heard) {
-      const others = otherGuesses(stretches).map((guess) => cutAtEndWord(guess + unsettled).text)
+      const others = otherGuesses(stretches).map((guess) => (guess + unsettled).trim())
       handlers.onFinal(heard, [...new Set(others)].filter((guess) => guess !== '' && guess !== heard))
     } else if (!errored) handlers.onError('no-speech') // ended without hearing anything and without an error event
     handlers.onEnd()

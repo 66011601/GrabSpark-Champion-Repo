@@ -119,8 +119,8 @@ export function speak(text: string, onDone?: () => void): void {
   }
   void loadVoice().then((recorded) => {
     if (mine !== turn) return
-    const clips = recorded && clipsFor(text, recorded)
-    if (clips) play(clips, mine, finish, byDevice)
+    const clips = recorded && clipsFor(text, recorded.lines)
+    if (clips) play(clips, recorded.playbackRate, mine, finish, byDevice)
     else byDevice()
   })
 }
@@ -130,14 +130,21 @@ export function speak(text: string, onDone?: () => void): void {
 let player: HTMLAudioElement | null = null
 
 /** Plays the recordings one after another. A recording that will not load hands the whole line to the device voice. */
-function play(clips: string[], mine: number, finish: () => void, instead: () => void): void {
+function play(clips: string[], rate: number, mine: number, finish: () => void, instead: () => void): void {
   player ??= new Audio()
   const audio = player
+  // Faster without keeping the pitch: her voice comes out higher, like the little girl she is.
+  const pitch = audio as HTMLAudioElement & { webkitPreservesPitch?: boolean; mozPreservesPitch?: boolean }
+  pitch.preservesPitch = false
+  pitch.webkitPreservesPitch = false
+  pitch.mozPreservesPitch = false
+  audio.defaultPlaybackRate = rate
   let index = 0
   const next = () => {
     if (mine !== turn) return
     if (index >= clips.length) return finish()
     audio.src = clipUrl(clips[index])
+    audio.playbackRate = rate
     index += 1
     whenAllowed(() => {
       if (mine !== turn) return
@@ -184,7 +191,9 @@ function say(voice: SpeechSynthesisVoice, text: string, mine: number, finish: ()
   const utterance = new SpeechSynthesisUtterance(toSpeech(text))
   utterance.voice = voice
   utterance.lang = voice.lang
-  utterance.rate = 1
+  // A little higher than the device's own voice, closer to the recorded little girl.
+  utterance.rate = 1.05
+  utterance.pitch = 1.3
   utterance.onstart = () => {
     if (mine === turn) setSpeaking(true)
   }
