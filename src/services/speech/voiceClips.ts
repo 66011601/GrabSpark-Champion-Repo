@@ -7,6 +7,12 @@
 /** line (spaces collapsed) → recording id; the file is voice/<id>.mp3 */
 export type VoiceManifest = Record<string, string>
 
+/** The recordings, and how fast to play them (above 1 without keeping the pitch: a higher, younger voice). */
+export interface RecordedVoice {
+  lines: VoiceManifest
+  playbackRate: number
+}
+
 /** A line as the manifest keys it: runs of spaces as one, no spaces at the ends. */
 export const lineKey = (text: string): string => text.replace(/\s+/g, ' ').trim()
 
@@ -35,13 +41,13 @@ export function clipsFor(line: string, manifest: VoiceManifest): string[] | null
 
 const base = () => import.meta.env.BASE_URL
 
-let manifest: Promise<VoiceManifest | null> | undefined
+let manifest: Promise<RecordedVoice | null> | undefined
 
 /** The manifest, fetched once. A failed fetch (offline for a moment) is tried again on the next line. */
-export function loadVoice(): Promise<VoiceManifest | null> {
+export function loadVoice(): Promise<RecordedVoice | null> {
   manifest ??= fetch(`${base()}voice/manifest.json`)
-    .then((response) => (response.ok ? (response.json() as Promise<{ lines: VoiceManifest }>) : null))
-    .then((file) => file?.lines ?? null)
+    .then((response) => (response.ok ? (response.json() as Promise<Partial<RecordedVoice>>) : null))
+    .then((file) => (file?.lines ? { lines: file.lines, playbackRate: file.playbackRate ?? 1 } : null))
     .catch(() => {
       manifest = undefined
       return null

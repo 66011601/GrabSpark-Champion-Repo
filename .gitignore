@@ -16,3 +16,4 @@ coverage
 .DS_Store
 *.suo
 *.sw?
+voice-samples/

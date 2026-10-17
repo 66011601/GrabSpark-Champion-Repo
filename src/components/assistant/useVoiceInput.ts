@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { cutAtEndWord } from '@/ai/commands/endWord.ts'
 import { greetingFor, holdGreeting, takeGreeting } from '@/ai/language/greeting.ts'
 import { fixHeard } from '@/ai/language/heard.ts'
 import { noteRegion } from '@/ai/language/region.ts'
@@ -160,8 +159,7 @@ export function useVoiceInput(interpret: Interpret, { understanding }: VoiceOpti
   const hearTurn = useCallback(
     (words: string, spoken?: { others: string[] }) => {
       if (!guard.current.mounted()) return
-      // A scripted or typed line may close with "จ้า" too, just like a spoken one.
-      const said = fixHeard(cutAtEndWord(words).text || words)
+      const said = fixHeard(words)
       const heard = understandThai(said)
       const others = (spoken?.others ?? []).map((other) => understandThai(fixHeard(other))).filter((other) => other.text !== heard.text)
       holdGreeting(greetingFor(noteRegion(heard.regionWords)))

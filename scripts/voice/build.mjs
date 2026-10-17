@@ -17,13 +17,16 @@ const ROOT = new URL('../../', import.meta.url)
 const OUT = new URL('public/voice/', ROOT)
 const SPOKEN = new URL('scripts/voice/spoken.json', ROOT)
 
-// The companion is a cheerful little girl. The Chirp 3 HD voices need no extra API; Gemini takes a style prompt.
+// The companion is a cute little girl. The Chirp 3 HD voices need no extra API but take no style or pitch, so the
+// youthful voice (Leda) is recorded a little slow and played back faster without keeping its pitch: higher and
+// younger, at about the normal speed (0.88 × 1.18 ≈ 1.04). Gemini takes a style prompt instead.
 const VOICES = {
-  chirp: { label: 'th-TH-Chirp3-HD-Aoede', voice: { languageCode: 'th-TH', name: 'th-TH-Chirp3-HD-Aoede' }, speakingRate: 1.05 },
+  chirp: { label: 'th-TH-Chirp3-HD-Leda@0.88', voice: { languageCode: 'th-TH', name: 'th-TH-Chirp3-HD-Leda' }, speakingRate: 0.88, playbackRate: 1.18 },
   gemini: {
     label: 'gemini-3.1-flash-tts-preview/Aoede: Cute, Friendly, Little Girl',
     voice: { languageCode: 'th-TH', name: 'Aoede', modelName: 'gemini-3.1-flash-tts-preview' },
     prompt: 'Cute, Friendly, Little Girl',
+    playbackRate: 1,
   },
 }
 const VOICE = VOICES[process.env.TTS_VOICE ?? 'chirp']
@@ -93,5 +96,5 @@ await Promise.all(
 // Recordings no line uses any more (changed copy, another voice) are removed.
 const used = new Set(Object.values(manifest))
 for (const file of readdirSync(OUT)) if (file.endsWith('.mp3') && !used.has(file.slice(0, -4))) unlinkSync(new URL(file, OUT))
-writeFileSync(new URL('manifest.json', OUT), `${JSON.stringify({ voice: VOICE.label, lines: manifest }, null, 1)}\n`)
+writeFileSync(new URL('manifest.json', OUT), `${JSON.stringify({ voice: VOICE.label, playbackRate: VOICE.playbackRate, lines: manifest }, null, 1)}\n`)
 console.log('wrote public/voice/manifest.json')

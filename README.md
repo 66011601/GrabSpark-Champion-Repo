@@ -62,7 +62,7 @@ npm test        # unit + architecture tests
 
 ### The companion's voice
 
-She speaks with recorded lines (Google Cloud Text-to-Speech, Thai voice Aoede) from `public/voice/`, so she sounds the same on every device. A line with no recording, such as a dish name the merchant made up, is read by the device's own Thai voice.
+She speaks with recorded lines (Google Cloud Text-to-Speech, Thai voice Leda, played a little faster and higher so she sounds like a little girl) from `public/voice/`, so she sounds the same on every device. A line with no recording, such as a dish name the merchant made up, is read by the device's own Thai voice.
 
 After changing what she says, record the new lines (only lines without a recording are sent):
 
