@@ -2,7 +2,7 @@ import { Camera, Mic } from 'lucide-react'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { CompanionAvatar } from '@/components/assistant/CompanionAvatar.tsx'
 import type { Choice, CompanionState } from '@/components/assistant/companionState.ts'
-import { Spotlight } from '@/components/assistant/Spotlight.tsx'
+import { type CompanionIntro, Spotlight } from '@/components/assistant/Spotlight.tsx'
 import { markSeen, shouldSpotlight } from '@/components/assistant/spotlight.ts'
 import { useSpokenLine } from '@/components/assistant/useSpokenLine.ts'
 import { VoiceToggle } from '@/components/assistant/VoiceToggle.tsx'
@@ -10,6 +10,7 @@ import { isSpeakingNow, subscribeVoice } from '@/services/speech/textToSpeech.ts
 
 interface AiHelperBarProps {
   text: string // what the companion offers here; said aloud each time it changes
+  intro?: CompanionIntro // she introduces herself first (the app's first screen, first time)
   notice?: string | null // something to fix, said first and shown amber
   mic: CompanionState
   onAvatar?: () => void // the face is the talk button
@@ -23,12 +24,13 @@ interface AiHelperBarProps {
  * The companion above the screen's green button: her 2.5D face (the talk button), the voice switch and the screen's own action.
  * What she says shows in the spotlight: on a new step, and whenever she has something to fix or a question to pick from.
  */
-export function AiHelperBar({ text, notice, mic, onAvatar, action, onSpoken, choices = [], shop = false }: AiHelperBarProps) {
+export function AiHelperBar({ text, intro, notice, mic, onAvatar, action, onSpoken, choices = [], shop = false }: AiHelperBarProps) {
   const speaking = useSyncExternalStore(subscribeVoice, isSpeakingNow)
-  useSpokenLine(notice ? `${notice} ${text}` : text, { listening: mic === 'listening', onSpoken })
+  const line = notice ? `${notice} ${text}` : text
+  useSpokenLine(intro ? `${intro.hello} ${intro.said} ${line}` : line, { listening: mic === 'listening', onSpoken })
   const Icon = action?.kind === 'camera' ? Camera : Mic
   const asks = notice || choices.length ? `${notice ?? ''}|${choices.map((choice) => choice.id).join()}` : ''
-  const [spotlight, setSpotlight] = useState(() => shouldSpotlight(text) || asks !== '')
+  const [spotlight, setSpotlight] = useState(() => intro !== undefined || shouldSpotlight(text) || asks !== '')
   const [firstLine] = useState(text)
   useEffect(() => markSeen(firstLine), [firstLine])
   // A new line alone means the merchant moved on (a voice run walks the page), so the page comes back;
@@ -41,9 +43,9 @@ export function AiHelperBar({ text, notice, mic, onAvatar, action, onSpoken, cho
   const talk = onAvatar && mic !== 'private' ? () => (setSpotlight(false), onAvatar()) : undefined
   return (
     <div className="flex items-center justify-end gap-2">
-      {spotlight && <Spotlight text={text} notice={notice} choices={choices} speaking={speaking} shop={shop} onTalk={talk} onClose={() => setSpotlight(false)} />}
+      {spotlight && <Spotlight text={text} intro={intro} notice={notice} choices={choices} speaking={speaking} shop={shop} onTalk={talk} onClose={() => setSpotlight(false)} />}
       <p aria-live="polite" className="sr-only">
-        {notice ? `${notice} ${text}` : text}
+        {line}
       </p>
       <VoiceToggle />
       {action && (
