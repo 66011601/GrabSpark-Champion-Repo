@@ -13,4 +13,8 @@ describe('toSpeech', () => {
   it('does not spell out an example email address', () => {
     expect(toSpeech('อีเมลยังไม่ถูกค่ะ ต้องมี @ เช่น name@example.com')).toBe('อีเมลยังไม่ถูกค่ะ ต้องมี เครื่องหมายแอท')
   })
+
+  it('says her English name the Thai way', () => {
+    expect(toSpeech('สวัสดีค่ะ หนูชื่อ Grabbie ผู้ช่วย AI')).toBe('สวัสดีค่ะ หนูชื่อ แกร็บบี้ ผู้ช่วย AI')
+  })
 })
