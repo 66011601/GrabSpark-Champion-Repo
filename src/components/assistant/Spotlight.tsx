@@ -1,4 +1,4 @@
-import { Mic } from 'lucide-react'
+import { Mic, type LucideIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { th } from '@/copy/th.ts'
@@ -13,8 +13,16 @@ import type { Choice } from './companionState.ts'
  * she says, and her bubble appears.
  * Tapping "เข้าใจแล้ว", the dimmed page, or Escape brings the page back; the talk button brings it back and listens.
  */
+/** Who she is and what she can do, shown above her line the first time the app opens. */
+export interface CompanionIntro {
+  hello: string
+  points: { icon: LucideIcon; text: string }[]
+  said: string // the points as one spoken sentence
+}
+
 interface SpotlightProps {
   text: string
+  intro?: CompanionIntro
   notice?: string | null
   choices?: Choice[]
   speaking: boolean
@@ -23,7 +31,7 @@ interface SpotlightProps {
   onClose: () => void
 }
 
-export function Spotlight({ text, notice, choices = [], speaking, shop = false, onTalk, onClose }: SpotlightProps) {
+export function Spotlight({ text, intro, notice, choices = [], speaking, shop = false, onTalk, onClose }: SpotlightProps) {
   // Found from a placeholder once it is in the page: on the app's first screen the phone frame is not there yet while this renders.
   const [phone, setPhone] = useState<HTMLElement | null>(null)
   const button = useRef<HTMLButtonElement>(null)
@@ -48,8 +56,23 @@ export function Spotlight({ text, notice, choices = [], speaking, shop = false, 
       <div className="pointer-events-none absolute inset-x-4 bottom-0 flex flex-col items-end">
         <div className="pointer-events-auto relative max-h-[55%] w-full animate-rise overflow-y-auto rounded-3xl bg-action p-4 text-white shadow-2xl [animation-delay:0.6s] motion-reduce:animate-none">
           <p className="text-sm font-bold text-white/85">{th.grab.aiHelper}</p>
+          {intro && (
+            <>
+              <p className="mt-1 text-lg leading-snug font-bold">{intro.hello}</p>
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {intro.points.map(({ icon: Icon, text: point }) => (
+                  <li key={point} className="flex items-center gap-2 text-base leading-snug">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/20">
+                      <Icon className="size-4" aria-hidden />
+                    </span>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           {notice && <p className="mt-1 rounded-xl bg-warn-bg px-2 py-1 text-base text-warn-ink">{notice}</p>}
-          <p className="mt-1 text-lg leading-snug">{text}</p>
+          <p className={`${intro ? 'mt-3' : 'mt-1'} text-lg leading-snug`}>{text}</p>
           {choices.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {choices.map((choice) => (
@@ -70,7 +93,7 @@ export function Spotlight({ text, notice, choices = [], speaking, shop = false, 
           </button>
           </div>
         <span className="relative -mt-2.5 mr-24 size-5 rotate-45 rounded-sm bg-action" aria-hidden />
-        <CompanionPose pose={poseFor({ text, notice, asking: choices.length > 0, shop })} speaking={speaking} className="-mt-3 h-60 w-60 shrink-0 translate-x-4" />
+        <CompanionPose pose={intro ? 'wave' : poseFor({ text, notice, asking: choices.length > 0, shop })} speaking={speaking} className="-mt-3 h-60 w-60 shrink-0 translate-x-4" />
       </div>
     </div>,
     phone,
