@@ -10,8 +10,11 @@ import { INITIAL_NAV, type NavState, type Script } from '@/ai/navigator/types.ts
 import { CATEGORY_LABELS } from '@/ai/onboarding/parsers/category.ts'
 import { BANK } from '@/ai/understanding/bank/index.ts'
 import { labelName } from '@/ai/understanding/labelNames.ts'
+import { scanSummary } from '@/components/scan/scanLines.ts'
 import { th } from '@/copy/th.ts'
 import { getMerchant } from '@/services/merchantApi.ts'
+import { sampleScan } from '@/services/ocr/mockOcr.ts'
+import type { DocKind } from '@/types/domain.ts'
 
 const said = (script: Script | null) => script?.steps.map((step) => step.say) ?? []
 // Where the owner is after a script ran: each step's screen and settings, in order.
@@ -61,6 +64,10 @@ export function demoLines(): string[] {
   }
   for (const off of [...sets]) if (off.length > 0) sets.push(days.filter((day) => !off.includes(day)))
   for (const off of sets) lines.push(th.h3.closedHeard(off.map((day) => th.h3.dayNames[day]).join(' ')))
+
+  // Photographing the ID card, the bank book or the paper menu: "กำลังอ่าน…", then what she read (the sample document).
+  lines.push(th.scan.reading)
+  for (const kind of Object.keys(th.scan.docs) as DocKind[]) lines.push(scanSummary(sampleScan(kind)))
 
   return lines.filter(Boolean)
 }
