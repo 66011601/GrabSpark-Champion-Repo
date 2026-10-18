@@ -19,8 +19,20 @@ export const th = {
       labelEn: 'Built by team',
       name: 'PITIPIWPIW WIW WIW',
       groups: [
-        { role: 'Developer', people: ['Thanapoom Somsak', 'Phutiphum Thongin'] },
-        { role: 'Business & Design', people: ['Siripunyakorn Navakornkul', 'Pitchapa Techamaneesutham'] },
+        {
+          role: 'Developer',
+          people: [
+            { name: 'Thanapoom Somsak', nickname: 'Thana' },
+            { name: 'Phutiphum Thongin', nickname: 'Tang' },
+          ],
+        },
+        {
+          role: 'Business & Design',
+          people: [
+            { name: 'Siripunyakorn Navakornkul', nickname: 'Mammam' },
+            { name: 'Pitchapa Techamaneesutham', nickname: 'View' },
+          ],
+        },
       ],
     },
   },

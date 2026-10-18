@@ -338,12 +338,12 @@ npm run voice
 
 Built for the **GrabSpark Hackathon**
 
-| Name | Role |
-|---|---|
-| **Thanapoom Somsak** | Developer |
-| **Phutiphum Thongin** | Developer |
-| **Siripunyakorn Navakornkul** | Business & Design |
-| **Pitchapa Techamaneesutham** | Business & Design |
+| Name | Nickname | Role |
+|---|---|---|
+| **Thanapoom Somsak** | Thana | Developer |
+| **Phutiphum Thongin** | Tang | Developer |
+| **Siripunyakorn Navakornkul** | Mammam | Business & Design |
+| **Pitchapa Techamaneesutham** | View | Business & Design |
 
 *Grabbie: helping every Thai merchant go from "I'm not good with apps" to "my co-pilot handles it."*
 

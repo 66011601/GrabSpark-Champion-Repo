@@ -45,11 +45,12 @@ export function DemoNotice({ onStart }: { onStart: () => void }) {
             {team.groups.map((group) => (
               <div key={group.role}>
                 <dt className="text-xs text-white/75">{group.role}</dt>
-                {/* A name never breaks in the middle; the line wraps between names. */}
-                <dd className="flex flex-wrap gap-x-3 text-sm leading-snug font-semibold">
+                {/* A name never breaks in the middle; the line wraps between names, or before a nickname on a narrow phone. */}
+                <dd className="flex flex-wrap gap-x-3 text-[13px] leading-snug font-semibold">
                   {group.people.map((person) => (
-                    <span key={person} className="whitespace-nowrap">
-                      {person}
+                    <span key={person.name}>
+                      <span className="whitespace-nowrap">{person.name}</span>{' '}
+                      <span className="text-xs font-normal whitespace-nowrap text-white/85">({person.nickname})</span>
                     </span>
                   ))}
                 </dd>
