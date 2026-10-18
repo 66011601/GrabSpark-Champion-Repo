@@ -23,7 +23,7 @@
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 
 - [Overview](#-overview)
 - [The Problem vs. Our Solution](#-the-problem-vs-our-solution)
@@ -40,7 +40,7 @@
 
 ---
 
-## 🌱 Overview
+## Overview
 
 **Grabbie** (น้องแกร็บบี้) is a voice-first AI co-pilot that sits inside the GrabMerchant app. She helps Thailand's **MSME merchants, street-food vendors and local shop owners**, many of whom are not comfortable with technology, sign up and run their store by **talking**, **taking a photo**, or **tapping a suggestion** instead of filling in long forms.
 
@@ -48,10 +48,10 @@ Text-only chatbots tell a merchant *what to do*. Grabbie *does it with them*. Sh
 
 | Action type | What the merchant sees |
 |---|---|
-| 🧭 **UI navigation** | A finger walks through the app and taps to the right page ("ขอดูยอดขายหน่อย" → Insights → Sales → 7 days) |
-| 📝 **Pre-filled forms** | Shop name, address, map pin, food type, owner and bank details filled in from speech or a photo, each marked "heard" until the merchant checks it |
-| 🃏 **Action cards** | A ready-to-confirm draft (a rainy-day promotion, a sold-out dish, new menu items) with the AI's reasoning and safety checks |
-| 🤝 **Guided execution** | Step-by-step help that asks back when unsure. **She never presses confirm or send for the merchant.** |
+| **UI navigation** | A finger walks through the app and taps to the right page ("ขอดูยอดขายหน่อย" → Insights → Sales → 7 days) |
+| **Pre-filled forms** | Shop name, address, map pin, food type, owner and bank details filled in from speech or a photo, each marked "heard" until the merchant checks it |
+| **Action cards** | A ready-to-confirm draft (a rainy-day promotion, a sold-out dish, new menu items) with the AI's reasoning and safety checks |
+| **Guided execution** | Step-by-step help that asks back when unsure. **She never presses confirm or send for the merchant.** |
 
 > **Human in the loop by design:** the AI only prepares drafts. Every action that changes the shop (submit, confirm, publish) is a tap only the merchant can make. Saying "ยืนยัน" gets a polite "only you can press this button".
 
@@ -61,8 +61,8 @@ Text-only chatbots tell a merchant *what to do*. Grabbie *does it with them*. Sh
 
 <table>
 <tr>
-<th width="50%">😣 The problem</th>
-<th width="50%">💡 Our solution: an AI that acts</th>
+<th width="50%">The problem</th>
+<th width="50%">Our solution: an AI that acts</th>
 </tr>
 <tr>
 <td valign="top">
@@ -88,23 +88,23 @@ Text-only chatbots tell a merchant *what to do*. Grabbie *does it with them*. Sh
 
 ## ✨ Key Features
 
-### 👧 A friendly "helpful niece" persona
+### A friendly "helpful niece" persona
 Grabbie talks like a patient niece who is good with phones. She calls herself **หนู** and ends her sentences with **ค่ะ**. She introduces herself on the very first screen, explains what she can do, and guides the merchant one step at a time through onboarding and KYC. She has 6 animated poses (wave, cheer, heart, wink, hands on hips, delivery bag) that match what she is saying, and she replies warmly when the merchant says thank you.
 
-### ⚙️ An action layer architecture
+### An action layer architecture
 Voice, text and photo (OCR) input all go through one understanding pipeline. It produces a **structured intent**, the same shape an LLM function call would return, and that intent drives the UI:
 
 - **Act 1, sign-up (7 steps):** one sentence such as *"ร้านชื่อครัวป้าแดงค่ะ ขายน้ำพริกปลาทู อยู่ลาดพร้าวซอยเจ็ดสิบเอ็ด ตรงข้ามเซเว่น"* fills the shop name, street, map pin, address and food type. A photo of an ID card or bank book fills that whole step.
 - **Act 2, running the shop:** a voice navigator opens any of the 13 home items, presses any button from any screen, and runs five guided scenarios: sales, a rain forecast, a rainy-day promotion, a dish that has sold out, and customer feedback.
 
-### 🗣️ Thai-localised language understanding
+### Thai-localised language understanding
 - **Regional dialects:** Isan, Northern (คำเมือง) and Southern words map to central Thai (`ข้อยขายส้มตำเด้อ`, `เบิ่งยอดขายแหน่`).
 - **Particles and slang:** polite endings, dialect closers and interjections (ครับ / ค่ะ / คับ / จ้า / เด้อ / เจ้า / ว่ะ) are stripped before matching. Rude words are masked as `***` and never reach a field.
 - **Ambiguous requests:** a matcher trained on **~4,000 sentences** acts when it is sure, asks back when it is unsure, and offers buttons when it is lost. On held-out sentences it gets **85–87% right in every region**, and acts wrongly without asking **≤ 0.1%** of the time.
 - **Thai–English code-switching:** short English replies such as *ok*, *yes*, *next*, *back*, *menu* and *stop* are understood mid-conversation.
 - **Speech-recogniser repair:** common Thai mis-hearings are fixed before matching. For example, บาด becomes บาท after a price, and Northern เจ้า is restored at the end of a sentence.
 
-### 💸 Cost-efficient infrastructure
+### Cost-efficient infrastructure
 - **No new foundation model.** The production design reuses GrabMerchant's existing AI and RAG services. Grabbie adds the action layer on top.
 - **The prototype costs nothing to run.** Understanding runs in the browser, and the companion's voice is recorded once and served as static MP3s (about 630 lines, 13 MB).
 - **Safe by construction.** Every AI-prepared draft passes guardrail checks (`src/ai/guardrail/`) before the merchant's tap can send it to the (mock) Grab API.
