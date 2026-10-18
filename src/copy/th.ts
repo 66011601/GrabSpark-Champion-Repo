@@ -13,6 +13,28 @@ export const th = {
       body: 'This is a demo application for the GrabSpark Business Case presentation only. It is not a real-world launch. All data and steps are simulated.',
       start: 'Got it, start',
     },
+    // Who made it, for everyone who opens the prototype.
+    team: {
+      label: 'พัฒนาโดยทีม',
+      labelEn: 'Built by team',
+      name: 'PITIPIWPIW WIW WIW',
+      groups: [
+        {
+          role: 'Developer',
+          people: [
+            { name: 'Thanapoom Somsak', nickname: 'Thana' },
+            { name: 'Phutiphum Thongin', nickname: 'Tang' },
+          ],
+        },
+        {
+          role: 'Business & Design',
+          people: [
+            { name: 'Siripunyakorn Navakornkul', nickname: 'Mammam' },
+            { name: 'Pitchapa Techamaneesutham', nickname: 'View' },
+          ],
+        },
+      ],
+    },
   },
   companion: {
     name: 'ผู้ช่วยร้าน',

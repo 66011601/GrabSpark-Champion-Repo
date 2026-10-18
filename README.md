@@ -338,6 +338,13 @@ npm run voice
 
 Built for the **GrabSpark Hackathon**
 
+| Name | Nickname | Role |
+|---|---|---|
+| **Thanapoom Somsak** | Thana | Developer |
+| **Phutiphum Thongin** | Tang | Developer |
+| **Siripunyakorn Navakornkul** | Mammam | Business & Design |
+| **Pitchapa Techamaneesutham** | View | Business & Design |
+
 *Grabbie: helping every Thai merchant go from "I'm not good with apps" to "my co-pilot handles it."*
 
 </div>
@@ -346,7 +353,7 @@ Built for the **GrabSpark Hackathon**
 
 ## 📜 Credits & Licences
 
-- **Prototype notice:** this is a demo for the GrabSpark Business Case presentation, not a real-world launch. All merchants, documents and figures are fictional samples.
+- **Prototype notice:** this is a demo for the GrabSpark Business Case presentation, not a real-world launch. All merchants, documents and figures are fictional samples. The team's credit is also shown on the prototype's first screen.
 - **Maps and place search:** © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL), via Nominatim, within its [usage policy](https://operations.osmfoundation.org/policies/nominatim/).
   - Places a merchant searches, pins or locates are sent to Nominatim to find the address. The prototype's own documents and applications are not sent anywhere.
   - Nominatim allows 1 request per second, and the hosted demo shares that limit. When it is busy, the app falls back to its own sample places and sub-district data.
